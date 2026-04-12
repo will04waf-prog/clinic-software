@@ -54,9 +54,33 @@ export default function LeadsPage() {
 
   useEffect(() => { load() }, [load])
 
-  const filtered = contacts.filter((c) =>
-    tab === 'all' ? true : c.status === tab
-  )
+  const [search, setSearch] = useState('')
+
+  // Map plural tab keys to singular status values
+  const TAB_STATUS: Record<Tab, string | null> = {
+    all:      null,
+    leads:    'lead',
+    patients: 'patient',
+    inactive: 'inactive',
+  }
+
+  const tabFiltered = TAB_STATUS[tab] === null
+    ? contacts
+    : contacts.filter((c) => c.status === TAB_STATUS[tab])
+
+  const q = search.toLowerCase().trim()
+  const filtered = q === ''
+    ? tabFiltered
+    : tabFiltered.filter((c) => {
+        const fullName = `${c.first_name} ${c.last_name ?? ''}`.toLowerCase()
+        return (
+          fullName.includes(q) ||
+          c.first_name.toLowerCase().includes(q) ||
+          (c.last_name ?? '').toLowerCase().includes(q) ||
+          (c.email ?? '').toLowerCase().includes(q) ||
+          (c.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
+        )
+      })
 
   const counts = {
     all:      contacts.length,
@@ -99,7 +123,14 @@ export default function LeadsPage() {
         )}
 
         {!loading && !error && (
-          <LeadsTable contacts={filtered} stages={stages} onRefresh={load} />
+          <LeadsTable
+            contacts={filtered}
+            stages={stages}
+            onRefresh={load}
+            search={search}
+            onSearchChange={setSearch}
+            totalForTab={tabFiltered.length}
+          />
         )}
       </div>
     </div>

@@ -1,5 +1,4 @@
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
 import { MoreHorizontal, Mail, Phone, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +14,9 @@ interface LeadsTableProps {
   contacts: Contact[]
   stages: PipelineStage[]
   onRefresh: () => void
+  search: string
+  onSearchChange: (v: string) => void
+  totalForTab: number
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -35,21 +37,9 @@ function StageChip({ stage }: { stage?: PipelineStage }) {
   )
 }
 
-export function LeadsTable({ contacts, stages, onRefresh }: LeadsTableProps) {
-  const [search, setSearch] = useState('')
-
-  const filtered = contacts.filter((c) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase().trim()
-    const fullName = `${c.first_name} ${c.last_name ?? ''}`.toLowerCase()
-    return (
-      fullName.includes(q) ||
-      c.first_name.toLowerCase().includes(q) ||
-      (c.last_name ?? '').toLowerCase().includes(q) ||
-      (c.email ?? '').toLowerCase().includes(q) ||
-      (c.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
-    )
-  })
+export function LeadsTable({ contacts, stages, onRefresh, search, onSearchChange, totalForTab }: LeadsTableProps) {
+  // contacts is already tab-filtered and search-filtered by the parent page
+  const filtered = contacts
 
   async function archiveContact(id: string) {
     await fetch(`/api/contacts/${id}`, {
@@ -69,7 +59,7 @@ export function LeadsTable({ contacts, stages, onRefresh }: LeadsTableProps) {
           className="pl-9"
           placeholder="Search by name, email, or phone..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
@@ -159,7 +149,7 @@ export function LeadsTable({ contacts, stages, onRefresh }: LeadsTableProps) {
         </table>
       </div>
 
-      <p className="text-xs text-gray-400">{filtered.length} of {contacts.length} contacts</p>
+      <p className="text-xs text-gray-400">{filtered.length} of {totalForTab} contacts</p>
     </div>
   )
 }
