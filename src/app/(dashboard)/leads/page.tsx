@@ -28,22 +28,29 @@ export default function LeadsPage() {
 
       if (contactsError) throw new Error(contactsError.message)
 
-      // Temporary shape inspector — check browser console, then remove
-      if (contactsData?.[0]) {
-        console.log('[leads] raw contact keys:', Object.keys(contactsData[0]))
-        console.log('[leads] raw contact sample:', contactsData[0])
-      }
-
       const mapped = (contactsData ?? []).map((c: any) => ({
         ...c,
         tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
       }))
 
-      if (mapped[0]) {
-        console.log('[leads] mapped contact keys:', Object.keys(mapped[0]))
-        console.log('[leads] first_name value:', mapped[0].first_name, '| type:', typeof mapped[0].first_name)
-        console.log('[leads] email value:', mapped[0].email, '| type:', typeof mapped[0].email)
-      }
+      // ── Shape inspector: open DevTools → Console to read this ──
+      console.log('[leads] total contacts returned:', mapped.length)
+      mapped.forEach((c: any, i: number) => {
+        console.log(`[leads] contact[${i}]`, {
+          id:         c.id,
+          name:       `${c.first_name} ${c.last_name ?? ''}`,
+          status:     c.status,
+          stage_name: c.stage?.name ?? null,
+          stage_id:   c.stage_id,
+          is_archived: c.is_archived,
+        })
+      })
+      const statusCounts = mapped.reduce((acc: any, c: any) => {
+        acc[c.status] = (acc[c.status] ?? 0) + 1
+        return acc
+      }, {})
+      console.log('[leads] status counts:', statusCounts)
+      // ───────────────────────────────────────────────────────────
 
       setContacts(mapped)
     } catch (err: any) {
