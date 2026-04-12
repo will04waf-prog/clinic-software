@@ -24,13 +24,13 @@ export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams)
   return { provider_id: data?.id }
 }
 
-// Replace {{variables}} in templates
+// Replace {{variables}} in templates — case-insensitive keys
 export function renderTemplate(template: string, vars: Record<string, string>) {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`)
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key.toLowerCase()] ?? `{{${key}}}`)
 }
 
 // Minimal HTML wrapper for plain-text style emails
-export function wrapEmailHtml(body: string, clinicName = 'Tarhunna') {
+export function wrapEmailHtml(body: string, clinicName = 'your clinic') {
   const paragraphs = body
     .split('\n')
     .filter(Boolean)

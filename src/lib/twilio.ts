@@ -27,7 +27,7 @@ export async function sendSMS(to: string, body: string) {
   }
 }
 
-// Replace template variables: {{first_name}}, {{clinic_name}}, etc.
+// Replace template variables: {{first_name}}, {{clinic_name}}, etc. — case-insensitive
 export function renderTemplate(template: string, vars: Record<string, string>) {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`)
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key.toLowerCase()] ?? `{{${key}}}`)
 }
