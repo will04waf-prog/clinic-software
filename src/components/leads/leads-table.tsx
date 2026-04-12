@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatRelative, formatPhone, formatProcedure } from '@/lib/utils'
-import type { Contact } from '@/types'
+import type { Contact, PipelineStage } from '@/types'
 
 interface LeadsTableProps {
   contacts: Contact[]
