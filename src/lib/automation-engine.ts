@@ -129,7 +129,7 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
     first_name: contact.first_name,
     last_name: contact.last_name ?? '',
     full_name: `${contact.first_name} ${contact.last_name ?? ''}`.trim(),
-    clinic_name: org?.name ?? 'Our Clinic',
+    clinic_name: org?.name ?? 'Tarhunna',
     clinic_phone: org?.phone ?? '',
     clinic_email: org?.email ?? '',
   }
@@ -145,7 +145,7 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
     } else if (step.channel === 'email' && contact.email && !contact.opted_out_email) {
       const subject = renderEmail(step.subject ?? 'Message from {{clinic_name}}', vars)
       const bodyText = renderEmail(step.body, vars)
-      const html = wrapEmailHtml(bodyText, org?.name ?? 'Clinic')
+      const html = wrapEmailHtml(bodyText, org?.name ?? 'Tarhunna')
       messageResult = await sendEmail({ to: contact.email, subject, html })
     }
   } catch (err: any) {

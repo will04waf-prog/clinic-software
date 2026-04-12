@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@cliniq.app'
+const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@tarhunna.com'
 
 export interface SendEmailParams {
   to: string
@@ -30,7 +30,7 @@ export function renderTemplate(template: string, vars: Record<string, string>) {
 }
 
 // Minimal HTML wrapper for plain-text style emails
-export function wrapEmailHtml(body: string, clinicName: string) {
+export function wrapEmailHtml(body: string, clinicName = 'Tarhunna') {
   const paragraphs = body
     .split('\n')
     .filter(Boolean)

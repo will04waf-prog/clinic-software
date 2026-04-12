@@ -39,9 +39,9 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center gap-2.5 border-b border-gray-200 px-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <span className="text-sm font-bold text-white">C</span>
+          <span className="text-sm font-bold text-white">T</span>
         </div>
-        <span className="text-lg font-bold text-gray-900">ClinIQ</span>
+        <span className="text-lg font-bold text-gray-900">Tarhunna</span>
       </div>
 
       {/* Nav */}

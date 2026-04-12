@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ClinIQ – Plastic Surgery Clinic CRM',
-  description: 'Capture leads, book consultations, reduce no-shows. Built for plastic surgery clinics.',
+  title: 'Tarhunna – Clinic CRM',
+  description: 'Capture leads, book consultations, and reduce no-shows. Built for aesthetic and plastic surgery clinics.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

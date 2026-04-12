@@ -60,9 +60,9 @@ export default function SignupPage() {
     <div className="flex min-h-full flex-col items-center justify-center bg-gray-50 px-4 py-12">
       <div className="mb-8 flex flex-col items-center gap-2">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 shadow-lg">
-          <span className="text-2xl font-black text-white">C</span>
+          <span className="text-2xl font-black text-white">T</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">ClinIQ</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Tarhunna</h1>
         <p className="text-sm text-gray-500">Start your 14-day free trial</p>
       </div>
 
