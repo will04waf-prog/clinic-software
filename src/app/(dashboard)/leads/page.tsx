@@ -28,31 +28,12 @@ export default function LeadsPage() {
 
       if (contactsError) throw new Error(contactsError.message)
 
-      const mapped = (contactsData ?? []).map((c: any) => ({
-        ...c,
-        tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
-      }))
-
-      // ── Shape inspector: open DevTools → Console to read this ──
-      console.log('[leads] total contacts returned:', mapped.length)
-      mapped.forEach((c: any, i: number) => {
-        console.log(`[leads] contact[${i}]`, {
-          id:         c.id,
-          name:       `${c.first_name} ${c.last_name ?? ''}`,
-          status:     c.status,
-          stage_name: c.stage?.name ?? null,
-          stage_id:   c.stage_id,
-          is_archived: c.is_archived,
-        })
-      })
-      const statusCounts = mapped.reduce((acc: any, c: any) => {
-        acc[c.status] = (acc[c.status] ?? 0) + 1
-        return acc
-      }, {})
-      console.log('[leads] status counts:', statusCounts)
-      // ───────────────────────────────────────────────────────────
-
-      setContacts(mapped)
+      setContacts(
+        (contactsData ?? []).map((c: any) => ({
+          ...c,
+          tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
+        }))
+      )
     } catch (err: any) {
       console.error('[leads] load error:', err)
       setError(err.message ?? 'Failed to load contacts')

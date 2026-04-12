@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { enrollContact } from '@/lib/automation-engine'
 import { z } from 'zod'
 
@@ -19,8 +20,6 @@ const patchSchema = z.object({
   scheduled_at:       z.string().datetime().optional(),
 }).strict()
 
-// ─── Helpers ─────────────────────────────────────────────────
-
 async function resolveOrgId(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const { data } = await supabase
     .from('profiles')
@@ -30,7 +29,6 @@ async function resolveOrgId(supabase: Awaited<ReturnType<typeof createClient>>, 
   return data?.organization_id ?? null
 }
 
-// ─── PATCH /api/consultations/[id] ───────────────────────────
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -44,7 +42,6 @@ export async function PATCH(
   const orgId = await resolveOrgId(supabase, user.id)
   if (!orgId) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-  // Fetch existing consultation — confirms it belongs to this org
   const { data: consultation, error: fetchError } = await supabase
     .from('consultations')
     .select('id, status, contact_id, organization_id')
@@ -56,23 +53,19 @@ export async function PATCH(
     return NextResponse.json({ error: 'Consultation not found' }, { status: 404 })
   }
 
-  // Validate body
   const body = await req.json()
   const parsed = patchSchema.safeParse(body)
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]
-    return NextResponse.json({ error: firstError.message }, { status: 400 })
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
   const updates = parsed.data
-
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 })
   }
 
   const statusChanged = updates.status && updates.status !== consultation.status
 
-  // Apply the update
   const { error: updateError } = await supabase
     .from('consultations')
     .update(updates)
@@ -81,47 +74,54 @@ export async function PATCH(
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
-  // ── Side effects on status change ──────────────────────────
   if (statusChanged && updates.status) {
-    // 1. Activity log
-    await supabase.from('activity_log').insert({
+    // Activity log
+    await supabaseAdmin.from('activity_log').insert({
       organization_id: orgId,
-      contact_id: consultation.contact_id,
-      user_id: user.id,
-      action: `consultation_${updates.status}`,  // e.g. consultation_no_show
-      metadata: { consultation_id: id },
+      contact_id:      consultation.contact_id,
+      user_id:         user.id,
+      action:          `consultation_${updates.status}`,
+      metadata:        { consultation_id: id },
     })
 
-    // 2. Promote contact to patient + move to "Consultation Done" stage
     if (updates.status === 'completed') {
-      const { data: doneStage } = await supabase
+      // Look up "Consultation Done" stage
+      const { data: doneStage } = await supabaseAdmin
         .from('pipeline_stages')
         .select('id')
         .eq('organization_id', orgId)
         .ilike('name', 'consultation done')
         .maybeSingle()
 
-      await supabase
+      const { error: contactErr, count } = await supabaseAdmin
         .from('contacts')
         .update({
-          status: 'patient',
+          status:           'patient',
           last_activity_at: new Date().toISOString(),
           ...(doneStage ? { stage_id: doneStage.id } : {}),
         })
         .eq('id', consultation.contact_id)
         .eq('organization_id', orgId)
+
+      if (contactErr) console.error('[consultations] contact update failed:', contactErr.message)
+      else console.log('[consultations] contact promoted to patient, rows affected:', count, 'stage:', doneStage?.id ?? 'not moved')
+
+      enrollContact({
+        contactId:      consultation.contact_id,
+        organizationId: orgId,
+        triggerType:    'consultation_completed',
+      }).catch((err) => console.error('Post-consult enrollment failed:', err))
     }
 
-    // 3. Move contact to "No-Show" stage + enroll in recovery sequence
     if (updates.status === 'no_show') {
-      const { data: noShowStage } = await supabase
+      const { data: noShowStage } = await supabaseAdmin
         .from('pipeline_stages')
         .select('id')
         .eq('organization_id', orgId)
         .ilike('name', 'no-show')
         .maybeSingle()
 
-      await supabase
+      const { error: contactErr, count } = await supabaseAdmin
         .from('contacts')
         .update({
           last_activity_at: new Date().toISOString(),
@@ -130,20 +130,14 @@ export async function PATCH(
         .eq('id', consultation.contact_id)
         .eq('organization_id', orgId)
 
-      enrollContact({
-        contactId: consultation.contact_id,
-        organizationId: orgId,
-        triggerType: 'no_show',
-      }).catch((err) => console.error('No-show enrollment failed:', err))
-    }
+      if (contactErr) console.error('[consultations] contact stage update failed:', contactErr.message)
+      else console.log('[consultations] contact moved to no-show stage, rows affected:', count, 'stage:', noShowStage?.id ?? 'not found')
 
-    // 4. Enroll in post-consultation sequence (fire-and-forget)
-    if (updates.status === 'completed') {
       enrollContact({
-        contactId: consultation.contact_id,
+        contactId:      consultation.contact_id,
         organizationId: orgId,
-        triggerType: 'consultation_completed',
-      }).catch((err) => console.error('Post-consult enrollment failed:', err))
+        triggerType:    'no_show',
+      }).catch((err) => console.error('No-show enrollment failed:', err))
     }
   }
 
