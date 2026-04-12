@@ -39,12 +39,15 @@ export function LeadsTable({ contacts, stages, onRefresh }: LeadsTableProps) {
   const [search, setSearch] = useState('')
 
   const filtered = contacts.filter((c) => {
-    const q = search.toLowerCase()
+    if (!search.trim()) return true
+    const q = search.toLowerCase().trim()
+    const fullName = `${c.first_name} ${c.last_name ?? ''}`.toLowerCase()
     return (
+      fullName.includes(q) ||
       c.first_name.toLowerCase().includes(q) ||
       (c.last_name ?? '').toLowerCase().includes(q) ||
       (c.email ?? '').toLowerCase().includes(q) ||
-      (c.phone ?? '').includes(q)
+      (c.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
     )
   })
 
