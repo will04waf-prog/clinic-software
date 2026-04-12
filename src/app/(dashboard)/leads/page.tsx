@@ -28,12 +28,24 @@ export default function LeadsPage() {
 
       if (contactsError) throw new Error(contactsError.message)
 
-      setContacts(
-        (contactsData ?? []).map((c: any) => ({
-          ...c,
-          tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
-        }))
-      )
+      // Temporary shape inspector — check browser console, then remove
+      if (contactsData?.[0]) {
+        console.log('[leads] raw contact keys:', Object.keys(contactsData[0]))
+        console.log('[leads] raw contact sample:', contactsData[0])
+      }
+
+      const mapped = (contactsData ?? []).map((c: any) => ({
+        ...c,
+        tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
+      }))
+
+      if (mapped[0]) {
+        console.log('[leads] mapped contact keys:', Object.keys(mapped[0]))
+        console.log('[leads] first_name value:', mapped[0].first_name, '| type:', typeof mapped[0].first_name)
+        console.log('[leads] email value:', mapped[0].email, '| type:', typeof mapped[0].email)
+      }
+
+      setContacts(mapped)
     } catch (err: any) {
       console.error('[leads] load error:', err)
       setError(err.message ?? 'Failed to load contacts')
@@ -62,13 +74,19 @@ export default function LeadsPage() {
   const filtered = q === ''
     ? tabFiltered
     : tabFiltered.filter((c) => {
-        const fullName = `${c.first_name} ${c.last_name ?? ''}`.toLowerCase()
+        const first    = (c.first_name  ?? '').toLowerCase()
+        const last     = (c.last_name   ?? '').toLowerCase()
+        const email    = (c.email       ?? '').toLowerCase()
+        const phone    = (c.phone       ?? '').replace(/\D/g, '')
+        const fullName = `${first} ${last}`.trim()
+        const qPhone   = q.replace(/\D/g, '')
+        console.log('[leads] searching contact:', { first, last, email, q })
         return (
           fullName.includes(q) ||
-          c.first_name.toLowerCase().includes(q) ||
-          (c.last_name ?? '').toLowerCase().includes(q) ||
-          (c.email ?? '').toLowerCase().includes(q) ||
-          (c.phone ?? '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
+          first.includes(q) ||
+          last.includes(q) ||
+          email.includes(q) ||
+          (qPhone.length > 0 && phone.includes(qPhone))
         )
       })
 
