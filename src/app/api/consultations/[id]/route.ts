@@ -105,7 +105,7 @@ export async function PATCH(
 
       if (contactErr) console.error('[consultations] contact update failed:', contactErr.message)
 
-      enrollContact({
+      await enrollContact({
         contactId:      consultation.contact_id,
         organizationId: orgId,
         triggerType:    'consultation_completed',
@@ -131,7 +131,7 @@ export async function PATCH(
 
       if (noShowContactErr) console.error('[consultations] contact stage update failed:', noShowContactErr.message)
 
-      enrollContact({
+      await enrollContact({
         contactId:      consultation.contact_id,
         organizationId: orgId,
         triggerType:    'no_show',

@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
     action: 'lead_created',
   })
 
-  // Trigger automation enrollment (fire-and-forget — never block the response)
-  enrollContact({
+  // Enroll in automations before returning — fire-and-forget is cut off on Vercel
+  await enrollContact({
     contactId: contact.id,
     organizationId: profile.organization_id,
     triggerType: 'new_lead',
