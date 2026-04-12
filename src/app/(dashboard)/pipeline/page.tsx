@@ -14,17 +14,16 @@ export default function PipelinePage() {
     try {
       const supabase = createClient()
 
-      const [{ data: stages }, { data: contacts }] = await Promise.all([
+      const [{ data: stages }, contactsRes] = await Promise.all([
         supabase.from('pipeline_stages').select('*').order('position'),
-        supabase
-          .from('contacts')
-          .select('*, stage:pipeline_stages(*)')
-          .eq('is_archived', false)
-          .not('stage_id', 'is', null),
+        fetch('/api/leads'),
       ])
 
+      const contacts = contactsRes.ok ? await contactsRes.json() : []
+      const staged = (contacts as any[]).filter((c) => c.stage_id != null)
+
       const cols: PipelineColumn[] = (stages ?? []).map((stage) => {
-        const stageContacts = (contacts ?? []).filter((c: any) => c.stage_id === stage.id)
+        const stageContacts = staged.filter((c) => c.stage_id === stage.id)
         return { stage, contacts: stageContacts, count: stageContacts.length }
       })
 
@@ -37,8 +36,11 @@ export default function PipelinePage() {
   useEffect(() => { load() }, [load])
 
   async function handleStageChange(contactId: string, stageId: string) {
-    const supabase = createClient()
-    await supabase.from('contacts').update({ stage_id: stageId }).eq('id', contactId)
+    await fetch(`/api/contacts/${contactId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage_id: stageId }),
+    })
     load()
   }
 

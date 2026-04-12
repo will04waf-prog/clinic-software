@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { LeadsTable } from '@/components/leads/leads-table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
-import { createClient } from '@/lib/supabase/client'
 import type { Contact } from '@/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -19,21 +18,13 @@ export default function LeadsPage() {
     setLoading(true)
     setError(null)
     try {
-      const supabase = createClient()
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('*, stage:pipeline_stages(*), tags:contact_tags(tag:tags(*))')
-        .eq('is_archived', false)
-        .order('last_activity_at', { ascending: false })
-
-      if (contactsError) throw new Error(contactsError.message)
-
-      setContacts(
-        (contactsData ?? []).map((c: any) => ({
-          ...c,
-          tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
-        }))
-      )
+      const res = await fetch('/api/leads')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      const data = await res.json()
+      setContacts(data)
     } catch (err: any) {
       console.error('[leads] load error:', err)
       setError(err.message ?? 'Failed to load contacts')
