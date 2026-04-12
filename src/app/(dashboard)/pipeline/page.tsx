@@ -20,7 +20,7 @@ export default function PipelinePage() {
           .from('contacts')
           .select('*, stage:pipeline_stages(*)')
           .eq('is_archived', false)
-          .eq('status', 'lead'),
+          .not('stage_id', 'is', null),
       ])
 
       const cols: PipelineColumn[] = (stages ?? []).map((stage) => {
@@ -48,7 +48,7 @@ export default function PipelinePage() {
     <div className="flex flex-col h-full overflow-hidden">
       <Header
         title="Pipeline"
-        subtitle={`${totalLeads} active leads`}
+        subtitle={`${totalLeads} active contacts`}
       />
 
       <div className="flex-1 overflow-hidden p-6">

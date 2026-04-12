@@ -92,17 +92,44 @@ export async function PATCH(
       metadata: { consultation_id: id },
     })
 
-    // 2. Promote contact to patient on completion
+    // 2. Promote contact to patient + move to "Consultation Done" stage
     if (updates.status === 'completed') {
+      const { data: doneStage } = await supabase
+        .from('pipeline_stages')
+        .select('id')
+        .eq('organization_id', orgId)
+        .ilike('name', 'consultation done')
+        .maybeSingle()
+
       await supabase
         .from('contacts')
-        .update({ status: 'patient', last_activity_at: new Date().toISOString() })
+        .update({
+          status: 'patient',
+          last_activity_at: new Date().toISOString(),
+          ...(doneStage ? { stage_id: doneStage.id } : {}),
+        })
         .eq('id', consultation.contact_id)
         .eq('organization_id', orgId)
     }
 
-    // 3. Enroll in no-show recovery sequence (fire-and-forget)
+    // 3. Move contact to "No-Show" stage + enroll in recovery sequence
     if (updates.status === 'no_show') {
+      const { data: noShowStage } = await supabase
+        .from('pipeline_stages')
+        .select('id')
+        .eq('organization_id', orgId)
+        .ilike('name', 'no-show')
+        .maybeSingle()
+
+      await supabase
+        .from('contacts')
+        .update({
+          last_activity_at: new Date().toISOString(),
+          ...(noShowStage ? { stage_id: noShowStage.id } : {}),
+        })
+        .eq('id', consultation.contact_id)
+        .eq('organization_id', orgId)
+
       enrollContact({
         contactId: consultation.contact_id,
         organizationId: orgId,
