@@ -63,18 +63,34 @@ export default function AutomationsPage() {
   }
 
   async function toggleActive(seq: AutomationSequence) {
-    await fetch(`/api/automations/${seq.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_active: !seq.is_active }),
-    })
-    load()
+    try {
+      const res = await fetch(`/api/automations/${seq.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !seq.is_active }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error ?? `HTTP ${res.status}`)
+      }
+      load()
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to update sequence')
+    }
   }
 
   async function deleteSequence(id: string) {
     if (!confirm('Delete this sequence? This cannot be undone.')) return
-    await fetch(`/api/automations/${id}`, { method: 'DELETE' })
-    load()
+    try {
+      const res = await fetch(`/api/automations/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error ?? `HTTP ${res.status}`)
+      }
+      load()
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to delete sequence')
+    }
   }
 
   // ── Editor view ──────────────────────────────────────────────

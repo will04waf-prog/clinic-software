@@ -51,8 +51,8 @@ async function sendReminder(consultation: any, type: '24h' | '2h', supabase: any
   })
 
   const smsBody = type === '24h'
-    ? `Hi ${contact.first_name}, just a reminder that you have a consultation with ${org?.name ?? 'Tarhunna'} tomorrow at ${dateStr}. Reply STOP to opt out.`
-    : `Hi ${contact.first_name}, your consultation with ${org?.name ?? 'Tarhunna'} is in about 2 hours (${dateStr}). See you soon!`
+    ? `Hi ${contact.first_name}, just a reminder that you have a consultation with ${org?.name ?? 'your clinic'} tomorrow at ${dateStr}. Reply STOP to opt out.`
+    : `Hi ${contact.first_name}, your consultation with ${org?.name ?? 'your clinic'} is in about 2 hours (${dateStr}). See you soon!`
 
   const emailSubject = type === '24h'
     ? `Reminder: Your consultation tomorrow`
@@ -70,7 +70,7 @@ async function sendReminder(consultation: any, type: '24h' | '2h', supabase: any
       await sendEmail({
         to: contact.email,
         subject: emailSubject,
-        html: wrapEmailHtml(emailBody, org?.name ?? 'Tarhunna'),
+        html: wrapEmailHtml(emailBody, org?.name ?? 'your clinic'),
       })
     }
   } catch (err) {

@@ -8,6 +8,7 @@ import type { PipelineColumn } from '@/types'
 export default function PipelinePage() {
   const [columns, setColumns] = useState<PipelineColumn[]>([])
   const [loading, setLoading] = useState(true)
+  const [moveError, setMoveError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,12 +37,21 @@ export default function PipelinePage() {
   useEffect(() => { load() }, [load])
 
   async function handleStageChange(contactId: string, stageId: string) {
-    await fetch(`/api/contacts/${contactId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage_id: stageId }),
-    })
-    load()
+    setMoveError(null)
+    try {
+      const res = await fetch(`/api/contacts/${contactId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage_id: stageId }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      load()
+    } catch (err: any) {
+      setMoveError(err.message ?? 'Failed to move contact')
+    }
   }
 
   const totalLeads = columns.reduce((sum, c) => sum + c.count, 0)
@@ -54,6 +64,11 @@ export default function PipelinePage() {
       />
 
       <div className="flex-1 overflow-hidden p-6">
+        {moveError && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm text-red-700">{moveError}</p>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />

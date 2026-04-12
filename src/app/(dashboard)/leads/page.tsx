@@ -59,7 +59,6 @@ export default function LeadsPage() {
         const phone    = (c.phone       ?? '').replace(/\D/g, '')
         const fullName = `${first} ${last}`.trim()
         const qPhone   = q.replace(/\D/g, '')
-        console.log('[leads] searching contact:', { first, last, email, q })
         return (
           fullName.includes(q) ||
           first.includes(q) ||
@@ -86,7 +85,7 @@ export default function LeadsPage() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {/* Tab bar — controls filter only, no TabsContent wrapping */}
-        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v as Tab); setSearch('') }}>
           <TabsList>
             <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
             <TabsTrigger value="leads">Leads ({counts.leads})</TabsTrigger>

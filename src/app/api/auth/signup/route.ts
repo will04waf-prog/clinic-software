@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Create auth user
-    console.log('[signup] Creating auth user:', email)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -48,12 +47,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: authError.message }, { status: 400 })
     }
 
-    console.log('[signup] Auth user created:', authData.user.id)
     const userId = authData.user.id
 
     try {
       // 2. Create organization
-      console.log('[signup] Creating organization:', clinic_name)
       const slug = slugify(clinic_name) + '-' + userId.slice(0, 6)
       const { data: org, error: orgError } = await supabaseAdmin
         .from('organizations')
@@ -66,11 +63,9 @@ export async function POST(req: NextRequest) {
         throw new Error(orgError.message)
       }
 
-      console.log('[signup] Organization created:', org.id)
       const orgId = org.id
 
       // 3. Create profile
-      console.log('[signup] Creating profile for user:', userId)
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         id: userId,
         organization_id: orgId,
@@ -84,10 +79,7 @@ export async function POST(req: NextRequest) {
         throw new Error(profileError.message)
       }
 
-      console.log('[signup] Profile created.')
-
       // 4. Seed default pipeline stages
-      console.log('[signup] Seeding pipeline stages...')
       const { error: stagesError } = await supabaseAdmin.rpc('seed_default_stages', {
         org_id: orgId,
       })
@@ -97,7 +89,6 @@ export async function POST(req: NextRequest) {
         throw new Error(stagesError.message)
       }
 
-      console.log('[signup] Signup complete for:', email)
       return NextResponse.json({ ok: true })
 
     } catch (innerErr: any) {

@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
 import { MoreHorizontal, Mail, Phone, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -40,17 +41,38 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
   // contacts is already tab-filtered and search-filtered by the parent page
   const filtered = contacts
 
+  const [archivingId, setArchivingId] = useState<string | null>(null)
+  const [archiveError, setArchiveError] = useState<string | null>(null)
+
   async function archiveContact(id: string) {
-    await fetch(`/api/contacts/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_archived: true }),
-    })
-    onRefresh()
+    if (!window.confirm('Archive this contact? You can restore them from settings.')) return
+    setArchivingId(id)
+    setArchiveError(null)
+    try {
+      const res = await fetch(`/api/contacts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_archived: true }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      onRefresh()
+    } catch (err: any) {
+      setArchiveError(err.message ?? 'Failed to archive contact')
+    } finally {
+      setArchivingId(null)
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {archiveError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700">{archiveError}</p>
+        </div>
+      )}
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -136,8 +158,12 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
                       <DropdownMenuItem asChild>
                         <Link href={`/leads/${contact.id}`}>View Profile</Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => archiveContact(contact.id)} className="text-red-600">
-                        Archive
+                      <DropdownMenuItem
+                        onClick={() => archiveContact(contact.id)}
+                        className="text-red-600"
+                        disabled={archivingId === contact.id}
+                      >
+                        {archivingId === contact.id ? 'Archiving…' : 'Archive'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

@@ -93,7 +93,7 @@ export async function PATCH(
         .ilike('name', 'consultation done')
         .maybeSingle()
 
-      const { error: contactErr, count } = await supabaseAdmin
+      const { error: contactErr } = await supabaseAdmin
         .from('contacts')
         .update({
           status:           'patient',
@@ -104,7 +104,6 @@ export async function PATCH(
         .eq('organization_id', orgId)
 
       if (contactErr) console.error('[consultations] contact update failed:', contactErr.message)
-      else console.log('[consultations] contact promoted to patient, rows affected:', count, 'stage:', doneStage?.id ?? 'not moved')
 
       enrollContact({
         contactId:      consultation.contact_id,
@@ -121,7 +120,7 @@ export async function PATCH(
         .ilike('name', 'no-show')
         .maybeSingle()
 
-      const { error: contactErr, count } = await supabaseAdmin
+      const { error: noShowContactErr } = await supabaseAdmin
         .from('contacts')
         .update({
           last_activity_at: new Date().toISOString(),
@@ -130,8 +129,7 @@ export async function PATCH(
         .eq('id', consultation.contact_id)
         .eq('organization_id', orgId)
 
-      if (contactErr) console.error('[consultations] contact stage update failed:', contactErr.message)
-      else console.log('[consultations] contact moved to no-show stage, rows affected:', count, 'stage:', noShowStage?.id ?? 'not found')
+      if (noShowContactErr) console.error('[consultations] contact stage update failed:', noShowContactErr.message)
 
       enrollContact({
         contactId:      consultation.contact_id,

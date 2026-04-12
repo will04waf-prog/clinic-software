@@ -25,13 +25,28 @@ interface ConsultationListProps {
 }
 
 export function ConsultationList({ consultations, onRefresh }: ConsultationListProps) {
+  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+
   async function updateStatus(id: string, status: string) {
-    await fetch(`/api/consultations/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    onRefresh()
+    setPendingId(id)
+    setActionError(null)
+    try {
+      const res = await fetch(`/api/consultations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      onRefresh()
+    } catch (err: any) {
+      setActionError(err.message ?? 'Failed to update status')
+    } finally {
+      setPendingId(null)
+    }
   }
 
   if (consultations.length === 0) {
@@ -46,8 +61,14 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
 
   return (
     <div className="space-y-3">
+      {actionError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700">{actionError}</p>
+        </div>
+      )}
       {consultations.map((consult) => {
         const cfg = STATUS_CONFIG[consult.status] ?? STATUS_CONFIG.scheduled
+        const isPending = pendingId === consult.id
         return (
           <div
             key={consult.id}
@@ -105,8 +126,11 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isPending}>
+                  {isPending
+                    ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                    : <MoreHorizontal className="h-4 w-4" />
+                  }
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

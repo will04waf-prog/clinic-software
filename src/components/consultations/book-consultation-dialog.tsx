@@ -16,7 +16,10 @@ import { PROCEDURES, type Procedure } from '@/types'
 import { formatProcedure } from '@/lib/utils'
 
 const schema = z.object({
-  scheduled_at:      z.string().min(1, 'Date and time are required'),
+  scheduled_at: z.string().min(1, 'Date and time are required').refine(
+    (v) => new Date(v) > new Date(),
+    'Consultation must be scheduled in the future'
+  ),
   duration_min:      z.number().int().min(15).max(480),
   type:              z.enum(['in_person', 'virtual'] as const),
   pre_consult_notes: z.string().max(2000).optional(),
