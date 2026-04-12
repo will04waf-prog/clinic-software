@@ -4,10 +4,10 @@
  * Called from API routes and cron jobs.
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS, renderTemplate as renderSMS } from '@/lib/twilio'
 import { sendEmail, renderTemplate as renderEmail, wrapEmailHtml } from '@/lib/resend'
-import type { Contact, Organization, TriggerType } from '@/types'
+import type { TriggerType } from '@/types'
 
 interface EnrollOptions {
   contactId: string
@@ -18,12 +18,12 @@ interface EnrollOptions {
 
 /**
  * Enroll a contact in all matching active sequences for a given trigger.
+ * Uses supabaseAdmin so it works correctly when called fire-and-forget
+ * from API routes (no dependency on request-scoped cookies/session).
  */
 export async function enrollContact(opts: EnrollOptions) {
-  const supabase = await createClient()
-
   // Find matching sequences
-  const query = supabase
+  let query = supabaseAdmin
     .from('automation_sequences')
     .select('id')
     .eq('organization_id', opts.organizationId)
@@ -31,7 +31,7 @@ export async function enrollContact(opts: EnrollOptions) {
     .eq('is_active', true)
 
   if (opts.triggerType === 'stage_changed' && opts.stageId) {
-    query.eq('trigger_stage_id', opts.stageId)
+    query = query.eq('trigger_stage_id', opts.stageId)
   }
 
   const { data: sequences } = await query
@@ -40,7 +40,7 @@ export async function enrollContact(opts: EnrollOptions) {
 
   for (const seq of sequences) {
     // Avoid double-enrollment
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from('contact_sequence_enrollments')
       .select('id')
       .eq('contact_id', opts.contactId)
@@ -51,7 +51,7 @@ export async function enrollContact(opts: EnrollOptions) {
     if (existing) continue
 
     // Get first step to set next_step_at
-    const { data: firstStep } = await supabase
+    const { data: firstStep } = await supabaseAdmin
       .from('sequence_steps')
       .select('id, delay_hours')
       .eq('sequence_id', seq.id)
@@ -63,7 +63,7 @@ export async function enrollContact(opts: EnrollOptions) {
       ? new Date(Date.now() + firstStep.delay_hours * 60 * 60 * 1000).toISOString()
       : null
 
-    await supabase.from('contact_sequence_enrollments').insert({
+    await supabaseAdmin.from('contact_sequence_enrollments').insert({
       contact_id: opts.contactId,
       sequence_id: seq.id,
       organization_id: opts.organizationId,
@@ -78,9 +78,7 @@ export async function enrollContact(opts: EnrollOptions) {
  * Process all due sequence steps. Called by a cron job every minute.
  */
 export async function processDueSteps() {
-  const supabase = await createClient()
-
-  const { data: enrollments } = await supabase
+  const { data: enrollments } = await supabaseAdmin
     .from('contact_sequence_enrollments')
     .select(`
       *,
@@ -95,7 +93,7 @@ export async function processDueSteps() {
 
   for (const enrollment of enrollments) {
     try {
-      await processEnrollmentStep(enrollment, supabase)
+      await processEnrollmentStep(enrollment, supabaseAdmin)
     } catch (err) {
       console.error('Error processing enrollment step:', err)
     }

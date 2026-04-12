@@ -3,12 +3,12 @@
  * Called by the cron job.
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 
 export async function sendConsultationReminders() {
-  const supabase = await createClient()
+  const supabase = supabaseAdmin
   const now = new Date()
 
   // Windows: now+23h→now+25h (24h reminder), now+1h→now+3h (2h reminder)
