@@ -63,14 +63,23 @@ export async function enrollContact(opts: EnrollOptions) {
       ? new Date(Date.now() + firstStep.delay_hours * 60 * 60 * 1000).toISOString()
       : null
 
-    await supabaseAdmin.from('contact_sequence_enrollments').insert({
-      contact_id: opts.contactId,
-      sequence_id: seq.id,
-      organization_id: opts.organizationId,
-      status: 'active',
-      current_step: 0,
-      next_step_at: nextStepAt,
-    })
+    const { data: enrollment } = await supabaseAdmin
+      .from('contact_sequence_enrollments')
+      .insert({
+        contact_id: opts.contactId,
+        sequence_id: seq.id,
+        organization_id: opts.organizationId,
+        status: 'active',
+        current_step: 0,
+        next_step_at: nextStepAt,
+      })
+      .select(`*, contact:contacts(*), sequence:automation_sequences(*, steps:sequence_steps(*))`)
+      .single()
+
+    // If first step has zero delay, execute it immediately instead of waiting for cron
+    if (enrollment && firstStep && firstStep.delay_hours === 0) {
+      await processEnrollmentStep(enrollment, supabaseAdmin)
+    }
   }
 }
 
@@ -127,7 +136,7 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
     first_name: contact.first_name,
     last_name: contact.last_name ?? '',
     full_name: `${contact.first_name} ${contact.last_name ?? ''}`.trim(),
-    clinic_name: org?.name ?? 'Tarhunna',
+    clinic_name: org?.name ?? 'your clinic',
     clinic_phone: org?.phone ?? '',
     clinic_email: org?.email ?? '',
   }
@@ -143,7 +152,7 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
     } else if (step.channel === 'email' && contact.email && !contact.opted_out_email) {
       const subject = renderEmail(step.subject ?? 'Message from {{clinic_name}}', vars)
       const bodyText = renderEmail(step.body, vars)
-      const html = wrapEmailHtml(bodyText, org?.name ?? 'Tarhunna')
+      const html = wrapEmailHtml(bodyText, org?.name ?? 'your clinic')
       messageResult = await sendEmail({ to: contact.email, subject, html })
     }
   } catch (err: any) {
