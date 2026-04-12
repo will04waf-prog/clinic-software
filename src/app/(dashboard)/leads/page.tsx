@@ -4,14 +4,13 @@ import { Header } from '@/components/layout/header'
 import { LeadsTable } from '@/components/leads/leads-table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
 import { createClient } from '@/lib/supabase/client'
-import type { Contact, PipelineStage } from '@/types'
+import type { Contact } from '@/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type Tab = 'all' | 'leads' | 'patients' | 'inactive'
 
 export default function LeadsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
-  const [stages, setStages] = useState<PipelineStage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('all')
@@ -21,21 +20,13 @@ export default function LeadsPage() {
     setError(null)
     try {
       const supabase = createClient()
-      const [{ data: contactsData, error: contactsError }, { data: stagesData, error: stagesError }] =
-        await Promise.all([
-          supabase
-            .from('contacts')
-            .select('*, stage:pipeline_stages(*), tags:contact_tags(tag:tags(*))')
-            .eq('is_archived', false)
-            .order('last_activity_at', { ascending: false }),
-          supabase
-            .from('pipeline_stages')
-            .select('*')
-            .order('position'),
-        ])
+      const { data: contactsData, error: contactsError } = await supabase
+        .from('contacts')
+        .select('*, stage:pipeline_stages(*), tags:contact_tags(tag:tags(*))')
+        .eq('is_archived', false)
+        .order('last_activity_at', { ascending: false })
 
       if (contactsError) throw new Error(contactsError.message)
-      if (stagesError)   throw new Error(stagesError.message)
 
       setContacts(
         (contactsData ?? []).map((c: any) => ({
@@ -43,7 +34,6 @@ export default function LeadsPage() {
           tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
         }))
       )
-      setStages(stagesData ?? [])
     } catch (err: any) {
       console.error('[leads] load error:', err)
       setError(err.message ?? 'Failed to load contacts')
