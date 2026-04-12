@@ -125,7 +125,6 @@ export default function LeadsPage() {
         {!loading && !error && (
           <LeadsTable
             contacts={filtered}
-            stages={stages}
             onRefresh={load}
             search={search}
             onSearchChange={setSearch}

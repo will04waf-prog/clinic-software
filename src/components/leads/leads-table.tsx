@@ -7,12 +7,11 @@ import { Input } from '@/components/ui/input'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { formatRelative, formatPhone, formatProcedure, cn } from '@/lib/utils'
-import type { Contact, PipelineStage } from '@/types'
+import { formatRelative, formatPhone, formatProcedure } from '@/lib/utils'
+import type { Contact } from '@/types'
 
 interface LeadsTableProps {
   contacts: Contact[]
-  stages: PipelineStage[]
   onRefresh: () => void
   search: string
   onSearchChange: (v: string) => void
@@ -37,7 +36,7 @@ function StageChip({ stage }: { stage?: PipelineStage }) {
   )
 }
 
-export function LeadsTable({ contacts, stages, onRefresh, search, onSearchChange, totalForTab }: LeadsTableProps) {
+export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalForTab }: LeadsTableProps) {
   // contacts is already tab-filtered and search-filtered by the parent page
   const filtered = contacts
 
