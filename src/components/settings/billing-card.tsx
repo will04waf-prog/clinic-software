@@ -33,8 +33,9 @@ export function BillingCard({ planStatus, hasStripeCustomer }: BillingCardProps)
     setError(null)
     try {
       const res  = await fetch(endpoint, { method: 'POST' })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
+      if (!data.url) throw new Error('No redirect URL returned')
       window.location.href = data.url
     } catch (err: any) {
       setError(err.message)

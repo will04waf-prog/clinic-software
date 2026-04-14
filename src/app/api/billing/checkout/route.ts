@@ -34,20 +34,25 @@ export async function POST(req: NextRequest) {
     lineItems.push({ price: STRIPE_PLAN.setup_fee_price_id, quantity: 1 })
   }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    // Reuse existing Stripe customer if available, otherwise prefill email
-    ...(org.stripe_customer_id
-      ? { customer: org.stripe_customer_id }
-      : { customer_email: profile.email ?? undefined }),
-    line_items: lineItems,
-    // organization_id in metadata is what the webhook uses to find the org
-    metadata: { organization_id: org.id },
-    success_url: `${origin}/billing/return?success=true`,
-    cancel_url:  `${origin}/billing/return?canceled=true`,
-    allow_promotion_codes: true,
-  })
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      // Reuse existing Stripe customer if available, otherwise prefill email
+      ...(org.stripe_customer_id
+        ? { customer: org.stripe_customer_id }
+        : { customer_email: profile.email ?? undefined }),
+      line_items: lineItems,
+      // organization_id in metadata is what the webhook uses to find the org
+      metadata: { organization_id: org.id },
+      success_url: `${origin}/billing/return?success=true`,
+      cancel_url:  `${origin}/billing/return?canceled=true`,
+      allow_promotion_codes: true,
+    })
 
-  return NextResponse.json({ url: session.url })
+    return NextResponse.json({ url: session.url })
+  } catch (err: any) {
+    console.error('[billing/checkout] Stripe error:', err.message)
+    return NextResponse.json({ error: err.message ?? 'Failed to create checkout session' }, { status: 500 })
+  }
 }
