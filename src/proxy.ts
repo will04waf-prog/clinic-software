@@ -25,7 +25,26 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Public routes
+  // ── Admin route protection ─────────────────────────────────
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    // Check is_super_admin via a lightweight direct fetch
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_super_admin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    return supabaseResponse
+  }
+
+  // ── Standard auth routes ───────────────────────────────────
   const publicRoutes = ['/login', '/signup', '/capture']
   const isPublic = publicRoutes.some((r) => pathname.startsWith(r))
 
