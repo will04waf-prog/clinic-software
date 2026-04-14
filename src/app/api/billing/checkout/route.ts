@@ -26,33 +26,36 @@ export async function POST(req: NextRequest) {
 
   const origin = new URL(req.url).origin
 
-  // Validate env vars at request time so a missing value returns a clear error
-  const monthlyPriceId  = process.env.STRIPE_MONTHLY_PRICE_ID
-  const setupFeePriceId = process.env.STRIPE_SETUP_FEE_PRICE_ID
-
-  if (!monthlyPriceId) {
-    console.error('[billing/checkout] STRIPE_MONTHLY_PRICE_ID is not set')
-    return NextResponse.json({ error: 'Billing is not configured. Please contact support.' }, { status: 500 })
-  }
-
-  // Monthly subscription is always included; setup fee is only added if configured
-  const lineItems: { price: string; quantity: number }[] = [
-    { price: monthlyPriceId, quantity: 1 },
+  // Use price_data inline so checkout never depends on env var price IDs being
+  // correct, in sync with the right Stripe mode, or free of whitespace issues.
+  const lineItems = [
+    {
+      price_data: {
+        currency: 'usd',
+        product_data: { name: 'Tarhunna Pro' },
+        unit_amount: 29700,          // $297.00/month
+        recurring: { interval: 'month' as const },
+      },
+      quantity: 1,
+    },
+    {
+      price_data: {
+        currency: 'usd',
+        product_data: { name: 'One-time Setup Fee' },
+        unit_amount: 50000,          // $500.00
+      },
+      quantity: 1,
+    },
   ]
-  if (setupFeePriceId) {
-    lineItems.push({ price: setupFeePriceId, quantity: 1 })
-  }
 
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      // Reuse existing Stripe customer if available, otherwise prefill email
       ...(org.stripe_customer_id
         ? { customer: org.stripe_customer_id }
         : { customer_email: profile.email ?? undefined }),
       line_items: lineItems,
-      // organization_id in metadata is what the webhook uses to find the org
       metadata: { organization_id: org.id },
       success_url: `${origin}/billing/return?success=true`,
       cancel_url:  `${origin}/billing/return?canceled=true`,
