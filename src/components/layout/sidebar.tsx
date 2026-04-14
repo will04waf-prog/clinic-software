@@ -9,7 +9,7 @@ import {
   Zap,
   Settings,
   LogOut,
-  Bell,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { href: '/settings',       label: 'Settings',        icon: Settings },
 ]
 
-export function Sidebar() {
+export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -68,6 +68,15 @@ export function Sidebar() {
 
       {/* Bottom actions */}
       <div className="border-t border-gray-200 p-3 space-y-0.5">
+        {isSuperAdmin && (
+          <Link
+            href="/admin"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Admin
+          </Link>
+        )}
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"

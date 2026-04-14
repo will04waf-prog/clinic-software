@@ -8,9 +8,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!user) redirect('/login')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_super_admin')
+    .eq('id', user.id)
+    .single()
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar />
+      <Sidebar isSuperAdmin={profile?.is_super_admin === true} />
       <main className="flex flex-1 flex-col overflow-hidden">
         {children}
       </main>
