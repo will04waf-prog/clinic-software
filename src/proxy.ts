@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── Standard auth routes ───────────────────────────────────
-  const publicRoutes = ['/login', '/signup', '/capture']
+  const publicRoutes = ['/login', '/signup', '/capture', '/billing']
   const isPublic = publicRoutes.some((r) => pathname.startsWith(r))
 
   if (!user && !isPublic && pathname !== '/') {

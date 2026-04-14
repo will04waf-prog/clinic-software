@@ -34,7 +34,7 @@ export default async function AdminAccountsPage() {
         .select('full_name, email')
         .eq('organization_id', org.id)
         .eq('role', 'owner')
-        .single()
+        .maybeSingle()
 
       return { ...org, userCount: userCount ?? 0, contactCount: contactCount ?? 0, owner }
     })

@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 const patchSchema = z.object({
   plan:         z.enum(['trial', 'starter', 'pro']).optional(),
-  plan_status:  z.enum(['active', 'past_due', 'canceled']).optional(),
+  plan_status:  z.enum(['active', 'past_due', 'canceled', 'suspended', 'trial']).optional(),
   admin_notes:  z.string().max(5000).optional(),
 }).strict()
 

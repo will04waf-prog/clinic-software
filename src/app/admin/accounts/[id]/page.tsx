@@ -5,9 +5,11 @@ import { AccountEditForm } from '@/components/admin/account-edit-form'
 import { formatRelative } from '@/lib/utils'
 
 const PLAN_STATUS_COLORS: Record<string, string> = {
-  active:   'bg-emerald-100 text-emerald-700',
-  past_due: 'bg-yellow-100 text-yellow-700',
-  canceled: 'bg-red-100 text-red-700',
+  trial:     'bg-blue-100 text-blue-700',
+  active:    'bg-emerald-100 text-emerald-700',
+  past_due:  'bg-yellow-100 text-yellow-700',
+  suspended: 'bg-orange-100 text-orange-700',
+  canceled:  'bg-red-100 text-red-700',
 }
 
 export default async function AdminAccountDetailPage({

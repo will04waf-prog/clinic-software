@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BillingCard } from '@/components/settings/billing-card'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -38,6 +39,11 @@ export default async function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <BillingCard
+          planStatus={org?.plan_status ?? 'trial'}
+          hasStripeCustomer={!!org?.stripe_customer_id}
+        />
 
         <Card>
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>

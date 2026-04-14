@@ -65,8 +65,10 @@ export function AccountEditForm({ orgId, plan, planStatus, adminNotes }: Account
           <Select value={currentStatus} onValueChange={setCurrentStatus}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="trial">Trial</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="past_due">Past Due</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
               <SelectItem value="canceled">Canceled</SelectItem>
             </SelectContent>
           </Select>

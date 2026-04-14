@@ -1,62 +1,16 @@
 import Stripe from 'stripe'
 
+// Singleton Stripe client — server-side only.
+// Never import this in client components.
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-03-25.dahlia',
 })
 
-export const PLANS = {
-  starter: {
-    name: 'Starter',
-    price_id: process.env.STRIPE_STARTER_PRICE_ID!,
-    price: 297,
-    description: 'Up to 2 users, 500 contacts',
-    features: [
-      'Lead capture forms',
-      'CRM & pipeline',
-      'Email automations',
-      '500 SMS/month',
-      '2 staff users',
-    ],
-  },
-  pro: {
-    name: 'Pro',
-    price_id: process.env.STRIPE_PRO_PRICE_ID!,
-    price: 497,
-    description: 'Unlimited users, unlimited contacts',
-    features: [
-      'Everything in Starter',
-      'Unlimited contacts',
-      'Unlimited staff users',
-      '2,000 SMS/month',
-      'Custom automations',
-      'Priority support',
-    ],
-  },
+// V1: one monthly plan + optional one-time setup fee
+export const STRIPE_PLAN = {
+  name: 'Tarhunna Pro',
+  monthly_price_id:  process.env.STRIPE_MONTHLY_PRICE_ID!,
+  setup_fee_price_id: process.env.STRIPE_SETUP_FEE_PRICE_ID ?? null,
+  monthly_price_cents: 29700,   // $297/month
+  setup_fee_cents:     50000,   // $500 one-time
 } as const
-
-export async function createCheckoutSession(
-  orgId: string,
-  priceId: string,
-  customerId?: string
-) {
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    customer: customerId,
-    line_items: [{ price: priceId, quantity: 1 }],
-    metadata: { organization_id: orgId },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgrade=success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgrade=canceled`,
-    allow_promotion_codes: true,
-  })
-
-  return session
-}
-
-export async function createBillingPortalSession(customerId: string) {
-  const session = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
-  })
-  return session
-}

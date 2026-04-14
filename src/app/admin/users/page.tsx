@@ -9,9 +9,9 @@ export default async function AdminUsersPage() {
     .order('created_at', { ascending: false })
 
   // Get last sign in from auth.users
-  const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers()
+  const { data: authData } = await supabaseAdmin.auth.admin.listUsers()
   const lastSignInMap = Object.fromEntries(
-    (authUsers ?? []).map((u) => [u.id, u.last_sign_in_at])
+    (authData?.users ?? []).map((u) => [u.id, u.last_sign_in_at])
   )
 
   return (
