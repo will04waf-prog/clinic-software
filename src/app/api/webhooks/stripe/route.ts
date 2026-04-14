@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
 
       // ── Payment succeeded → ensure active ────────────────────────
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice
-        const subId   = typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as any)?.id
+        const invoice = event.data.object as any
+        const subId   = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
         if (!subId) break
 
         await updateOrgBySubscription(subId, { plan_status: 'active' })
@@ -93,8 +93,8 @@ export async function POST(req: NextRequest) {
 
       // ── Payment failed → mark past_due ────────────────────────────
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice
-        const subId   = typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as any)?.id
+        const invoice = event.data.object as any
+        const subId   = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
         if (!subId) break
 
         await updateOrgBySubscription(subId, { plan_status: 'past_due' })
