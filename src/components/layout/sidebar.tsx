@@ -74,7 +74,7 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
           >
             <ShieldCheck className="h-4 w-4" />
-            Admin
+            Super Admin
           </Link>
         )}
         <button
