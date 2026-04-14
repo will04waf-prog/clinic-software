@@ -26,12 +26,21 @@ export async function POST(req: NextRequest) {
 
   const origin = new URL(req.url).origin
 
-  // Monthly subscription is always included; setup fee is optional
+  // Validate env vars at request time so a missing value returns a clear error
+  const monthlyPriceId  = process.env.STRIPE_MONTHLY_PRICE_ID
+  const setupFeePriceId = process.env.STRIPE_SETUP_FEE_PRICE_ID
+
+  if (!monthlyPriceId) {
+    console.error('[billing/checkout] STRIPE_MONTHLY_PRICE_ID is not set')
+    return NextResponse.json({ error: 'Billing is not configured. Please contact support.' }, { status: 500 })
+  }
+
+  // Monthly subscription is always included; setup fee is only added if configured
   const lineItems: { price: string; quantity: number }[] = [
-    { price: STRIPE_PLAN.monthly_price_id, quantity: 1 },
+    { price: monthlyPriceId, quantity: 1 },
   ]
-  if (STRIPE_PLAN.setup_fee_price_id) {
-    lineItems.push({ price: STRIPE_PLAN.setup_fee_price_id, quantity: 1 })
+  if (setupFeePriceId) {
+    lineItems.push({ price: setupFeePriceId, quantity: 1 })
   }
 
   try {
