@@ -52,9 +52,10 @@ export async function POST(req: NextRequest) {
     try {
       // 2. Create organization
       const slug = slugify(clinic_name) + '-' + userId.slice(0, 6)
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
       const { data: org, error: orgError } = await supabaseAdmin
         .from('organizations')
-        .insert({ name: clinic_name, slug })
+        .insert({ name: clinic_name, slug, trial_ends_at: trialEndsAt })
         .select('id')
         .single()
 

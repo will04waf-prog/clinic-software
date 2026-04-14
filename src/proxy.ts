@@ -56,6 +56,32 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  // ── Trial expiration enforcement ───────────────────────────
+  // Only check for logged-in users on protected routes.
+  // /settings and /billing must stay accessible so they can subscribe.
+  if (user && !isPublic && pathname !== '/' &&
+      !pathname.startsWith('/settings') &&
+      !pathname.startsWith('/billing') &&
+      !pathname.startsWith('/admin')) {
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('organization:organizations(plan_status, trial_ends_at)')
+      .eq('id', user.id)
+      .single()
+
+    const org = profileData?.organization as any
+    const trialExpired =
+      org?.plan_status === 'trial_expired' ||
+      (org?.plan_status === 'trial' &&
+       org?.trial_ends_at &&
+       new Date(org.trial_ends_at) < new Date())
+
+    if (trialExpired) {
+      return NextResponse.redirect(new URL('/settings', request.url))
+    }
+  }
+
   return supabaseResponse
 }
 
