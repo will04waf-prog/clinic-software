@@ -66,15 +66,15 @@ BEGIN
     (
       v_sofia, v_org_id, v_stage_consult_done,
       'Sofia', 'Martinez', 'sofia.martinez.demo@tarhunna.com', '(305) 555-0101',
-      'instagram', ARRAY['rhinoplasty','fillers'], 'patient',
-      'Very happy with the consultation. Ready to schedule procedure.',
+      'instagram', ARRAY['botox','lip_filler'], 'patient',
+      'Very happy with the consultation. Ready to schedule treatment.',
       now() - interval '3 days', now() - interval '6 weeks', now() - interval '3 days'
     ),
     (
       v_james, v_org_id, v_stage_closed_won,
       'James', 'Chen', 'james.chen.demo@tarhunna.com', '(305) 555-0102',
-      'referral', ARRAY['bbl','liposuction'], 'patient',
-      'Referred by Dr. Santos. Procedure completed successfully.',
+      'referral', ARRAY['body_contouring','weight_loss'], 'patient',
+      'Referred by a friend. Treatments completed successfully.',
       now() - interval '1 week', now() - interval '8 weeks', now() - interval '1 week'
     ),
 
@@ -82,15 +82,15 @@ BEGIN
     (
       v_valentina, v_org_id, v_stage_consult_booked,
       'Valentina', 'Torres', 'valentina.torres.demo@tarhunna.com', '(305) 555-0103',
-      'instagram', ARRAY['breast_augmentation'], 'lead',
-      'Came in from IG story. Interested in augmentation, has done research already.',
+      'instagram', ARRAY['skin_tightening','microneedling'], 'lead',
+      'Came in from IG story. Interested in skin tightening, has done research already.',
       now() - interval '1 day', now() - interval '2 weeks', now() - interval '1 day'
     ),
     (
       v_marcus, v_org_id, v_stage_consult_booked,
       'Marcus', 'Johnson', 'marcus.johnson.demo@tarhunna.com', '(305) 555-0104',
-      'facebook', ARRAY['liposuction','tummy_tuck'], 'lead',
-      'Wants to combine lipo and tummy tuck. Asking about recovery time.',
+      'facebook', ARRAY['body_contouring','chemical_peel'], 'lead',
+      'Wants to combine body contouring and a chemical peel. Asking about downtime.',
       now() - interval '2 days', now() - interval '10 days', now() - interval '2 days'
     ),
 
@@ -98,21 +98,21 @@ BEGIN
     (
       v_isabella, v_org_id, v_stage_contacted,
       'Isabella', 'Rivera', 'isabella.rivera.demo@tarhunna.com', '(305) 555-0105',
-      'referral', ARRAY['facelift','botox'], 'lead',
+      'referral', ARRAY['botox','fillers'], 'lead',
       'Warm lead from Maria Chen. Reached out twice, responsive over email.',
       now() - interval '4 days', now() - interval '3 weeks', now() - interval '4 days'
     ),
     (
       v_daniel, v_org_id, v_stage_new_lead,
       'Daniel', 'Kim', 'daniel.kim.demo@tarhunna.com', '(305) 555-0106',
-      'website', ARRAY['rhinoplasty'], 'lead',
+      'website', ARRAY['microneedling'], 'lead',
       NULL,
       now() - interval '2 hours', now() - interval '2 hours', now() - interval '2 hours'
     ),
     (
       v_priya, v_org_id, v_stage_proposal,
       'Priya', 'Patel', 'priya.patel.demo@tarhunna.com', '(305) 555-0107',
-      'instagram', ARRAY['breast_reduction'], 'lead',
+      'instagram', ARRAY['prp','hydrafacial'], 'lead',
       'Sent treatment plan and pricing. Following up end of week.',
       now() - interval '5 days', now() - interval '4 weeks', now() - interval '5 days'
     ),
@@ -140,8 +140,8 @@ BEGIN
     (
       uuid_generate_v4(), v_org_id, v_sofia,
       now() - interval '2 weeks', 60, 'in_person', 'completed',
-      ARRAY['rhinoplasty','fillers'],
-      'Patient wants natural results. No dramatic changes.',
+      ARRAY['botox','lip_filler'],
+      'Patient wants subtle, natural results. Minimal downtime preferred.',
       'Great consultation. Patient is a strong candidate. Sent follow-up pricing.',
       true, true,
       now() - interval '2 weeks' - interval '1 day',
@@ -152,8 +152,8 @@ BEGIN
     (
       uuid_generate_v4(), v_org_id, v_marcus,
       now() + interval '1 day', 60, 'virtual', 'confirmed',
-      ARRAY['liposuction','tummy_tuck'],
-      'Wants to discuss combining procedures and total recovery timeline.',
+      ARRAY['body_contouring','chemical_peel'],
+      'Wants to discuss combining body contouring and chemical peel. Discussing downtime.',
       NULL, false, false,
       now() - interval '2 days',
       now() - interval '2 days'
@@ -163,8 +163,8 @@ BEGIN
     (
       uuid_generate_v4(), v_org_id, v_valentina,
       now() + interval '4 days', 60, 'in_person', 'scheduled',
-      ARRAY['breast_augmentation'],
-      'First-time consult. Came from IG ad. Interested in natural look, 300-350cc range.',
+      ARRAY['skin_tightening','microneedling'],
+      'First-time consult. Came from IG ad. Interested in a skin tightening + microneedling package.',
       NULL, false, false,
       now() - interval '1 day',
       now() - interval '1 day'
