@@ -50,17 +50,28 @@ export function slugify(text: string) {
 
 export function formatProcedure(procedure: string) {
   const map: Record<string, string> = {
-    rhinoplasty: 'Rhinoplasty',
-    bbl: 'BBL',
-    liposuction: 'Liposuction',
-    breast_augmentation: 'Breast Augmentation',
-    breast_reduction: 'Breast Reduction',
-    tummy_tuck: 'Tummy Tuck',
-    facelift: 'Facelift',
-    blepharoplasty: 'Blepharoplasty',
-    botox: 'Botox',
-    fillers: 'Fillers',
-    other: 'Other',
+    // Med spa
+    botox:                'Botox',
+    fillers:              'Fillers',
+    lip_filler:           'Lip Filler',
+    chemical_peel:        'Chemical Peel',
+    microneedling:        'Microneedling',
+    laser_hair_removal:   'Laser Hair Removal',
+    hydrafacial:          'Hydrafacial',
+    skin_tightening:      'Skin Tightening',
+    prp:                  'PRP',
+    body_contouring:      'Body Contouring',
+    weight_loss:          'Weight Loss',
+    other:                'Other',
+    // Plastic surgery (kept so any existing records still render cleanly)
+    rhinoplasty:          'Rhinoplasty',
+    bbl:                  'BBL',
+    liposuction:          'Liposuction',
+    breast_augmentation:  'Breast Augmentation',
+    breast_reduction:     'Breast Reduction',
+    tummy_tuck:           'Tummy Tuck',
+    facelift:             'Facelift',
+    blepharoplasty:       'Blepharoplasty',
   }
   return map[procedure] ?? procedure
 }

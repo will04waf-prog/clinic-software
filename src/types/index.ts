@@ -28,19 +28,39 @@ export type NotificationType =
 
 export type LeadSource = 'website' | 'referral' | 'instagram' | 'facebook' | 'walkin' | 'other'
 
-export const PROCEDURES = [
-  'rhinoplasty',
-  'bbl',
-  'liposuction',
-  'breast_augmentation',
-  'breast_reduction',
-  'tummy_tuck',
-  'facelift',
-  'blepharoplasty',
-  'botox',
-  'fillers',
-  'other',
-] as const
+// Procedure presets by clinic type.
+// To switch defaults, change the PROCEDURES export below.
+export const PROCEDURE_PRESETS = {
+  med_spa: [
+    'botox',
+    'fillers',
+    'lip_filler',
+    'chemical_peel',
+    'microneedling',
+    'laser_hair_removal',
+    'hydrafacial',
+    'skin_tightening',
+    'prp',
+    'body_contouring',
+    'weight_loss',
+    'other',
+  ],
+  plastic_surgery: [
+    'rhinoplasty',
+    'bbl',
+    'liposuction',
+    'breast_augmentation',
+    'breast_reduction',
+    'tummy_tuck',
+    'facelift',
+    'blepharoplasty',
+    'botox',
+    'fillers',
+    'other',
+  ],
+} as const
+
+export const PROCEDURES = PROCEDURE_PRESETS.med_spa
 
 export type Procedure = typeof PROCEDURES[number]
 
