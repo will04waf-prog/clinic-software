@@ -2,11 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { StatsCards } from '@/components/dashboard/stats-cards'
+import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatRelative, formatDateTime } from '@/lib/utils'
 import type { DashboardStats } from '@/types'
 import Link from 'next/link'
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>
 
@@ -28,7 +31,7 @@ async function getDashboardData(supabase: SupabaseClient, orgId: string) {
   const endOfToday   = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
 
   const [
-    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,
+    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11,
   ] = await Promise.all([
     supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfToday),
     supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfWeek),
@@ -40,6 +43,10 @@ async function getDashboardData(supabase: SupabaseClient, orgId: string) {
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'completed'),
     supabase.from('contacts').select('*, stage:pipeline_stages(*)').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(5),
     supabase.from('consultations').select('*, contact:contacts(first_name, last_name)').eq('organization_id', orgId).gte('scheduled_at', now.toISOString()).order('scheduled_at', { ascending: true }).limit(5),
+    // Onboarding: total consultations (any status)
+    supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
+    // Onboarding: active automations with at least one step
+    supabase.from('automation_sequences').select('id, sequence_steps!inner(id)', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
   ])
 
   const totalContacts = r6.count ?? 0
@@ -58,8 +65,11 @@ async function getDashboardData(supabase: SupabaseClient, orgId: string) {
 
   return {
     stats,
-    recentLeads:    r8.data  ?? [],
+    recentLeads:      r8.data ?? [],
     upcomingConsults: r9.data ?? [],
+    hasLeads:         (r6.count ?? 0) > 0,
+    hasConsultations: (r10.count ?? 0) > 0,
+    hasAutomations:   (r11.count ?? 0) > 0,
   }
 }
 
@@ -79,8 +89,11 @@ export default async function DashboardPage() {
 
   // Fetch dashboard data — never crash the page on a query error
   let stats = EMPTY_STATS
-  let recentLeads:     any[] = []
+  let recentLeads:      any[] = []
   let upcomingConsults: any[] = []
+  let hasLeads         = false
+  let hasConsultations = false
+  let hasAutomations   = false
   let dataError: string | null = null
 
   try {
@@ -88,12 +101,16 @@ export default async function DashboardPage() {
     stats            = result.stats
     recentLeads      = result.recentLeads
     upcomingConsults = result.upcomingConsults
+    hasLeads         = result.hasLeads
+    hasConsultations = result.hasConsultations
+    hasAutomations   = result.hasAutomations
   } catch (err: any) {
     console.error('[dashboard] data fetch error:', err.message)
     dataError = err.message
   }
 
   const org = (profile as any).organization
+  const captureUrl = `${APP_URL}/capture/${org?.slug ?? ''}`
 
   return (
     <div className="flex flex-col overflow-hidden h-full">
@@ -109,6 +126,13 @@ export default async function DashboardPage() {
             <p className="text-xs text-red-500 mt-0.5">{dataError}</p>
           </div>
         )}
+
+        <OnboardingChecklist
+          hasLeads={hasLeads}
+          hasConsultations={hasConsultations}
+          hasAutomations={hasAutomations}
+          captureUrl={captureUrl}
+        />
 
         <StatsCards stats={stats} />
 
