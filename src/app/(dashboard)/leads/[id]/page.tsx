@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/header'
 import { BookConsultationDialog } from '@/components/consultations/book-consultation-dialog'
+import { SendEmailDialog } from '@/components/leads/send-email-dialog'
 import { formatDate, formatDateTime, formatRelative, formatPhone, formatProcedure, formatLeadSource } from '@/lib/utils'
 import type { Contact, Message, ActivityLog, Consultation } from '@/types'
 
@@ -60,12 +61,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         title={`${contact.first_name} ${contact.last_name ?? ''}`}
         subtitle={contact.email ?? contact.phone ?? 'No contact info'}
         actions={
-          <Link href="/leads">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <SendEmailDialog
+              contactId={contact.id}
+              contactEmail={contact.email ?? null}
+              firstName={contact.first_name}
+            />
+            <Link href="/leads">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            </Link>
+          </div>
         }
       />
 
