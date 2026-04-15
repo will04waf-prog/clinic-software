@@ -11,11 +11,7 @@ function wrap(content: string): string {
 <head><meta charset="utf-8"/></head>
 <body style="font-family:system-ui,-apple-system,sans-serif;background:#f9fafb;margin:0;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:40px;box-shadow:0 1px 3px rgba(0,0,0,.08);">
-    <div style="margin-bottom:28px;">
-      <div style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:#4f46e5;border-radius:8px;">
-        <span style="color:#fff;font-size:18px;font-weight:900;">T</span>
-      </div>
-    </div>
+    <p style="font-size:20px;font-weight:900;color:#4f46e5;margin:0 0 28px 0;">Tarhunna</p>
     ${content}
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0 16px;"/>
     <p style="font-size:12px;color:#9ca3af;margin:0;">Tarhunna &middot; You're receiving this because your account is on a free trial.</p>
