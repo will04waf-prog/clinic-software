@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { processDueSteps } from '@/lib/automation-engine'
 import { sendConsultationReminders } from '@/lib/consultation-reminders'
 import { expireTrials } from '@/lib/expire-trials'
+import { sendTrialReminders } from '@/lib/trial-reminders'
 
 // Called by an external cron (e.g. Vercel Cron, GitHub Actions, cron-job.org)
 // Protect with a shared secret in the Authorization header.
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
       processDueSteps(),
       sendConsultationReminders(),
       expireTrials(),
+      sendTrialReminders(),
     ])
     return NextResponse.json({ ok: true, ran_at: new Date().toISOString() })
   } catch (err: any) {
