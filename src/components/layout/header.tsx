@@ -8,13 +8,13 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, actions }: HeaderProps) {
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div>
-        <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+    <header className="flex min-h-14 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2 sm:px-6">
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-base font-semibold text-gray-900 sm:text-lg">{title}</h1>
+        {subtitle && <p className="truncate text-xs text-gray-500">{subtitle}</p>}
       </div>
       {actions && (
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2">
           {actions}
         </div>
       )}

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { TrialBanner } from '@/components/layout/trial-banner'
+import { MobileNav } from '@/components/layout/mobile-nav'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -20,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar isSuperAdmin={profile?.is_super_admin === true} />
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden pb-16 md:pb-0">
         {org && !profile?.is_super_admin && (
           <TrialBanner
             planStatus={org.plan_status ?? 'trial'}
@@ -29,6 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         )}
         {children}
       </main>
+      <MobileNav />
     </div>
   )
 }

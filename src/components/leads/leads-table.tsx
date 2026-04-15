@@ -85,14 +85,14 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Stage</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Procedures</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Activity</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Procedures</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Activity</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
               <th className="w-10 px-4 py-3" />
             </tr>
@@ -129,7 +129,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
                 <td className="px-4 py-3">
                   <StageChip stage={contact.stage} />
                 </td>
-                <td className="px-4 py-3">
+                <td className="hidden sm:table-cell px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {(contact.procedure_interest ?? []).slice(0, 2).map((p) => (
                       <Badge key={p} variant="secondary" className="text-xs">{formatProcedure(p)}</Badge>
@@ -139,7 +139,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-400">
+                <td className="hidden sm:table-cell px-4 py-3 text-xs text-gray-400">
                   {contact.last_activity_at ? formatRelative(contact.last_activity_at) : '—'}
                 </td>
                 <td className="px-4 py-3">

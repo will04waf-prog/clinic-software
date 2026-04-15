@@ -18,7 +18,7 @@ export function TrialBanner({ planStatus, trialEndsAt }: TrialBannerProps) {
 
   if (isExpired) {
     return (
-      <div className="flex items-center justify-between gap-4 bg-red-600 px-5 py-2.5 text-white text-sm shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-red-600 px-5 py-2.5 text-white text-sm shrink-0">
         <p className="font-medium">
           Your 14-day trial has ended. Subscribe to continue using Tarhunna.
         </p>
@@ -34,7 +34,7 @@ export function TrialBanner({ planStatus, trialEndsAt }: TrialBannerProps) {
 
   // Trial ending soon
   return (
-    <div className="flex items-center justify-between gap-4 bg-amber-500 px-5 py-2.5 text-white text-sm shrink-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-amber-500 px-5 py-2.5 text-white text-sm shrink-0">
       <p className="font-medium">
         {daysLeft === 1
           ? 'Your trial ends tomorrow.'

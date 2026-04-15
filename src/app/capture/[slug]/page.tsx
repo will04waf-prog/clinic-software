@@ -129,8 +129,8 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
           <p className="mt-1 text-gray-500">Request a consultation</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-8 shadow-sm space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="first_name">First name <span className="text-red-500">*</span></Label>
               <Input id="first_name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jane" />

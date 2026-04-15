@@ -35,7 +35,7 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   }
 
   return (
-    <aside className="flex h-full w-60 flex-col border-r border-gray-200 bg-white">
+    <aside className="hidden md:flex h-full w-60 flex-col border-r border-gray-200 bg-white">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2.5 border-b border-gray-200 px-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
