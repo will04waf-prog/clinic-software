@@ -1,6 +1,29 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, Zap, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+
+function AutomationsSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-gray-200" />
+            <div className="space-y-1.5">
+              <div className="h-3.5 w-32 rounded bg-gray-200" />
+              <div className="h-3 w-20 rounded bg-gray-100" />
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <div className="h-8 w-8 rounded bg-gray-100" />
+            <div className="h-8 w-8 rounded bg-gray-100" />
+            <div className="h-8 w-8 rounded bg-gray-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 import { Header } from '@/components/layout/header'
 import { SequenceEditor } from '@/components/automations/sequence-editor'
 import { Button } from '@/components/ui/button'
@@ -132,9 +155,7 @@ export default function AutomationsPage() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
-          </div>
+          <AutomationsSkeleton />
         ) : sequences.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50">

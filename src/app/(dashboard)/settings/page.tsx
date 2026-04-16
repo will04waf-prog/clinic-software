@@ -11,11 +11,11 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*, organization:organizations(*)')
+    .select('full_name, email, role, organization:organizations(name, plan, timezone, plan_status, stripe_customer_id)')
     .eq('id', user.id)
     .single()
 
-  const org = profile?.organization
+  const org = profile?.organization as any
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

@@ -6,6 +6,27 @@ import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
 import type { Contact } from '@/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+function LeadsSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white animate-pulse">
+      <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+        <div className="h-3 w-48 rounded bg-gray-200" />
+      </div>
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-4 border-b border-gray-100 px-4 py-3 last:border-0">
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3.5 w-36 rounded bg-gray-200" />
+            <div className="h-3 w-48 rounded bg-gray-100" />
+          </div>
+          <div className="h-5 w-16 rounded-full bg-gray-200" />
+          <div className="h-5 w-14 rounded-full bg-gray-200" />
+          <div className="h-7 w-7 rounded bg-gray-100" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 type Tab = 'all' | 'leads' | 'patients' | 'inactive'
 
 export default function LeadsPage() {
@@ -85,21 +106,19 @@ export default function LeadsPage() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {/* Tab bar — controls filter only, no TabsContent wrapping */}
-        <Tabs value={tab} onValueChange={(v) => { setTab(v as Tab); setSearch('') }}>
-          <TabsList>
-            <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-            <TabsTrigger value="leads">Leads ({counts.leads})</TabsTrigger>
-            <TabsTrigger value="patients">Patients ({counts.patients})</TabsTrigger>
-            <TabsTrigger value="inactive">Inactive ({counts.inactive})</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="overflow-x-auto">
+          <Tabs value={tab} onValueChange={(v) => { setTab(v as Tab); setSearch('') }}>
+            <TabsList>
+              <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+              <TabsTrigger value="leads">Leads ({counts.leads})</TabsTrigger>
+              <TabsTrigger value="patients">Patients ({counts.patients})</TabsTrigger>
+              <TabsTrigger value="inactive">Inactive ({counts.inactive})</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Content rendered directly — avoids Radix TabsContent hidden-state bug */}
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
-          </div>
-        )}
+        {loading && <LeadsSkeleton />}
 
         {!loading && error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
