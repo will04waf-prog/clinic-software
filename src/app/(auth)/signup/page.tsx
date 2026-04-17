@@ -63,7 +63,7 @@ export default function SignupPage() {
           <span className="text-2xl font-black text-white">T</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Tarhunna</h1>
-        <p className="text-sm text-gray-500">Start your 14-day free trial</p>
+        <p className="text-sm text-gray-500">CRM for Aesthetic Clinics — 14-day free trial</p>
       </div>
 
       <Card className="w-full max-w-sm">

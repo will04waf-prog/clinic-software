@@ -41,7 +41,7 @@ export default function LoginPage() {
           <span className="text-2xl font-black text-white">T</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Tarhunna</h1>
-        <p className="text-sm text-gray-500">Clinic Growth Platform</p>
+        <p className="text-sm text-gray-500">CRM for Aesthetic Clinics</p>
       </div>
 
       <Card className="w-full max-w-sm">
