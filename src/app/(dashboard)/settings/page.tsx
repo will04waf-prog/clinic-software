@@ -4,6 +4,9 @@ import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
+import { CaptureFormCard } from '@/components/settings/capture-form-card'
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -12,7 +15,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email, role, organization:organizations(name, plan, timezone, plan_status, stripe_customer_id, procedures)')
+    .select('full_name, email, role, organization:organizations(name, slug, plan, timezone, plan_status, stripe_customer_id, procedures)')
     .eq('id', user.id)
     .single()
 
@@ -45,6 +48,10 @@ export default async function SettingsPage() {
           planStatus={org?.plan_status ?? 'trial'}
           hasStripeCustomer={!!org?.stripe_customer_id}
         />
+
+        {org?.slug && (
+          <CaptureFormCard url={`${APP_URL}/capture/${org.slug}`} />
+        )}
 
         <ServicesCard initial={org?.procedures ?? null} />
 
