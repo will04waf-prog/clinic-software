@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
+import { ServicesCard } from '@/components/settings/services-card'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -11,7 +12,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email, role, organization:organizations(name, plan, timezone, plan_status, stripe_customer_id)')
+    .select('full_name, email, role, organization:organizations(name, plan, timezone, plan_status, stripe_customer_id, procedures)')
     .eq('id', user.id)
     .single()
 
@@ -44,6 +45,8 @@ export default async function SettingsPage() {
           planStatus={org?.plan_status ?? 'trial'}
           hasStripeCustomer={!!org?.stripe_customer_id}
         />
+
+        <ServicesCard initial={org?.procedures ?? null} />
 
         <Card>
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>

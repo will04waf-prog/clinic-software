@@ -5,7 +5,7 @@ import { Mail, Phone, MoreHorizontal } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatRelative, formatProcedure } from '@/lib/utils'
-import type { PipelineColumn, Contact } from '@/types'
+import type { PipelineColumn, PipelineContact } from '@/types'
 
 interface PipelineBoardProps {
   columns: PipelineColumn[]
@@ -13,7 +13,7 @@ interface PipelineBoardProps {
 }
 
 function ContactCard({ contact, onMove, stages }: {
-  contact: Contact
+  contact: PipelineContact
   onMove: (stageId: string) => void
   stages: { id: string; name: string }[]
 }) {

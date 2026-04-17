@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, slug')
+    .select('id, name, slug, procedures')
     .eq('slug', slug)
     .single()
 

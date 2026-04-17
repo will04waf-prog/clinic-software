@@ -62,7 +62,8 @@ export async function proxy(request: NextRequest) {
   if (user && !isPublic && pathname !== '/' &&
       !pathname.startsWith('/settings') &&
       !pathname.startsWith('/billing') &&
-      !pathname.startsWith('/admin')) {
+      !pathname.startsWith('/admin') &&
+      !pathname.startsWith('/onboarding')) {
 
     const { data: profileData } = await supabase
       .from('profiles')

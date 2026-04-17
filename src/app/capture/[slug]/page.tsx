@@ -5,37 +5,24 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-
-const PROCEDURES = [
-  { value: 'rhinoplasty',        label: 'Rhinoplasty' },
-  { value: 'bbl',                label: 'BBL' },
-  { value: 'liposuction',        label: 'Liposuction' },
-  { value: 'breast_augmentation',label: 'Breast Augmentation' },
-  { value: 'breast_reduction',   label: 'Breast Reduction' },
-  { value: 'tummy_tuck',         label: 'Tummy Tuck' },
-  { value: 'facelift',           label: 'Facelift' },
-  { value: 'blepharoplasty',     label: 'Blepharoplasty' },
-  { value: 'botox',              label: 'Botox' },
-  { value: 'fillers',            label: 'Fillers' },
-  { value: 'other',              label: 'Other' },
-]
+import { ALL_PRESET_LABELS } from '@/components/settings/procedure-picker'
 
 export default function CaptureFormPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [slug, setSlug]   = useState('')
-  const [orgName, setOrgName] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [slug, setSlug]         = useState('')
+  const [orgName, setOrgName]   = useState('')
+  const [procedureList, setProcedureList] = useState<string[]>([])
+  const [loading, setLoading]   = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [submitted, setSubmitted]   = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]           = useState<string | null>(null)
 
-  const [firstName, setFirstName]       = useState('')
-  const [lastName, setLastName]         = useState('')
-  const [email, setEmail]               = useState('')
-  const [phone, setPhone]               = useState('')
-  const [notes, setNotes]               = useState('')
-  const [procedures, setProcedures]     = useState<string[]>([])
+  const [firstName, setFirstName]   = useState('')
+  const [lastName, setLastName]     = useState('')
+  const [email, setEmail]           = useState('')
+  const [phone, setPhone]           = useState('')
+  const [notes, setNotes]           = useState('')
+  const [procedures, setProcedures] = useState<string[]>([])
 
   useEffect(() => {
     params.then(({ slug: s }) => {
@@ -43,17 +30,26 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
       fetch(`/api/capture/${s}`)
         .then((r) => r.json())
         .then((j) => {
-          if (j.error) { setNotFound(true) }
-          else { setOrgName(j.org.name) }
+          if (j.error) {
+            setNotFound(true)
+          } else {
+            setOrgName(j.org.name)
+            // Use org's custom procedure list if set, otherwise fall back to all presets
+            setProcedureList(
+              Array.isArray(j.org.procedures) && j.org.procedures.length > 0
+                ? j.org.procedures
+                : ALL_PRESET_LABELS
+            )
+          }
         })
         .catch(() => setNotFound(true))
         .finally(() => setLoading(false))
     })
   }, [params])
 
-  function toggleProcedure(value: string) {
+  function toggleProcedure(label: string) {
     setProcedures((prev) =>
-      prev.includes(value) ? prev.filter((p) => p !== value) : [...prev, value]
+      prev.includes(label) ? prev.filter((p) => p !== label) : [...prev, label]
     )
   }
 
@@ -151,25 +147,27 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
             <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 000-0000" />
           </div>
 
-          <div className="space-y-2">
-            <Label>Procedures of interest</Label>
-            <div className="flex flex-wrap gap-2">
-              {PROCEDURES.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => toggleProcedure(p.value)}
-                  className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-                    procedures.includes(p.value)
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+          {procedureList.length > 0 && (
+            <div className="space-y-2">
+              <Label>Procedures of interest</Label>
+              <div className="flex flex-wrap gap-2">
+                {procedureList.map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => toggleProcedure(label)}
+                    className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+                      procedures.includes(label)
+                        ? 'border-indigo-600 bg-indigo-600 text-white'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="notes">Additional notes</Label>

@@ -253,9 +253,20 @@ export interface DashboardStats {
   total_contacts: number
 }
 
+export interface PipelineContact {
+  id: string
+  first_name: string
+  last_name: string | null
+  email: string | null
+  phone: string | null
+  procedure_interest: string[] | null
+  last_activity_at: string | null
+  stage_id: string | null
+}
+
 export interface PipelineColumn {
   stage: PipelineStage
-  contacts: Contact[]
+  contacts: PipelineContact[]
   count: number
 }
 

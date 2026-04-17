@@ -47,7 +47,7 @@ export default function SignupPage() {
       // Sign in immediately
       const supabase = createClient()
       await supabase.auth.signInWithPassword({ email: form.email, password: form.password })
-      router.push('/dashboard')
+      router.push('/onboarding')
       router.refresh()
     } catch (err: any) {
       setError(err.message)

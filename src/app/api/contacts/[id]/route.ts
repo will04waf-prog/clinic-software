@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PROCEDURES } from '@/types'
 import { z } from 'zod'
 
 const VALID_SOURCES = ['website', 'referral', 'instagram', 'facebook', 'walkin', 'other'] as const
@@ -11,7 +10,7 @@ const patchSchema = z.object({
   is_archived:         z.boolean().optional(),
   status:              z.enum(VALID_STATUSES).optional(),
   source:              z.enum(VALID_SOURCES).optional(),
-  procedure_interest:  z.array(z.enum(PROCEDURES)).optional(),
+  procedure_interest:  z.array(z.string()).optional(),
   notes:               z.string().max(2000).optional(),
   opted_out_sms:       z.boolean().optional(),
   opted_out_email:     z.boolean().optional(),

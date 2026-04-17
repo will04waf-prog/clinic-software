@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrollContact } from '@/lib/automation-engine'
-import { PROCEDURES } from '@/types'
 import { z } from 'zod'
 
 const VALID_TYPES = ['in_person', 'virtual'] as const
@@ -13,7 +12,7 @@ const createConsultationSchema = z.object({
   type:                z.enum(VALID_TYPES).optional(),
   assigned_to:         z.string().uuid().nullable().optional(),
   pre_consult_notes:   z.string().max(2000).optional(),
-  procedure_discussed: z.array(z.enum(PROCEDURES)).optional().default([]),
+  procedure_discussed: z.array(z.string()).optional().default([]),
 })
 
 // ─── GET /api/consultations ───────────────────────────────────
