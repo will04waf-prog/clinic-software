@@ -55,47 +55,85 @@ export async function POST(request: Request) {
         timeStyle: 'short',
       })
 
-      const rows = [
-        ['Name',           String(name)],
-        ['Clinic / Spa',   String(clinic_name)],
-        ['Email',          String(email)],
-        ['Phone',           phone || '—'],
-        ['Preferred Date',  preferred_date || '—'],
-        ['Preferred Time',  preferred_time || '—'],
-        ['Notes',           notes || '—'],
-        ['Source',         source || 'direct'],
-        ['Page',           page_path || '—'],
-        ['Submitted At',   submittedAt],
-      ]
+      function field(label: string, value: string | null | undefined, href?: string) {
+        const display = value || '—'
+        const valueHtml = href && value
+          ? `<a href="${href}" style="color:#6366f1;text-decoration:none;">${display}</a>`
+          : `<span style="color:${value ? '#111827' : '#9ca3af'};">${display}</span>`
+        return `
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">${label}</div>
+            <div style="font-size:15px;line-height:1.5;word-break:break-word;">${valueHtml}</div>
+          </div>`
+      }
 
-      const tableRows = rows
-        .map(
-          ([label, value]) =>
-            `<tr>
-              <td style="padding:8px 12px;font-weight:600;color:#374151;white-space:nowrap;vertical-align:top;">${label}</td>
-              <td style="padding:8px 12px;color:#111827;word-break:break-word;">${value}</td>
-            </tr>`
-        )
-        .join('')
+      const preferredDisplay = preferred_date
+        ? `${preferred_date}${preferred_time ? ' at ' + preferred_time + ' ET' : ''}`
+        : null
 
       const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"/></head>
-<body style="font-family:system-ui,sans-serif;background:#f9fafb;padding:40px 20px;">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:40px;box-shadow:0 1px 3px rgba(0,0,0,.08);">
-    <p style="margin:0 0 4px 0;font-size:13px;font-weight:600;color:#6366f1;text-transform:uppercase;letter-spacing:.05em;">New Demo Request</p>
-    <h1 style="margin:0 0 24px 0;font-size:22px;font-weight:700;color:#111827;">${String(clinic_name)}</h1>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
-      <tbody>${tableRows}</tbody>
-    </table>
-    <div style="margin-top:24px;">
-      <a href="https://tarhunna.net/admin/demo-requests" style="display:inline-block;background:#6366f1;color:#fff;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px;text-decoration:none;">
-        View in Admin
-      </a>
-    </div>
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
-    <p style="font-size:12px;color:#9ca3af;margin:0;">Tarhunna · tarhunna.net</p>
-  </div>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+</head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;">
+
+        <!-- Header -->
+        <tr><td style="background:#6366f1;border-radius:12px 12px 0 0;padding:24px 28px;">
+          <div style="font-size:11px;font-weight:600;color:#c7d2fe;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">New Demo Request</div>
+          <div style="font-size:22px;font-weight:700;color:#ffffff;line-height:1.2;">${String(clinic_name)}</div>
+          <div style="font-size:13px;color:#a5b4fc;margin-top:4px;">${submittedAt}</div>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="background:#ffffff;padding:28px;border-radius:0 0 12px 12px;">
+
+          <!-- Contact -->
+          <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;">
+            <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Contact</div>
+            ${field('Name', String(name))}
+            ${field('Email', String(email), `mailto:${String(email)}`)}
+            ${field('Phone', phone)}
+          </div>
+
+          <!-- Scheduling preference -->
+          <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;">
+            <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Scheduling Preference</div>
+            ${field('Preferred Date &amp; Time', preferredDisplay)}
+          </div>
+
+          ${notes ? `
+          <!-- Notes -->
+          <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;">
+            <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Notes</div>
+            <div style="font-size:15px;color:#111827;line-height:1.6;white-space:pre-wrap;">${String(notes)}</div>
+          </div>` : ''}
+
+          <!-- Meta -->
+          <div style="margin-bottom:24px;">
+            <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Source</div>
+            ${field('Page', page_path)}
+            ${field('Referrer', source && source !== 'direct' ? source : null)}
+          </div>
+
+          <!-- CTA -->
+          <a href="https://tarhunna.net/admin/demo-requests"
+             style="display:block;background:#6366f1;color:#ffffff;font-weight:600;font-size:15px;text-align:center;text-decoration:none;padding:14px 20px;border-radius:8px;">
+            View in Admin &rarr;
+          </a>
+
+          <p style="margin:20px 0 0 0;font-size:12px;color:#9ca3af;text-align:center;">
+            Tarhunna &middot; tarhunna.net
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>`
 
@@ -103,7 +141,7 @@ export async function POST(request: Request) {
         console.log('[demo] sending admin notification to:', adminEmail)
         const result = await sendEmail({
           to: adminEmail,
-          subject: `New demo request from ${String(clinic_name)}`,
+          subject: `Demo request: ${String(clinic_name)} — ${String(name)}`,
           html,
           replyTo: String(email),
         })
