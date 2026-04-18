@@ -11,6 +11,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react'
+import { ProductShowcase } from './product-showcase'
 
 export const metadata: Metadata = {
   title: 'CRM for Med Spas — Tarhunna',
@@ -199,7 +200,7 @@ export default function MedSpaCRMPage() {
       <main className="flex-1">
 
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20 sm:py-28">
+        <section className="bg-gradient-to-b from-white to-gray-50 px-6 py-20 sm:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
@@ -239,6 +240,9 @@ export default function MedSpaCRMPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Product Showcase ─────────────────────────────────── */}
+        <ProductShowcase />
 
         {/* ── Problem ──────────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
@@ -332,23 +336,23 @@ export default function MedSpaCRMPage() {
         </section>
 
         {/* ── Mid-page CTA ─────────────────────────────────────── */}
-        <section className="bg-indigo-50 border-y border-indigo-100 px-6 py-12">
+        <section className="bg-indigo-600 px-6 py-12">
           <div className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>
-              <p className="text-base font-semibold text-gray-900">Ready to see how it works?</p>
-              <p className="mt-1 text-sm text-gray-500">Try Tarhunna free for 14 days — no credit card required.</p>
+              <p className="text-base font-semibold text-white">Ready to see how it works?</p>
+              <p className="mt-1 text-sm text-indigo-200">Try Tarhunna free for 14 days — no credit card required.</p>
             </div>
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:shrink-0">
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm"
               >
                 Try free for 14 days
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/book-demo"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                className="text-sm font-medium text-indigo-200 hover:text-white transition-colors"
               >
                 or book a 20-minute walkthrough
               </Link>
