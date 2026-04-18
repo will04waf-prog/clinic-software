@@ -219,7 +219,7 @@ export default function MedSpaCRMPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/signup"
+                href="/book-demo"
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-6 py-3 text-base font-semibold text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
               >
                 Book a demo
@@ -355,7 +355,7 @@ export default function MedSpaCRMPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/signup"
+                href="/book-demo"
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-indigo-400 px-6 py-3 text-base font-semibold text-white hover:border-indigo-300 hover:bg-indigo-500 transition-colors"
               >
                 Book a demo

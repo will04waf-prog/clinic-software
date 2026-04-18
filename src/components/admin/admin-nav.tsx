@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Building2, Users } from 'lucide-react'
+import { LayoutDashboard, Building2, Users, CalendarCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/admin/home',     label: 'Home',     icon: LayoutDashboard },
-  { href: '/admin/accounts', label: 'Accounts', icon: Building2 },
-  { href: '/admin/users',    label: 'Users',    icon: Users },
+  { href: '/admin/home',          label: 'Home',          icon: LayoutDashboard },
+  { href: '/admin/accounts',      label: 'Accounts',      icon: Building2 },
+  { href: '/admin/users',         label: 'Users',         icon: Users },
+  { href: '/admin/demo-requests', label: 'Demo Requests', icon: CalendarCheck },
 ]
 
 export function AdminNav() {
