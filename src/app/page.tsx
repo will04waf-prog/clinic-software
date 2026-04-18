@@ -9,13 +9,30 @@ import {
   BellOff,
   CheckCircle,
   ArrowRight,
+  AlertCircle,
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Tarhunna — CRM for Aesthetic Clinics',
+  title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
   description:
-    'Tarhunna helps med spas, aesthetic clinics, and plastic surgery practices capture leads, automate follow-up, schedule consultations, and reduce no-shows — all in one platform.',
+    'CRM software for med spas, aesthetic clinics, and plastic surgery practices. Capture leads, automate follow-up, and reduce no-shows — all in one platform.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Tarhunna',
+    title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
+    description:
+      'Stop losing leads between inquiries and consultations. Tarhunna helps aesthetic clinics capture, follow up, and convert more patients.',
+    url: 'https://tarhunna.net',
+  },
 }
+
+// ── Page data ─────────────────────────────────────────────
+
+const PAIN_POINTS = [
+  'Leads arrive from Instagram, your website, and referrals with no central place to manage them',
+  'Follow-up relies on memory or sticky notes instead of a consistent automated system',
+  'No-shows happen because appointment reminders are manual, skipped, or too late',
+]
 
 const FEATURES = [
   {
@@ -26,17 +43,17 @@ const FEATURES = [
   {
     icon: LayoutGrid,
     title: 'Leads & Pipeline',
-    body: 'See every lead at a glance. Move contacts through your pipeline from inquiry to booked consultation.',
+    body: 'See every lead at a glance. Move contacts through your pipeline from first inquiry to booked consultation.',
   },
   {
     icon: CalendarDays,
     title: 'Consultation Scheduling',
-    body: 'Book, track, and manage consultations. See exactly who is coming in and when.',
+    body: 'Book, track, and manage consultations. See exactly who is coming in, what they want, and when.',
   },
   {
     icon: Zap,
     title: 'Automated Follow-Up',
-    body: 'Set up follow-up sequences that run automatically. Nurture leads without lifting a finger.',
+    body: 'Set up follow-up sequences that trigger automatically. Nurture leads without lifting a finger.',
   },
   {
     icon: Mail,
@@ -51,21 +68,90 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  { number: '01', title: 'Capture the inquiry', body: 'A patient fills out your intake form. Their info lands in Tarhunna instantly.' },
-  { number: '02', title: 'Organize the lead', body: 'Add them to your pipeline, tag their procedure interest, and assign to a team member.' },
-  { number: '03', title: 'Follow up automatically', body: 'Sequences handle the nurture — emails go out on schedule without you thinking about it.' },
-  { number: '04', title: 'Book the consultation', body: 'Log the consultation, send a reminder, and show up ready. No-shows drop. Revenue grows.' },
+  {
+    number: '01',
+    title: 'Capture the inquiry',
+    body: 'A patient fills out your intake form. Their info lands in Tarhunna instantly — no manual logging.',
+  },
+  {
+    number: '02',
+    title: 'Organize the lead',
+    body: 'Tag their procedure interest, move them into your pipeline, and assign to a team member.',
+  },
+  {
+    number: '03',
+    title: 'Follow up automatically',
+    body: 'Sequences handle the nurture. Emails go out on schedule without you having to think about it.',
+  },
+  {
+    number: '04',
+    title: 'Book the consultation',
+    body: 'Log the consultation, send a reminder, and show up ready. No-shows drop. Revenue grows.',
+  },
 ]
 
 const CLINIC_TYPES = [
-  { label: 'Med Spas', description: 'Botox, fillers, laser, and wellness — manage every inquiry and convert more bookings.' },
-  { label: 'Aesthetic Clinics', description: 'From first inquiry to loyal patient. Keep your pipeline full and your follow-up consistent.' },
-  { label: 'Plastic Surgery Practices', description: 'Long consideration cycles need smart follow-up. Tarhunna keeps leads warm until the patient is ready.' },
+  {
+    label: 'Med Spas',
+    description:
+      'Botox, fillers, laser, and wellness — manage every inquiry, track every lead, and convert more bookings.',
+  },
+  {
+    label: 'Aesthetic Clinics',
+    description:
+      'From first inquiry to loyal patient. Keep your pipeline full and your follow-up consistent across every channel.',
+  },
+  {
+    label: 'Plastic Surgery Practices',
+    description:
+      'Long consideration cycles need smart follow-up. Tarhunna keeps leads warm until the patient is ready to book.',
+  },
 ]
+
+const FAQ_ITEMS = [
+  {
+    q: 'What is Tarhunna?',
+    a: 'Tarhunna is a CRM and follow-up platform built for med spas, aesthetic clinics, and plastic surgery practices. It helps you capture leads, organize your pipeline, automate follow-up emails, and manage consultations — all in one place.',
+  },
+  {
+    q: 'Who is Tarhunna for?',
+    a: 'Tarhunna is built for aesthetic practices of all sizes — solo injectors, med spas, aesthetic clinics, and plastic surgery offices. If you are managing patient inquiries and consultations, Tarhunna is designed for you.',
+  },
+  {
+    q: 'How does automated follow-up work?',
+    a: 'You set up follow-up sequences tied to specific triggers — new lead, consultation booked, no-show — and Tarhunna sends emails automatically on your schedule. No manual work required once a sequence is running.',
+  },
+  {
+    q: 'Does Tarhunna replace my EMR?',
+    a: 'No. Tarhunna is a CRM and lead management tool, not an electronic medical records system. It handles the front-of-funnel — lead capture, follow-up, and consultation scheduling — and sits alongside your existing EMR.',
+  },
+  {
+    q: 'How long does it take to get started?',
+    a: 'Most clinics are fully set up in under 10 minutes. Add your services, share your intake form link, and your first leads start coming in right away. No technical setup required.',
+  },
+]
+
+// ── Page ──────────────────────────────────────────────────
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
+
+      {/* FAQ schema for Google rich results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+              '@type': 'Question',
+              name: q,
+              acceptedAnswer: { '@type': 'Answer', text: a },
+            })),
+          }),
+        }}
+      />
 
       {/* ── Nav ──────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
@@ -99,14 +185,16 @@ export default function LandingPage() {
         <section className="bg-white px-6 py-20 sm:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">14-day free trial · No credit card</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+                14-day free trial · No credit card
+              </span>
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              The CRM built for<br className="hidden sm:block" /> aesthetic clinics
+              Stop losing leads.<br className="hidden sm:block" /> Start booking more consultations.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
-              Capture leads, automate follow-up, schedule consultations, and reduce no-shows —
-              all in one platform built for med spas and aesthetic practices.
+              Tarhunna is the CRM for med spas and aesthetic clinics. Capture every inquiry,
+              follow up automatically, and convert more leads into booked consultations.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -134,15 +222,43 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── Features ─────────────────────────────────────────── */}
+        {/* ── Problem ──────────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-10 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                Most clinic leads go cold before they ever book
+              </h2>
+              <p className="mt-4 text-gray-500 max-w-xl mx-auto">
+                Aesthetic practices attract plenty of interest — but without a proper system,
+                most of that interest quietly disappears. Leads arrive and then go quiet.
+                Consultations get missed. Revenue walks out the door.
+              </p>
+            </div>
+            <ul className="space-y-4 max-w-xl mx-auto">
+              {PAIN_POINTS.map((point) => (
+                <li key={point} className="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50 px-5 py-4">
+                  <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                  <span className="text-sm text-gray-700">{point}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 text-center text-sm font-medium text-gray-500">
+              Tarhunna fixes all three — in one platform built specifically for aesthetic clinics.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Features ─────────────────────────────────────────── */}
+        <section className="bg-white px-6 py-20">
           <div className="mx-auto max-w-6xl">
             <div className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Everything your clinic needs to convert more leads
+                CRM tools built for med spas and aesthetic practices
               </h2>
               <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-                Built specifically for aesthetic practices — not a generic CRM retrofitted for healthcare.
+                Not a generic CRM retrofitted for healthcare. Every feature is designed around
+                how aesthetic clinics actually work.
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -160,15 +276,19 @@ export default function LandingPage() {
         </section>
 
         {/* ── How it works ─────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20">
+        <section className="bg-gray-50 px-6 py-20">
           <div className="mx-auto max-w-4xl">
             <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">How it works</h2>
-              <p className="mt-3 text-gray-500">Four steps from first inquiry to booked consultation.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                From first inquiry to booked consultation
+              </h2>
+              <p className="mt-3 text-gray-500">
+                Four steps — automated, organized, and built into one simple workflow.
+              </p>
             </div>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map(({ number, title, body }) => (
-                <div key={number} className="relative">
+                <div key={number}>
                   <div className="mb-4 text-3xl font-black text-indigo-100">{number}</div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
@@ -179,12 +299,14 @@ export default function LandingPage() {
         </section>
 
         {/* ── Who it's for ─────────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
+        <section className="bg-white px-6 py-20">
           <div className="mx-auto max-w-5xl">
             <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">Built for your type of clinic</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                Built for med spas, aesthetic clinics, and plastic surgery practices
+              </h2>
               <p className="mt-3 text-gray-500">
-                Whether you're a solo injector or a multi-provider practice, Tarhunna fits.
+                Whether you are a solo injector or a multi-provider practice, Tarhunna fits your workflow.
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-3">
@@ -197,6 +319,25 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── FAQ ──────────────────────────────────────────────── */}
+        <section className="bg-gray-50 px-6 py-20">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                Frequently asked questions
+              </h2>
+            </div>
+            <dl className="space-y-0 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+              {FAQ_ITEMS.map(({ q, a }) => (
+                <div key={q} className="px-6 py-5">
+                  <dt className="mb-2 text-sm font-semibold text-gray-900">{q}</dt>
+                  <dd className="text-sm text-gray-500 leading-relaxed">{a}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 
