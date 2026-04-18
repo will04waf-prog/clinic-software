@@ -388,6 +388,24 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Med Spa callout ──────────────────────────────────── */}
+        <section className="bg-white px-6 pb-2">
+          <div className="mx-auto max-w-5xl">
+            <Link
+              href="/med-spa-crm"
+              className="group flex items-center justify-between gap-4 rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-4 hover:border-indigo-200 hover:bg-indigo-100/70 transition-colors"
+            >
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-sm font-semibold text-indigo-700">Running a med spa?</span>
+                <span className="text-sm text-indigo-600/80">
+                  See how Tarhunna helps med spas capture leads and book more consultations.
+                </span>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-indigo-400 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        </section>
+
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
           <div className="mx-auto max-w-3xl">
