@@ -45,11 +45,11 @@ export const metadata: Metadata = {
 // ── Page data ──────────────────────────────────────────────
 
 const PAIN_POINTS = [
-  'Inquiries come in from Instagram, your website, and referrals with no central system to track them',
-  'Follow-up is inconsistent — leads go cold before they ever schedule a consultation',
-  'No-shows happen because appointment reminders are manual, late, or skipped entirely',
-  'Lead stages and notes live on spreadsheets or sticky notes with no unified system',
-  'Front desk staff spend hours chasing leads instead of focusing on clients in the building',
+  'You are taking DMs, website form submissions, and referrals — and they all live in different places',
+  'Follow-up depends on whoever remembers to send it. Some leads get five messages, most get none',
+  'No-shows keep happening because reminder calls take time your front desk does not have',
+  'Your lead notes are in a spreadsheet nobody keeps current',
+  'Your team spends more time chasing old leads than welcoming the clients walking in the door',
 ]
 
 const FEATURES = [
@@ -88,18 +88,21 @@ const FEATURES = [
 const COMPARISONS = [
   {
     vs: 'Spreadsheets',
-    heading: 'No more manual tracking',
-    body: 'Spreadsheets require constant updates, miss follow-up deadlines, and give no real visibility into your pipeline. Tarhunna captures leads automatically and tracks every stage without manual entry.',
+    heading: 'No reminders. No pipeline. No history.',
+    before: 'Miss one follow-up and the lead goes cold — and you will never know it happened.',
+    after: 'Automatic follow-up from the moment they inquire. Every lead tracked, every stage visible, nothing slipping through.',
   },
   {
     vs: 'Generic CRMs',
-    heading: 'Built for aesthetic practices',
-    body: 'Generic CRMs are built for sales teams, not med spas. Tarhunna is designed around how aesthetic practices work — intake forms, consultation tracking, and follow-up sequences for services like Botox, fillers, and laser treatments.',
+    heading: 'Built for sales reps, not injectors.',
+    before: 'No intake forms. No consultation tracking. No aesthetic workflow. You spend weeks customizing something that never quite fits.',
+    after: 'Built around med spa workflows from day one. Intake forms, pipeline, consultation log — ready without setup gymnastics.',
   },
   {
     vs: 'Patchwork systems',
-    heading: 'One platform instead of four',
-    body: 'Most med spas piece together a booking tool, an email app, a spreadsheet, and a notes system. Tarhunna replaces all of them with one connected platform that keeps everything in sync.',
+    heading: 'Four tools, four logins, constant gaps.',
+    before: 'Leads fall through the cracks between your booking app, email tool, spreadsheet, and notes. Nobody knows what the current status is.',
+    after: 'One login. Lead capture, follow-up, scheduling, and reminders all connected and in sync.',
   },
 ]
 
@@ -207,8 +210,9 @@ export default function MedSpaCRMPage() {
               CRM Software Built<br className="hidden sm:block" /> for Med Spas
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
-              Capture every inquiry, automate follow-up, book consultations, and reduce
-              no-shows — with a CRM designed specifically for medical spas and aesthetic practices.
+              Most med spas lose leads between the first inquiry and the consultation.
+              Tarhunna captures every request, follows up automatically, and books more
+              consultations — without adding work for your team.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -240,13 +244,13 @@ export default function MedSpaCRMPage() {
         <section className="bg-gray-50 px-6 py-20">
           <div className="mx-auto max-w-3xl">
             <div className="mb-10 text-center">
+              <p className="text-xs font-semibold uppercase tracking-widest text-red-400 mb-3">Sound familiar?</p>
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Med spas lose revenue when leads fall through the cracks
               </h2>
               <p className="mt-4 text-gray-500 max-w-xl mx-auto">
-                Most med spas attract plenty of interest — but without a proper system,
-                that interest disappears. Inquiries go unanswered. Follow-up gets skipped.
-                Consultations get missed.
+                Most med spas attract plenty of interest. Without a system, that interest quietly
+                disappears — one missed follow-up at a time.
               </p>
             </div>
             <ul className="space-y-3 max-w-xl mx-auto">
@@ -305,15 +309,49 @@ export default function MedSpaCRMPage() {
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-3">
-              {COMPARISONS.map(({ vs, heading, body }) => (
-                <div key={vs} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                  <div className="mb-3 inline-flex rounded-full bg-red-50 px-3 py-1">
-                    <span className="text-xs font-semibold text-red-500">vs. {vs}</span>
+              {COMPARISONS.map(({ vs, heading, before, after }) => (
+                <div key={vs} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+                  <div>
+                    <div className="mb-3 inline-flex rounded-full bg-red-50 px-3 py-1">
+                      <span className="text-xs font-semibold text-red-500">vs. {vs}</span>
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900">{heading}</h3>
                   </div>
-                  <h3 className="mb-2 text-base font-semibold text-gray-900">{heading}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
+                  <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3">
+                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Without Tarhunna</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{before}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
+                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">With Tarhunna</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{after}</p>
+                  </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Mid-page CTA ─────────────────────────────────────── */}
+        <section className="bg-indigo-50 border-y border-indigo-100 px-6 py-12">
+          <div className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+            <div>
+              <p className="text-base font-semibold text-gray-900">Ready to see how it works?</p>
+              <p className="mt-1 text-sm text-gray-500">Try Tarhunna free for 14 days — no credit card required.</p>
+            </div>
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:shrink-0">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                Try free for 14 days
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/book-demo"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+              >
+                or book a 20-minute walkthrough
+              </Link>
             </div>
           </div>
         </section>
@@ -343,7 +381,10 @@ export default function MedSpaCRMPage() {
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start filling your med spa schedule today
             </h2>
-            <p className="mt-4 text-indigo-200">
+            <p className="mt-4 text-indigo-100 text-base">
+              Built for med spas that want to capture more leads, reduce no-shows, and fill their schedule.
+            </p>
+            <p className="mt-2 text-indigo-300 text-sm">
               14-day free trial. No credit card required. Set up in minutes.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
