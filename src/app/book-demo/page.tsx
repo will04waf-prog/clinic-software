@@ -75,6 +75,10 @@ export default function BookDemoPage() {
         {' · '}
         <a href="/med-spa-crm" className="hover:text-gray-600 transition-colors">Med Spa CRM</a>
         {' · '}
+        <a href="/privacy" className="hover:text-gray-600 transition-colors">Privacy</a>
+        {' · '}
+        <a href="/terms" className="hover:text-gray-600 transition-colors">Terms</a>
+        {' · '}
         <a href="/login" className="hover:text-gray-600 transition-colors">Sign in</a>
       </footer>
     </div>

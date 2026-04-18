@@ -447,6 +447,8 @@ export default function LandingPage() {
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">
+            <Link href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-gray-900 transition-colors">Terms</Link>
             <Link href="/login" className="hover:text-gray-900 transition-colors">Log in</Link>
             <Link href="/signup" className="hover:text-gray-900 transition-colors">Sign up</Link>
             <span>© {new Date().getFullYear()} Tarhunna</span>
