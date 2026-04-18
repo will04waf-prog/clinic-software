@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const { name, clinic_name, email, phone, preferred_date, notes, source, page_path } = body
+    const { name, clinic_name, email, phone, preferred_date, preferred_time, notes, source, page_path } = body
 
     if (!name || !clinic_name || !email) {
       return NextResponse.json({ error: 'Name, clinic name, and email are required.' }, { status: 400 })
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
         email: String(email).slice(0, 200),
         phone: phone ? String(phone).slice(0, 50) : null,
         preferred_date: preferred_date ? String(preferred_date).slice(0, 200) : null,
+        preferred_time: preferred_time ? String(preferred_time).slice(0, 50) : null,
         notes: notes ? String(notes).slice(0, 2000) : null,
         source: source ? String(source).slice(0, 500) : null,
         page_path: page_path ? String(page_path).slice(0, 500) : null,
@@ -58,9 +59,10 @@ export async function POST(request: Request) {
         ['Name',           String(name)],
         ['Clinic / Spa',   String(clinic_name)],
         ['Email',          String(email)],
-        ['Phone',          phone || '—'],
-        ['Preferred Date', preferred_date || '—'],
-        ['Notes',          notes || '—'],
+        ['Phone',           phone || '—'],
+        ['Preferred Date',  preferred_date || '—'],
+        ['Preferred Time',  preferred_time || '—'],
+        ['Notes',           notes || '—'],
         ['Source',         source || 'direct'],
         ['Page',           page_path || '—'],
         ['Submitted At',   submittedAt],

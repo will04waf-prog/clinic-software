@@ -9,11 +9,24 @@ type DemoRequest = {
   email: string
   phone: string | null
   preferred_date: string | null
+  preferred_time: string | null
   notes: string | null
   status: string
   source: string | null
   page_path: string | null
   created_at: string
+}
+
+function formatPreferredDate(date: string | null) {
+  if (!date) return null
+  // Handle ISO date strings (YYYY-MM-DD) from the date input
+  const parts = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (parts) {
+    const d = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+  // Fallback: return as-is for legacy free-text values
+  return date
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -75,8 +88,11 @@ export function DemoRequestsTable({ requests }: { requests: DemoRequest[] }) {
                 )}
               </td>
               <td className="px-5 py-3 text-sm text-gray-700">{req.clinic_name}</td>
-              <td className="px-5 py-3 text-sm text-gray-500">
-                {req.preferred_date || <span className="text-gray-300">—</span>}
+              <td className="px-5 py-3 text-sm text-gray-500 whitespace-nowrap">
+                {formatPreferredDate(req.preferred_date) ?? <span className="text-gray-300">—</span>}
+                {req.preferred_time && (
+                  <div className="text-xs text-gray-400 mt-0.5">{req.preferred_time} ET</div>
+                )}
               </td>
               <td className="px-5 py-3 text-sm text-gray-500 max-w-xs">
                 {req.notes ? (

@@ -4,6 +4,25 @@ import { usePathname } from 'next/navigation'
 
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
+const TIME_OPTIONS = [
+  '9:00 AM', '9:30 AM',
+  '10:00 AM', '10:30 AM',
+  '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM',
+  '1:00 PM', '1:30 PM',
+  '2:00 PM', '2:30 PM',
+  '3:00 PM', '3:30 PM',
+  '4:00 PM', '4:30 PM',
+  '5:00 PM',
+]
+
+// Minimum selectable date: tomorrow
+function getMinDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().split('T')[0]
+}
+
 export function BookDemoForm() {
   const pathname = usePathname()
   const [status, setStatus] = useState<Status>('idle')
@@ -20,7 +39,8 @@ export function BookDemoForm() {
       clinic_name: (form.elements.namedItem('clinic_name') as HTMLInputElement).value.trim(),
       email: (form.elements.namedItem('email') as HTMLInputElement).value.trim(),
       phone: (form.elements.namedItem('phone') as HTMLInputElement).value.trim(),
-      preferred_date: (form.elements.namedItem('preferred_date') as HTMLInputElement).value.trim(),
+      preferred_date: (form.elements.namedItem('preferred_date') as HTMLInputElement).value,
+      preferred_time: (form.elements.namedItem('preferred_time') as HTMLSelectElement).value,
       notes: (form.elements.namedItem('notes') as HTMLTextAreaElement).value.trim(),
       source: document.referrer || 'direct',
       page_path: pathname,
@@ -120,17 +140,38 @@ export function BookDemoForm() {
         </div>
       </div>
 
+      {/* Preferred date + time */}
       <div>
-        <label htmlFor="preferred_date" className="block text-sm font-medium text-gray-700 mb-1.5">
-          Preferred date / time <span className="text-gray-400 font-normal">(optional)</span>
-        </label>
-        <input
-          id="preferred_date"
-          name="preferred_date"
-          type="text"
-          placeholder="e.g. Tuesday afternoon or April 22 at 2pm EST"
-          className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        />
+        <p className="block text-sm font-medium text-gray-700 mb-1.5">
+          Preferred date &amp; time <span className="text-gray-400 font-normal">(optional)</span>
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="preferred_date" className="sr-only">Preferred date</label>
+            <input
+              id="preferred_date"
+              name="preferred_date"
+              type="date"
+              min={getMinDate()}
+              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="preferred_time" className="sr-only">Preferred time</label>
+            <select
+              id="preferred_time"
+              name="preferred_time"
+              defaultValue=""
+              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+            >
+              <option value="">Any time</option>
+              {TIME_OPTIONS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="mt-1.5 text-xs text-gray-400">All times are Eastern (ET). We will confirm availability.</p>
       </div>
 
       <div>
