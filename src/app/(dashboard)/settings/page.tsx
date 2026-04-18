@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
+import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
 
@@ -15,7 +16,14 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email, role, organization:organizations(name, slug, plan, timezone, plan_status, stripe_customer_id, procedures)')
+    .select(`
+      full_name, email, role,
+      organization:organizations(
+        name, slug, plan, timezone, plan_status, stripe_customer_id, procedures,
+        sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
+        sms_template_confirmation, sms_template_reminder_24h, sms_template_reminder_2h
+      )
+    `)
     .eq('id', user.id)
     .single()
 
@@ -54,6 +62,16 @@ export default async function SettingsPage() {
         )}
 
         <ServicesCard initial={org?.procedures ?? null} />
+
+        <SmsSettingsCard initial={{
+          sms_enabled:               org?.sms_enabled               ?? false,
+          sms_confirmation_enabled:  org?.sms_confirmation_enabled  ?? true,
+          sms_reminder_24h_enabled:  org?.sms_reminder_24h_enabled  ?? true,
+          sms_reminder_2h_enabled:   org?.sms_reminder_2h_enabled   ?? true,
+          sms_template_confirmation: org?.sms_template_confirmation ?? null,
+          sms_template_reminder_24h: org?.sms_template_reminder_24h ?? null,
+          sms_template_reminder_2h:  org?.sms_template_reminder_2h  ?? null,
+        }} />
 
         <Card>
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>

@@ -10,6 +10,7 @@ const CaptureSchema = z.object({
   phone:               z.string().optional(),
   procedure_interest:  z.array(z.string()).optional(),
   notes:               z.string().optional(),
+  sms_consent:         z.boolean().optional().default(false),
 })
 
 // GET — verify slug is valid (used by the form page to load org info)
@@ -47,7 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { email, ...rest } = parsed.data
+  const { email, sms_consent, ...rest } = parsed.data
 
   // Get default stage for org
   const { data: defaultStage } = await supabase
@@ -64,6 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       stage_id:           defaultStage?.id ?? null,
       email:              email || null,
       source:             'website',
+      sms_consent:        sms_consent ?? false,
       ...rest,
       procedure_interest: rest.procedure_interest ?? [],
     })

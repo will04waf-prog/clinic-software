@@ -1,25 +1,34 @@
 import twilio from 'twilio'
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID!
-const authToken = process.env.TWILIO_AUTH_TOKEN!
-const fromNumber = process.env.TWILIO_PHONE_NUMBER!
-
-export function getTwilioClient() {
-  return twilio(accountSid, authToken)
+export function isTwilioConfigured(): boolean {
+  return !!(
+    process.env.TWILIO_ACCOUNT_SID &&
+    process.env.TWILIO_AUTH_TOKEN &&
+    process.env.TWILIO_PHONE_NUMBER
+  )
 }
 
-export async function sendSMS(to: string, body: string) {
+export function getTwilioClient() {
+  return twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!)
+}
+
+export async function sendSMS(
+  to: string,
+  body: string
+): Promise<{ provider_id: string; status: string } | null> {
+  if (!isTwilioConfigured()) {
+    console.warn('[sms] Twilio not configured — skipping send')
+    return null
+  }
+
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER!
   const client = getTwilioClient()
 
-  // Normalize phone number
+  // Normalize to E.164
   const normalized = to.replace(/\D/g, '')
   const e164 = normalized.startsWith('1') ? `+${normalized}` : `+1${normalized}`
 
-  const message = await client.messages.create({
-    body,
-    from: fromNumber,
-    to: e164,
-  })
+  const message = await client.messages.create({ body, from: fromNumber, to: e164 })
 
   return {
     provider_id: message.sid,

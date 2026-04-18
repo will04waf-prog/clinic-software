@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrollContact } from '@/lib/automation-engine'
+import { sendConsultationSms } from '@/lib/consultation-reminders'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const VALID_TYPES = ['in_person', 'virtual'] as const
@@ -157,6 +159,43 @@ export async function POST(req: NextRequest) {
     organizationId: profile.organization_id,
     triggerType: 'consultation_booked',
   }).catch((err) => console.error('Consultation booked enrollment failed:', err))
+
+  // Confirmation SMS (fire-and-forget — never block the response)
+  ;(async () => {
+    try {
+      const [{ data: orgSms }, { data: contactSms }] = await Promise.all([
+        supabaseAdmin
+          .from('organizations')
+          .select(`
+            name, timezone,
+            sms_enabled, sms_confirmation_enabled,
+            sms_template_confirmation
+          `)
+          .eq('id', profile.organization_id)
+          .single(),
+        supabaseAdmin
+          .from('contacts')
+          .select('id, first_name, phone, opted_out_sms, sms_consent')
+          .eq('id', contact_id)
+          .single(),
+      ])
+
+      if (orgSms && contactSms) {
+        await sendConsultationSms({
+          type: 'confirmation',
+          org: orgSms as any,
+          contact: contactSms,
+          consultation: {
+            id: consultation.id,
+            organization_id: profile.organization_id,
+            scheduled_at: parsed.data.scheduled_at,
+          },
+        })
+      }
+    } catch (err) {
+      console.error('[confirmation sms] failed:', err)
+    }
+  })()
 
   return NextResponse.json({ id: consultation.id }, { status: 201 })
 }

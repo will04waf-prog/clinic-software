@@ -17,12 +17,13 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
 
-  const [firstName, setFirstName]   = useState('')
-  const [lastName, setLastName]     = useState('')
-  const [email, setEmail]           = useState('')
-  const [phone, setPhone]           = useState('')
-  const [notes, setNotes]           = useState('')
-  const [procedures, setProcedures] = useState<string[]>([])
+  const [firstName, setFirstName]     = useState('')
+  const [lastName, setLastName]       = useState('')
+  const [email, setEmail]             = useState('')
+  const [phone, setPhone]             = useState('')
+  const [notes, setNotes]             = useState('')
+  const [procedures, setProcedures]   = useState<string[]>([])
+  const [smsConsent, setSmsConsent]   = useState(false)
 
   useEffect(() => {
     params.then(({ slug: s }) => {
@@ -66,12 +67,13 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          first_name: firstName.trim(),
-          last_name:  lastName.trim() || undefined,
-          email:      email.trim() || undefined,
-          phone:      phone.trim() || undefined,
-          notes:      notes.trim() || undefined,
+          first_name:         firstName.trim(),
+          last_name:          lastName.trim() || undefined,
+          email:              email.trim() || undefined,
+          phone:              phone.trim() || undefined,
+          notes:              notes.trim() || undefined,
           procedure_interest: procedures,
+          sms_consent:        smsConsent,
         }),
       })
 
@@ -179,6 +181,21 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
               rows={3}
             />
           </div>
+
+          {/* SMS consent — only shown when a phone number is provided */}
+          {phone.trim() && (
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={smsConsent}
+                onChange={(e) => setSmsConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
+              />
+              <span className="text-xs text-gray-500 leading-relaxed">
+                I agree to receive appointment reminders by SMS from {orgName}. Message and data rates may apply. Reply STOP at any time to opt out.
+              </span>
+            </label>
+          )}
 
           {error && (
             <p className="text-sm text-red-600">{error}</p>
