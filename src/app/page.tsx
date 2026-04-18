@@ -31,7 +31,7 @@ const FEATURES = [
   {
     icon: CalendarDays,
     title: 'Consultation Scheduling',
-    body: 'Book, track, and manage consultations. Get the full picture on who's coming in and when.',
+    body: 'Book, track, and manage consultations. See exactly who is coming in and when.',
   },
   {
     icon: Zap,
@@ -60,7 +60,7 @@ const STEPS = [
 const CLINIC_TYPES = [
   { label: 'Med Spas', description: 'Botox, fillers, laser, and wellness — manage every inquiry and convert more bookings.' },
   { label: 'Aesthetic Clinics', description: 'From first inquiry to loyal patient. Keep your pipeline full and your follow-up consistent.' },
-  { label: 'Plastic Surgery Practices', description: 'Long consideration cycles need smart follow-up. Tarhunna keeps leads warm until they're ready.' },
+  { label: 'Plastic Surgery Practices', description: 'Long consideration cycles need smart follow-up. Tarhunna keeps leads warm until the patient is ready.' },
 ]
 
 export default function LandingPage() {
