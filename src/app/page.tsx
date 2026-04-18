@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
   description:
     'CRM software for med spas, aesthetic clinics, and plastic surgery practices. Capture leads, automate follow-up, and reduce no-shows — all in one platform.',
+  alternates: {
+    canonical: 'https://tarhunna.net',
+  },
   openGraph: {
     type: 'website',
     siteName: 'Tarhunna',
@@ -23,6 +26,7 @@ export const metadata: Metadata = {
     description:
       'Stop losing leads between inquiries and consultations. Tarhunna helps aesthetic clinics capture, follow up, and convert more patients.',
     url: 'https://tarhunna.net',
+    locale: 'en_US',
   },
 }
 
@@ -137,7 +141,69 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
 
-      {/* FAQ schema for Google rich results */}
+      {/* Organization schema — helps Google's knowledge graph recognize the brand */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Tarhunna',
+            url: 'https://tarhunna.net',
+            logo: 'https://tarhunna.net/icon.svg',
+            description: 'CRM software for med spas, aesthetic clinics, and plastic surgery practices.',
+            foundingDate: '2024',
+            contactPoint: {
+              '@type': 'ContactPoint',
+              contactType: 'customer support',
+              url: 'https://tarhunna.net/signup',
+            },
+          }),
+        }}
+      />
+
+      {/* WebSite schema — enables sitelinks search and brand recognition */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Tarhunna',
+            url: 'https://tarhunna.net',
+            description: 'CRM for med spas and aesthetic clinics',
+            publisher: {
+              '@type': 'Organization',
+              name: 'Tarhunna',
+            },
+          }),
+        }}
+      />
+
+      {/* SoftwareApplication schema — categorizes what the product is */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'Tarhunna',
+            applicationCategory: 'BusinessApplication',
+            applicationSubCategory: 'CRM',
+            operatingSystem: 'Web',
+            url: 'https://tarhunna.net',
+            description: 'CRM and follow-up platform for med spas, aesthetic clinics, and plastic surgery practices.',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD',
+              description: '14-day free trial, no credit card required',
+            },
+          }),
+        }}
+      />
+
+      {/* FAQPage schema — enables FAQ rich results in Google search */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
