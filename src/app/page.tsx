@@ -11,6 +11,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react'
+import { HomeProductShowcase } from './home-product-showcase'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
@@ -287,6 +288,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Product Showcase ─────────────────────────────────── */}
+        <HomeProductShowcase />
 
         {/* ── Problem ──────────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
