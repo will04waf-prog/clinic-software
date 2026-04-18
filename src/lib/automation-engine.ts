@@ -148,7 +148,12 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
   try {
     if (step.channel === 'sms' && contact.phone && !contact.opted_out_sms) {
       const body = renderSMS(step.body, vars)
-      messageResult = await sendSMS(contact.phone, body)
+      const smsResult = await sendSMS(contact.phone, body)
+      if (smsResult === null) {
+        messageStatus = 'skipped'
+      } else {
+        messageResult = smsResult
+      }
     } else if (step.channel === 'email' && contact.email && !contact.opted_out_email) {
       const subject = renderEmail(step.subject ?? 'Message from {{clinic_name}}', vars)
       const bodyText = renderEmail(step.body, vars)
