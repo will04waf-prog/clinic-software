@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── Standard auth routes ───────────────────────────────────
-  const publicRoutes = ['/login', '/signup', '/capture', '/billing']
+  const publicRoutes = ['/login', '/signup', '/capture', '/billing', '/sitemap.xml', '/robots.txt', '/icon.svg']
   const isPublic = publicRoutes.some((r) => pathname.startsWith(r))
 
   if (!user && !isPublic && pathname !== '/') {
@@ -87,5 +87,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|favicon.png|sitemap.xml|robots.txt|icon.svg|api/).*)'],
 }
