@@ -44,7 +44,7 @@ const CONSULTS = [
 
 function ChromeBar({ url }: { url: string }) {
   return (
-    <div className="flex items-center gap-3 bg-gray-200 px-4 py-2.5 shrink-0">
+    <div className="flex items-center gap-3 bg-gray-200 px-4 py-2 sm:py-2.5 shrink-0">
       <div className="flex gap-1.5 shrink-0">
         <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
         <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
@@ -65,7 +65,7 @@ function LeadsPanel() {
       <ChromeBar url="leads" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-white px-5 py-3">
+        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Leads &amp; Contacts</p>
           <p className="text-xs text-gray-400">26 contacts</p>
         </div>
@@ -78,7 +78,7 @@ function LeadsPanel() {
         {/* Rows */}
         <div className="divide-y divide-gray-100 bg-white">
           {LEADS.map((lead) => (
-            <div key={lead.name} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-5 py-3">
+            <div key={lead.name} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-5 py-2 sm:py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-gray-900">{lead.name}</p>
                 <p className="truncate text-xs text-gray-400">{lead.email}</p>
@@ -106,7 +106,7 @@ function PipelinePanel() {
       <ChromeBar url="pipeline" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-white px-5 py-3">
+        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Pipeline</p>
           <p className="text-xs text-gray-400">8 active contacts</p>
         </div>
@@ -145,7 +145,7 @@ function ConsultationsPanel() {
       <ChromeBar url="consultations" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-white px-5 py-3">
+        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Consultations</p>
           <p className="text-xs text-gray-400">4 upcoming · 2 today</p>
         </div>
@@ -154,7 +154,7 @@ function ConsultationsPanel() {
           {CONSULTS.map((c) => (
             <div
               key={`${c.name}-${c.day}`}
-              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-3"
+              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-2.5 sm:p-3"
             >
               {/* Date block — matches real ConsultationList */}
               <div className="flex flex-col items-center rounded-lg bg-indigo-50 px-2.5 py-1.5 text-center shrink-0 min-w-[46px]">
@@ -204,10 +204,10 @@ function StepLabel({ number, label }: { number: string; label: string }) {
 
 export function HomeProductShowcase() {
   return (
-    <section className="bg-slate-900 px-6 py-20">
+    <section className="bg-slate-900 px-6 py-12 sm:py-20">
       <div className="mx-auto max-w-6xl">
         {/* Headline */}
-        <div className="mb-10 text-center">
+        <div className="mb-6 sm:mb-10 text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
             The platform
           </p>
