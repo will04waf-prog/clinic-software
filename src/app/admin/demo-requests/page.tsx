@@ -25,18 +25,21 @@ export default async function DemoRequestsPage({
 
   const counts = await Promise.all([
     supabaseAdmin.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+    supabaseAdmin.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'contacted'),
     supabaseAdmin.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'booked'),
     supabaseAdmin.from('demo_requests').select('id', { count: 'exact', head: true }),
   ])
 
-  const newCount = counts[0].count ?? 0
-  const bookedCount = counts[1].count ?? 0
-  const allCount = counts[2].count ?? 0
+  const newCount       = counts[0].count ?? 0
+  const contactedCount = counts[1].count ?? 0
+  const bookedCount    = counts[2].count ?? 0
+  const allCount       = counts[3].count ?? 0
 
   const tabs = [
-    { label: 'New', value: 'new', count: newCount },
-    { label: 'Booked', value: 'booked', count: bookedCount },
-    { label: 'All', value: 'all', count: allCount },
+    { label: 'New',       value: 'new',       count: newCount },
+    { label: 'Contacted', value: 'contacted',  count: contactedCount },
+    { label: 'Booked',    value: 'booked',     count: bookedCount },
+    { label: 'All',       value: 'all',        count: allCount },
   ]
 
   return (
