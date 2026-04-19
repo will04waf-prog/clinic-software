@@ -1,4 +1,3 @@
-import { useId } from 'react'
 import { cn } from '@/lib/utils'
 
 type LogoVariant = 'mark+wordmark' | 'mark' | 'wordmark'
@@ -13,15 +12,9 @@ const WORDMARK_CLASS: Record<LogoSize, string> = {
   lg: 'text-xl font-semibold tracking-tight',
 }
 
-// Pipeline Apex — one discrete input bar plus an L-shaped pipeline that turns
-// the corner at its top and exits as an arrow. Pipeline and arrow are one
-// continuous path, so conversion is structural to the silhouette.
-const PIPELINE_PATH =
-  'M10 8 A2 2 0 0 1 12 6 L22 6 L22 2 L31 9 L22 16 L22 11 L18 11 A3 3 0 0 0 15 14 L15 25 A2 2 0 0 1 13 27 L12 27 A2 2 0 0 1 10 25 Z'
+const MARK_BLUE = '#2563EB'
 
 function LogoMark({ size }: { size: LogoSize }) {
-  const id = useId()
-  const gradId = `tarhunna-mark-${id}`
   const px = MARK_PX[size]
   return (
     <svg
@@ -32,14 +25,21 @@ function LogoMark({ size }: { size: LogoSize }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient id={gradId} x1="1" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#60A5FA" />
-          <stop offset="100%" stopColor="#1E3A8A" />
-        </linearGradient>
-      </defs>
-      <rect x="3" y="15" width="5" height="12" rx="2" fill={`url(#${gradId})`} />
-      <path d={PIPELINE_PATH} fill={`url(#${gradId})`} />
+      <g stroke={MARK_BLUE} strokeWidth="1.3" strokeLinecap="round" fill="none">
+        <line x1="7"  y1="16" x2="15" y2="8" />
+        <line x1="15" y1="8"  x2="23" y2="9" />
+        <line x1="15" y1="8"  x2="16" y2="16" />
+        <line x1="23" y1="9"  x2="23" y2="19" />
+        <line x1="7"  y1="16" x2="16" y2="16" />
+        <line x1="16" y1="16" x2="17" y2="24" />
+        <line x1="17" y1="24" x2="23" y2="19" />
+      </g>
+      <circle cx="7"  cy="16" r="3.2" fill={MARK_BLUE} />
+      <circle cx="23" cy="9"  r="2.4" fill={MARK_BLUE} />
+      <circle cx="23" cy="19" r="2.2" fill={MARK_BLUE} />
+      <circle cx="16" cy="16" r="1.6" fill={MARK_BLUE} />
+      <circle cx="15" cy="8"  r="2.2" stroke={MARK_BLUE} strokeWidth="1.5" fill="none" />
+      <circle cx="17" cy="24" r="2.2" stroke={MARK_BLUE} strokeWidth="1.5" fill="none" />
     </svg>
   )
 }
