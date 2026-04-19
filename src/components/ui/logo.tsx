@@ -17,7 +17,7 @@ const WORDMARK_CLASS: Record<LogoSize, string> = {
 // the corner at its top and exits as an arrow. Pipeline and arrow are one
 // continuous path, so conversion is structural to the silhouette.
 const PIPELINE_PATH =
-  'M9 8.5 A1.5 1.5 0 0 1 10.5 7 L22 7 L22 3 L30 9 L22 15 L22 11 L13 11 L13 25.5 A1.5 1.5 0 0 1 11.5 27 L10.5 27 A1.5 1.5 0 0 1 9 25.5 Z'
+  'M10 8 A2 2 0 0 1 12 6 L22 6 L22 2 L31 9 L22 16 L22 11 L18 11 A3 3 0 0 0 15 14 L15 25 A2 2 0 0 1 13 27 L12 27 A2 2 0 0 1 10 25 Z'
 
 function LogoMark({ size }: { size: LogoSize }) {
   const id = useId()
@@ -38,7 +38,7 @@ function LogoMark({ size }: { size: LogoSize }) {
           <stop offset="100%" stopColor="#1E3A8A" />
         </linearGradient>
       </defs>
-      <rect x="3" y="17" width="4" height="10" rx="1.5" fill={`url(#${gradId})`} />
+      <rect x="3" y="15" width="5" height="12" rx="2" fill={`url(#${gradId})`} />
       <path d={PIPELINE_PATH} fill={`url(#${gradId})`} />
     </svg>
   )
