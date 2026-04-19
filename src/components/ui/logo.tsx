@@ -45,7 +45,7 @@ export function Logo({
   const inkClass     = theme === 'dark' ? 'text-white' : 'text-gray-900'
 
   return (
-    <div className={cn('flex items-center gap-2', inkClass, className)}>
+    <div className={cn('flex items-center gap-1.5', inkClass, className)}>
       {showMark && <LogoMark size={size} />}
       {showWordmark && (
         <span className={cn(WORDMARK_CLASS[size])}>
