@@ -12,12 +12,11 @@ const WORDMARK_CLASS: Record<LogoSize, string> = {
   lg: 'text-xl font-semibold tracking-tight',
 }
 
-// Meridian / Apex — single continuous closed stroke.
-// Left side: rounded sweep (the nurture curve).
-// Right side: two straight edges meeting at a sharp apex (the booking moment).
-// One mark, one gesture: unbroken follow-up with forward motion.
+// Refined T — filled silhouette with deep 5px chamfers where crossbar
+// meets stem. The chamfers carry the brand detail: lead flows into the
+// booking. No backdrop; ink only, inherits color from context.
 const MARK_PATH =
-  'M3 16 C3 8 9 3 17 3 C20 3 20 5 23 8 L27 16 L23 24 C20 27 20 29 17 29 C9 29 3 24 3 16 Z'
+  'M4 7 L28 7 L28 12 L24 12 L19 17 L19 27 L13 27 L13 17 L8 12 L4 12 Z'
 
 function LogoMark({ size }: { size: LogoSize }) {
   const px = MARK_PX[size]
@@ -26,18 +25,10 @@ function LogoMark({ size }: { size: LogoSize }) {
       width={px}
       height={px}
       viewBox="0 0 32 32"
-      fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <path
-        d={MARK_PATH}
-        stroke="currentColor"
-        strokeWidth={3.25}
-        strokeLinejoin="miter"
-        strokeLinecap="round"
-        strokeMiterlimit={10}
-      />
+      <path d={MARK_PATH} fill="currentColor" />
     </svg>
   )
 }
