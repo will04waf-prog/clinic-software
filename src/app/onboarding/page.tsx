@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProcedurePicker, ALL_PRESET_LABELS } from '@/components/settings/procedure-picker'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/ui/logo'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -37,8 +38,8 @@ export default function OnboardingPage() {
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 shadow-lg mb-4">
-            <span className="text-2xl font-black text-white">T</span>
+          <div className="mb-4">
+            <Logo variant="mark" size="lg" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome to Tarhunna</h1>
           <p className="mt-2 text-gray-500 max-w-md mx-auto">

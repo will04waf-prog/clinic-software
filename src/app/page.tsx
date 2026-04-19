@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { HomeProductShowcase } from './home-product-showcase'
+import { Logo } from '@/components/ui/logo'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
@@ -224,10 +225,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-              <span className="text-sm font-black text-white">T</span>
-            </div>
-            <span className="text-base font-bold text-gray-900">Tarhunna</span>
+            <Logo size="md" />
           </Link>
           <nav className="flex items-center gap-3">
             <Link
@@ -462,10 +460,7 @@ export default function LandingPage() {
       <footer className="border-t border-gray-200 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-              <span className="text-xs font-black text-white">T</span>
-            </div>
-            <span className="text-sm font-bold text-gray-900">Tarhunna</span>
+            <Logo size="sm" />
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">

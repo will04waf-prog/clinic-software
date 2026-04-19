@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/logo'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -37,11 +38,8 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   return (
     <aside className="hidden md:flex h-full w-60 flex-col border-r border-gray-200 bg-white">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 border-b border-gray-200 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <span className="text-sm font-bold text-white">T</span>
-        </div>
-        <span className="text-lg font-bold text-gray-900">Tarhunna</span>
+      <div className="flex h-16 items-center border-b border-gray-200 px-5">
+        <Logo size="md" />
       </div>
 
       {/* Nav */}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { BookDemoForm } from './book-demo-form'
+import { Logo } from '@/components/ui/logo'
 
 export const metadata: Metadata = {
   title: 'Book a Demo — Tarhunna',
@@ -14,9 +15,8 @@ export default function BookDemoPage() {
       {/* Nav */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 font-semibold text-gray-900">
-            <img src="/icon.svg" alt="Tarhunna" className="h-7 w-7" />
-            Tarhunna
+          <a href="/" className="flex items-center gap-2">
+            <Logo size="sm" />
           </a>
           <a
             href="/login"

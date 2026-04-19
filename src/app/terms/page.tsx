@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Logo } from '@/components/ui/logo'
 
 export const metadata: Metadata = {
   title: 'Terms of Service — Tarhunna',
@@ -19,10 +20,7 @@ export default function TermsPage() {
       <header className="border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-              <span className="text-xs font-black text-white">T</span>
-            </div>
-            <span className="text-sm font-bold text-gray-900">Tarhunna</span>
+            <Logo size="sm" />
           </Link>
           <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
             Sign in
