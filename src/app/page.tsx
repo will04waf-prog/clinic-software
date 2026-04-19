@@ -101,6 +101,7 @@ const CLINIC_TYPES = [
     label: 'Med Spas',
     description:
       'Botox, fillers, laser, and wellness — manage every inquiry, track every lead, and convert more bookings.',
+    href: '/med-spa-crm',
   },
   {
     label: 'Aesthetic Clinics',
@@ -112,7 +113,7 @@ const CLINIC_TYPES = [
     description:
       'Long consideration cycles need smart follow-up. Tarhunna keeps leads warm until the patient is ready to book.',
   },
-]
+] as const
 
 const FAQ_ITEMS = [
   {
@@ -228,6 +229,12 @@ export default function LandingPage() {
             <Logo size="md" />
           </Link>
           <nav className="flex items-center gap-3">
+            <Link
+              href="/med-spa-crm"
+              className="hidden sm:inline-block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              For Med Spas
+            </Link>
             <Link
               href="/login"
               className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
@@ -378,14 +385,37 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-3">
-              {CLINIC_TYPES.map(({ label, description }) => (
-                <div key={label} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                  <div className="mb-3 inline-flex rounded-full bg-indigo-50 px-3 py-1">
-                    <span className="text-sm font-semibold text-indigo-600">{label}</span>
+              {CLINIC_TYPES.map((type) => {
+                const { label, description } = type
+                const href = 'href' in type ? type.href : undefined
+                const content = (
+                  <>
+                    <div className="mb-3 inline-flex rounded-full bg-indigo-50 px-3 py-1">
+                      <span className="text-sm font-semibold text-indigo-600">{label}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+                    {href && (
+                      <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 group-hover:gap-1.5 transition-all">
+                        Learn more
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </>
+                )
+                return href ? (
+                  <Link
+                    key={label}
+                    href={href}
+                    className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={label} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    {content}
                   </div>
-                  <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
