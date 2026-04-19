@@ -20,7 +20,7 @@ const WORDMARK_CLASS: Record<LogoSize, string> = {
 //   - 45° chamfers at both inner corners where stem meets crossbar
 //     (L21 14 → L19 16 on the right, L13 16 → L11 14 on the left)
 // This single path is what makes it feel designed, not typeset.
-const MARK_PATH = 'M4 6 L28 6 L28 11 L21 11 L19 13 L19 27 L13 27 L13 13 L11 11 L4 11 Z'
+const MARK_PATH = 'M4 7 L28 7 L28 12 L24 12 L19 17 L19 27 L13 27 L13 17 L8 12 L4 12 Z'
 
 function LogoMark({ size }: { size: LogoSize }) {
   const px = MARK_PX[size]
