@@ -5,12 +5,12 @@ type LogoVariant = 'mark+wordmark' | 'mark' | 'wordmark'
 type LogoSize    = 'sm' | 'md' | 'lg'
 type LogoTheme   = 'light' | 'dark'
 
-const MARK_PX: Record<LogoSize, number> = { sm: 24, md: 28, lg: 44 }
+const MARK_PX: Record<LogoSize, number> = { sm: 24, md: 32, lg: 56 }
 
 const WORDMARK_CLASS: Record<LogoSize, string> = {
   sm: 'text-sm font-semibold tracking-tight',
   md: 'text-base font-semibold tracking-tight',
-  lg: 'text-xl font-semibold tracking-tight',
+  lg: 'text-2xl font-semibold tracking-tight',
 }
 
 function LogoMark({ size }: { size: LogoSize }) {
@@ -45,7 +45,7 @@ export function Logo({
   const inkClass     = theme === 'dark' ? 'text-white' : 'text-gray-900'
 
   return (
-    <div className={cn('flex items-center gap-2.5', inkClass, className)}>
+    <div className={cn('flex items-center gap-2', inkClass, className)}>
       {showMark && <LogoMark size={size} />}
       {showWordmark && (
         <span className={cn(WORDMARK_CLASS[size])}>
