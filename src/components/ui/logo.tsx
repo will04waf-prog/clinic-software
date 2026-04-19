@@ -12,11 +12,11 @@ const WORDMARK_CLASS: Record<LogoSize, string> = {
   lg: 'text-xl font-semibold tracking-tight',
 }
 
-// Refined T — filled silhouette with deep 5px chamfers where crossbar
-// meets stem. The chamfers carry the brand detail: lead flows into the
-// booking. No backdrop; ink only, inherits color from context.
+// Refined T — filled silhouette with chamfers where crossbar meets stem.
+// Asymmetric: right chamfer is 6 units, left is 5 units. The one-unit
+// lean is what carries forward motion without drifting gimmicky.
 const MARK_PATH =
-  'M4 7 L28 7 L28 12 L24 12 L19 17 L19 27 L13 27 L13 17 L8 12 L4 12 Z'
+  'M4 7 L28 7 L28 12 L25 12 L19 17 L19 27 L13 27 L13 17 L8 12 L4 12 Z'
 
 function LogoMark({ size }: { size: LogoSize }) {
   const px = MARK_PX[size]
