@@ -6,6 +6,7 @@ import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
+import { SignOutButton } from '@/components/ui/sign-out-button'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
 
@@ -87,6 +88,9 @@ export default async function SettingsPage() {
             <div className="flex justify-between">
               <span className="text-gray-500">Role</span>
               <span className="font-medium text-gray-900 capitalize">{profile?.role ?? '—'}</span>
+            </div>
+            <div className="pt-3 border-t border-gray-100">
+              <SignOutButton />
             </div>
           </CardContent>
         </Card>
