@@ -3,6 +3,13 @@
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
   html, body { height: 100%; }
+
+  /* Kill the 300ms tap delay on iOS for all interactive elements so button
+     presses feel instant. Paired with active:scale-* tactile feedback. */
+  button, a, [role="button"], input[type="submit"], input[type="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer utilities {
