@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Header } from '@/components/layout/header'
+import { GreetingHeader } from '@/components/dashboard/greeting-header'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -114,8 +114,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col overflow-hidden h-full">
-      <Header
-        title={`Good ${getGreeting()}, ${profile.full_name.split(' ')[0]}`}
+      <GreetingHeader
+        firstName={profile.full_name.split(' ')[0]}
         subtitle={org?.name}
       />
 
@@ -208,9 +208,3 @@ export default async function DashboardPage() {
   )
 }
 
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
