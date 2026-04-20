@@ -262,7 +262,7 @@ export default function LandingPage() {
               </span>
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Stop losing leads.<br className="hidden sm:block" /> Start booking more consultations.
+              Stop losing leads.<br className="hidden sm:block" /> Start booking <span className="text-indigo-600">more consultations</span>.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
               Tarhunna is the CRM for med spas and aesthetic clinics. Capture every inquiry,
