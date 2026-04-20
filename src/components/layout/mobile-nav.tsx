@@ -23,8 +23,9 @@ export function MobileNav() {
           <Link
             key={href}
             href={href}
+            prefetch
             className={cn(
-              'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors duration-150 active:bg-gray-50 active:scale-[0.96]',
+              'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors duration-100 active:bg-gray-50 active:scale-[0.96]',
               active ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-900'
             )}
           >
