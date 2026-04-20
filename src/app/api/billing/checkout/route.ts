@@ -38,14 +38,6 @@ export async function POST(req: NextRequest) {
       },
       quantity: 1,
     },
-    {
-      price_data: {
-        currency: 'usd',
-        product_data: { name: 'One-time Setup Fee' },
-        unit_amount: 50000,          // $500.00
-      },
-      quantity: 1,
-    },
   ]
 
   try {
