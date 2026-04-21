@@ -11,7 +11,6 @@ import { Logo } from '@/components/ui/logo'
 function ForgotPasswordInner() {
   const searchParams = useSearchParams()
   const linkError = searchParams.get('error')
-  const reason = searchParams.get('r')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -53,9 +52,6 @@ function ForgotPasswordInner() {
               <p className="text-sm text-amber-700">
                 Your previous reset link expired or was invalid. Enter your email below to get a new one.
               </p>
-              {reason && (
-                <p className="mt-1 text-xs text-amber-600 font-mono break-all">debug: {reason}</p>
-              )}
             </div>
           )}
           {submitted ? (
