@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { enrollContact } from '@/lib/automation-engine'
+import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
 import { z } from 'zod'
 
 const VALID_STATUSES = [
@@ -105,11 +106,24 @@ export async function PATCH(
 
       if (contactErr) console.error('[consultations] contact update failed:', contactErr.message)
 
-      await enrollContact({
-        contactId:      consultation.contact_id,
-        organizationId: orgId,
-        triggerType:    'consultation_completed',
-      }).catch((err) => console.error('Post-consult enrollment failed:', err))
+      // Durable enrollment: /api/cron drains the queue. Shadow mode keeps the
+      // legacy call alongside the enqueue until ENROLLMENT_JOBS_MODE=primary.
+      try {
+        await enqueueEnrollment({
+          contactId:      consultation.contact_id,
+          organizationId: orgId,
+          triggerType:    'consultation_completed',
+        })
+      } catch {
+        // Logged inside enqueueEnrollment
+      }
+      if (enrollmentJobsMode() === 'shadow') {
+        await enrollContact({
+          contactId:      consultation.contact_id,
+          organizationId: orgId,
+          triggerType:    'consultation_completed',
+        }).catch((err) => console.error('Post-consult enrollment failed:', err))
+      }
     }
 
     if (updates.status === 'no_show') {
@@ -131,11 +145,24 @@ export async function PATCH(
 
       if (noShowContactErr) console.error('[consultations] contact stage update failed:', noShowContactErr.message)
 
-      await enrollContact({
-        contactId:      consultation.contact_id,
-        organizationId: orgId,
-        triggerType:    'no_show',
-      }).catch((err) => console.error('No-show enrollment failed:', err))
+      // Durable enrollment: /api/cron drains the queue. Shadow mode keeps the
+      // legacy call alongside the enqueue until ENROLLMENT_JOBS_MODE=primary.
+      try {
+        await enqueueEnrollment({
+          contactId:      consultation.contact_id,
+          organizationId: orgId,
+          triggerType:    'no_show',
+        })
+      } catch {
+        // Logged inside enqueueEnrollment
+      }
+      if (enrollmentJobsMode() === 'shadow') {
+        await enrollContact({
+          contactId:      consultation.contact_id,
+          organizationId: orgId,
+          triggerType:    'no_show',
+        }).catch((err) => console.error('No-show enrollment failed:', err))
+      }
     }
   }
 

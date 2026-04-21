@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { enrollContact } from '@/lib/automation-engine'
+import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
 
 const CaptureSchema = z.object({
   first_name:          z.string().min(1),
@@ -82,12 +83,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     metadata:        { source: 'web_form', slug },
   })
 
-  // Fire automation (fire-and-forget)
-  enrollContact({
-    contactId:      contact.id,
-    triggerType:    'new_lead',
-    organizationId: org.id,
-  }).catch(console.error)
+  // Durable enrollment: /api/cron drains the queue. Shadow mode keeps the
+  // legacy fire-and-forget alongside the enqueue until ENROLLMENT_JOBS_MODE=primary.
+  try {
+    await enqueueEnrollment({
+      contactId:      contact.id,
+      organizationId: org.id,
+      triggerType:    'new_lead',
+    })
+  } catch {
+    // Logged inside enqueueEnrollment
+  }
+  if (enrollmentJobsMode() === 'shadow') {
+    enrollContact({
+      contactId:      contact.id,
+      triggerType:    'new_lead',
+      organizationId: org.id,
+    }).catch(console.error)
+  }
 
   return NextResponse.json({ ok: true }, { status: 201 })
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrollContact } from '@/lib/automation-engine'
+import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
 import { z } from 'zod'
 
 const VALID_SOURCES = ['website', 'referral', 'instagram', 'facebook', 'walkin', 'other'] as const
@@ -126,12 +127,25 @@ export async function POST(req: NextRequest) {
     action: 'lead_created',
   })
 
-  // Enroll in automations before returning — fire-and-forget is cut off on Vercel
-  await enrollContact({
-    contactId: contact.id,
-    organizationId: profile.organization_id,
-    triggerType: 'new_lead',
-  }).catch((err) => console.error('Automation enrollment failed:', err))
+  // Durable enrollment: /api/cron drains the queue. Shadow mode keeps the
+  // legacy in-request call alongside the enqueue so behavior is unchanged
+  // until ENROLLMENT_JOBS_MODE=primary.
+  try {
+    await enqueueEnrollment({
+      contactId: contact.id,
+      organizationId: profile.organization_id,
+      triggerType: 'new_lead',
+    })
+  } catch {
+    // Logged inside enqueueEnrollment
+  }
+  if (enrollmentJobsMode() === 'shadow') {
+    await enrollContact({
+      contactId: contact.id,
+      organizationId: profile.organization_id,
+      triggerType: 'new_lead',
+    }).catch((err) => console.error('Automation enrollment failed:', err))
+  }
 
   return NextResponse.json({ id: contact.id }, { status: 201 })
 }

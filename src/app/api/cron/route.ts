@@ -3,6 +3,7 @@ import { processDueSteps } from '@/lib/automation-engine'
 import { sendConsultationReminders } from '@/lib/consultation-reminders'
 import { expireTrials } from '@/lib/expire-trials'
 import { sendTrialReminders } from '@/lib/trial-reminders'
+import { processEnrollmentJobs } from '@/lib/enrollment-jobs'
 
 // Called by an external cron (e.g. Vercel Cron, GitHub Actions, cron-job.org)
 // Protect with a shared secret in the Authorization header.
@@ -16,13 +17,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    await Promise.all([
+    const [, , , , enrollmentResult] = await Promise.all([
       processDueSteps(),
       sendConsultationReminders(),
       expireTrials(),
       sendTrialReminders(),
+      processEnrollmentJobs(),
     ])
-    return NextResponse.json({ ok: true, ran_at: new Date().toISOString() })
+    return NextResponse.json({
+      ok: true,
+      ran_at: new Date().toISOString(),
+      enrollment_jobs: enrollmentResult,
+    })
   } catch (err: any) {
     console.error('[cron] error:', err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })

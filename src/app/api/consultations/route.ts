@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrollContact } from '@/lib/automation-engine'
+import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
 import { sendConsultationSms } from '@/lib/consultation-reminders'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
@@ -153,12 +154,24 @@ export async function POST(req: NextRequest) {
     metadata: { consultation_id: consultation.id, scheduled_at: fields.scheduled_at },
   })
 
-  // Enroll in consultation_booked sequence (fire-and-forget)
-  enrollContact({
-    contactId: contact_id,
-    organizationId: profile.organization_id,
-    triggerType: 'consultation_booked',
-  }).catch((err) => console.error('Consultation booked enrollment failed:', err))
+  // Durable enrollment: /api/cron drains the queue. Shadow mode keeps the
+  // legacy fire-and-forget alongside the enqueue until ENROLLMENT_JOBS_MODE=primary.
+  try {
+    await enqueueEnrollment({
+      contactId: contact_id,
+      organizationId: profile.organization_id,
+      triggerType: 'consultation_booked',
+    })
+  } catch {
+    // Logged inside enqueueEnrollment
+  }
+  if (enrollmentJobsMode() === 'shadow') {
+    enrollContact({
+      contactId: contact_id,
+      organizationId: profile.organization_id,
+      triggerType: 'consultation_booked',
+    }).catch((err) => console.error('Consultation booked enrollment failed:', err))
+  }
 
   // Confirmation SMS (fire-and-forget — never block the response)
   ;(async () => {
