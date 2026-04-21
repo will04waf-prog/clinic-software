@@ -42,9 +42,9 @@ export function OnboardingChecklist({
     {
       done: hasConsultations,
       label: 'Schedule a consultation',
-      description: 'Book a consultation with one of your leads.',
-      href: '/consultations',
-      cta: 'Go to Consultations',
+      description: "Open a lead and click 'Book Consultation' to schedule your first one.",
+      href: '/leads',
+      cta: 'Go to Leads',
     },
     {
       done: hasAutomations,

@@ -53,8 +53,16 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
         <CalendarCheck className="mx-auto h-8 w-8 text-gray-300" />
-        <p className="mt-3 text-sm font-medium text-gray-500">No consultations found</p>
-        <p className="mt-1 text-xs text-gray-400">Book a consultation from a lead profile</p>
+        <p className="mt-3 text-sm font-medium text-gray-500">No consultations yet</p>
+        <p className="mt-1 text-xs text-gray-400">
+          Open a lead and click &lsquo;Book Consultation&rsquo; to schedule one.
+        </p>
+        <Link
+          href="/leads"
+          className="mt-4 inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
+        >
+          Go to Leads →
+        </Link>
       </div>
     )
   }
