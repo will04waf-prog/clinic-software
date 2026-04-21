@@ -6,6 +6,7 @@ import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
+import { ChangePasswordCard } from '@/components/settings/change-password-card'
 import { SignOutButton } from '@/components/ui/sign-out-button'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
@@ -89,6 +90,8 @@ export default async function SettingsPage() {
               <span className="text-gray-500">Role</span>
               <span className="font-medium text-gray-900 capitalize">{profile?.role ?? '—'}</span>
             </div>
+            {profile?.email && <ChangePasswordCard userEmail={profile.email} />}
+
             <div className="pt-3 border-t border-gray-100">
               <SignOutButton />
             </div>
