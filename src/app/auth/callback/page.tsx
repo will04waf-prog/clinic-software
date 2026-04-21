@@ -10,11 +10,11 @@
  * getSession() resolves, the session is already set in cookies.
  */
 'use client'
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function AuthCallbackPage() {
+function CallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -37,5 +37,19 @@ export default function AuthCallbackPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <p className="text-sm text-gray-500">Verifying reset link...</p>
     </div>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <p className="text-sm text-gray-500">Verifying reset link...</p>
+        </div>
+      }
+    >
+      <CallbackInner />
+    </Suspense>
   )
 }
