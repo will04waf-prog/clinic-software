@@ -1,13 +1,17 @@
 'use client'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Logo } from '@/components/ui/logo'
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordInner() {
+  const searchParams = useSearchParams()
+  const linkError = searchParams.get('error')
+  const reason = searchParams.get('r')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -44,6 +48,16 @@ export default function ForgotPasswordPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {linkError && !submitted && (
+            <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+              <p className="text-sm text-amber-700">
+                Your previous reset link expired or was invalid. Enter your email below to get a new one.
+              </p>
+              {reason && (
+                <p className="mt-1 text-xs text-amber-600 font-mono break-all">debug: {reason}</p>
+              )}
+            </div>
+          )}
           {submitted ? (
             <div className="space-y-4">
               <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-3">
@@ -88,5 +102,13 @@ export default function ForgotPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordInner />
+    </Suspense>
   )
 }

@@ -24,10 +24,14 @@ function CallbackInner() {
       : window.location.hash
     const hashParams = new URLSearchParams(hashRaw)
 
+    const failWith = (reason: string) => {
+      console.warn('[auth/callback] fail:', reason)
+      router.replace(`/forgot-password?error=expired&r=${encodeURIComponent(reason)}`)
+    }
+
     const hashError = hashParams.get('error_code') ?? hashParams.get('error')
     if (hashError) {
-      console.warn('[auth/callback] hash error:', hashError)
-      router.replace('/forgot-password?error=expired')
+      failWith(`hash_err:${hashError}`)
       return
     }
 
@@ -35,25 +39,20 @@ function CallbackInner() {
     const refreshToken = hashParams.get('refresh_token')
     const code = searchParams.get('code')
 
-    const finish = (ok: boolean) => {
-      router.replace(ok ? next : '/forgot-password?error=expired')
-    }
-
     if (accessToken && refreshToken) {
       supabase.auth
         .setSession({ access_token: accessToken, refresh_token: refreshToken })
         .then(({ error }) => {
-          if (error) console.warn('[auth/callback] setSession failed:', error.message)
-          finish(!error)
+          if (error) failWith(`set:${error.message}`)
+          else router.replace(next)
         })
     } else if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) console.warn('[auth/callback] exchangeCodeForSession failed:', error.message)
-        finish(!error)
+        if (error) failWith(`exch:${error.message}`)
+        else router.replace(next)
       })
     } else {
-      console.warn('[auth/callback] no token or code in URL')
-      finish(false)
+      failWith(`no_tokens:hash_len=${hashRaw.length}:qs=${searchParams.toString().slice(0, 80)}`)
     }
   }, [router, searchParams])
 
