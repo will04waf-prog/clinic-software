@@ -7,6 +7,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS, renderTemplate as renderSMS } from '@/lib/twilio'
 import { sendEmail, renderTemplate as renderEmail, wrapEmailHtml } from '@/lib/resend'
+import { withCronLock } from '@/lib/cron-locks'
 import type { TriggerType } from '@/types'
 
 interface EnrollOptions {
@@ -85,28 +86,31 @@ export async function enrollContact(opts: EnrollOptions) {
 
 /**
  * Process all due sequence steps. Called by a cron job every minute.
+ * Serialized via cron_locks to prevent overlapping ticks from double-sending.
  */
 export async function processDueSteps() {
-  const { data: enrollments } = await supabaseAdmin
-    .from('contact_sequence_enrollments')
-    .select(`
-      *,
-      contact:contacts(*),
-      sequence:automation_sequences(*, steps:sequence_steps(*))
-    `)
-    .eq('status', 'active')
-    .lte('next_step_at', new Date().toISOString())
-    .limit(50)
+  await withCronLock('processDueSteps', 90, async () => {
+    const { data: enrollments } = await supabaseAdmin
+      .from('contact_sequence_enrollments')
+      .select(`
+        *,
+        contact:contacts(*),
+        sequence:automation_sequences(*, steps:sequence_steps(*))
+      `)
+      .eq('status', 'active')
+      .lte('next_step_at', new Date().toISOString())
+      .limit(50)
 
-  if (!enrollments) return
+    if (!enrollments) return
 
-  for (const enrollment of enrollments) {
-    try {
-      await processEnrollmentStep(enrollment, supabaseAdmin)
-    } catch (err) {
-      console.error('Error processing enrollment step:', err)
+    for (const enrollment of enrollments) {
+      try {
+        await processEnrollmentStep(enrollment, supabaseAdmin)
+      } catch (err) {
+        console.error('Error processing enrollment step:', err)
+      }
     }
-  }
+  })
 }
 
 async function processEnrollmentStep(enrollment: any, supabase: any) {

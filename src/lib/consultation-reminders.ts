@@ -10,48 +10,51 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 import { renderSmsForConsultation, type SmsMessageType } from '@/lib/sms-messages'
+import { withCronLock } from '@/lib/cron-locks'
 
 export async function sendConsultationReminders() {
-  const now = new Date()
+  await withCronLock('sendConsultationReminders', 90, async () => {
+    const now = new Date()
 
-  const window24Start = new Date(now.getTime() + 23 * 3600_000).toISOString()
-  const window24End   = new Date(now.getTime() + 25 * 3600_000).toISOString()
-  const window2Start  = new Date(now.getTime() +  1 * 3600_000).toISOString()
-  const window2End    = new Date(now.getTime() +  3 * 3600_000).toISOString()
+    const window24Start = new Date(now.getTime() + 23 * 3600_000).toISOString()
+    const window24End   = new Date(now.getTime() + 25 * 3600_000).toISOString()
+    const window2Start  = new Date(now.getTime() +  1 * 3600_000).toISOString()
+    const window2End    = new Date(now.getTime() +  3 * 3600_000).toISOString()
 
-  const orgSelect = `
-    name, timezone,
-    sms_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
-    sms_template_reminder_24h, sms_template_reminder_2h,
-    phone, email
-  `
+    const orgSelect = `
+      name, timezone,
+      sms_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
+      sms_template_reminder_24h, sms_template_reminder_2h,
+      phone, email
+    `
 
-  const contactSelect = `
-    id, first_name, email, phone,
-    opted_out_sms, sms_consent
-  `
+    const contactSelect = `
+      id, first_name, email, phone,
+      opted_out_sms, sms_consent
+    `
 
-  const [{ data: due24 }, { data: due2h }] = await Promise.all([
-    supabaseAdmin
-      .from('consultations')
-      .select(`*, contact:contacts(${contactSelect}), org:organizations!consultations_organization_id_fkey(${orgSelect})`)
-      .in('status', ['scheduled', 'confirmed'])
-      .eq('reminder_24h_sent', false)
-      .gte('scheduled_at', window24Start)
-      .lte('scheduled_at', window24End),
-    supabaseAdmin
-      .from('consultations')
-      .select(`*, contact:contacts(${contactSelect}), org:organizations!consultations_organization_id_fkey(${orgSelect})`)
-      .in('status', ['scheduled', 'confirmed'])
-      .eq('reminder_2h_sent', false)
-      .gte('scheduled_at', window2Start)
-      .lte('scheduled_at', window2End),
-  ])
+    const [{ data: due24 }, { data: due2h }] = await Promise.all([
+      supabaseAdmin
+        .from('consultations')
+        .select(`*, contact:contacts(${contactSelect}), org:organizations!consultations_organization_id_fkey(${orgSelect})`)
+        .in('status', ['scheduled', 'confirmed'])
+        .eq('reminder_24h_sent', false)
+        .gte('scheduled_at', window24Start)
+        .lte('scheduled_at', window24End),
+      supabaseAdmin
+        .from('consultations')
+        .select(`*, contact:contacts(${contactSelect}), org:organizations!consultations_organization_id_fkey(${orgSelect})`)
+        .in('status', ['scheduled', 'confirmed'])
+        .eq('reminder_2h_sent', false)
+        .gte('scheduled_at', window2Start)
+        .lte('scheduled_at', window2End),
+    ])
 
-  await Promise.all([
-    ...(due24 ?? []).map((c) => sendReminder(c, 'reminder_24h')),
-    ...(due2h ?? []).map((c) => sendReminder(c, 'reminder_2h')),
-  ])
+    await Promise.all([
+      ...(due24 ?? []).map((c) => sendReminder(c, 'reminder_24h')),
+      ...(due2h ?? []).map((c) => sendReminder(c, 'reminder_2h')),
+    ])
+  })
 }
 
 async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_2h') {
