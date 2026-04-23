@@ -116,6 +116,10 @@ export async function processDueSteps() {
 async function processEnrollmentStep(enrollment: any, supabase: any) {
   const { contact, sequence } = enrollment
   if (!contact || !sequence) return
+  // Skip soft-deleted contacts (e.g., Undo Import within 24h).
+  // The nested join above uses the base `contacts` table via FK, so we
+  // filter in code rather than swap to the contacts_active view.
+  if (contact.deleted_at) return
 
   const steps = (sequence.steps as any[]).sort((a, b) => a.position - b.position)
   const step = steps[enrollment.current_step]

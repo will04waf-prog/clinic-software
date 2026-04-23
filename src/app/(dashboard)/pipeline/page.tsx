@@ -42,7 +42,7 @@ export default function PipelinePage() {
       const [{ data: stages }, { data: contactsData }] = await Promise.all([
         supabase.from('pipeline_stages').select('*').order('position'),
         supabase
-          .from('contacts')
+          .from('contacts_active')
           .select('id, first_name, last_name, email, phone, procedure_interest, last_activity_at, stage_id')
           .eq('is_archived', false)
           .order('last_activity_at', { ascending: false }),

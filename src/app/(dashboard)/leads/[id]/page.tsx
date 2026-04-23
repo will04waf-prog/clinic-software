@@ -21,7 +21,7 @@ async function getContactData(id: string) {
     { data: consultations },
   ] = await Promise.all([
     supabase
-      .from('contacts')
+      .from('contacts_active')
       .select('*, stage:pipeline_stages(*), tags:contact_tags(tag:tags(*))')
       .eq('id', id)
       .single(),

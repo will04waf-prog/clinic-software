@@ -35,7 +35,7 @@ export default async function AdminAccountDetailPage({
     { data: users },
   ] = await Promise.all([
     supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('organization_id', id),
-    supabaseAdmin.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', id).eq('is_archived', false),
+    supabaseAdmin.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', id).eq('is_archived', false),
     supabaseAdmin.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', id),
     supabaseAdmin.from('messages').select('*', { count: 'exact', head: true }).eq('organization_id', id),
     supabaseAdmin.from('profiles').select('id, full_name, email, role, created_at').eq('organization_id', id).order('created_at'),

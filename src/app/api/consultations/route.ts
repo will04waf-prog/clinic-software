@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 
   // Confirm contact belongs to this org
   const { data: contact, error: contactError } = await supabase
-    .from('contacts')
+    .from('contacts_active')
     .select('id, stage_id')
     .eq('id', contact_id)
     .eq('organization_id', profile.organization_id)
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
           .eq('id', profile.organization_id)
           .single(),
         supabaseAdmin
-          .from('contacts')
+          .from('contacts_active')
           .select('id, first_name, phone, opted_out_sms, sms_consent')
           .eq('id', contact_id)
           .single(),

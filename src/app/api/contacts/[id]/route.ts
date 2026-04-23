@@ -33,7 +33,7 @@ async function getContact(
   orgId: string
 ) {
   const { data, error } = await supabase
-    .from('contacts')
+    .from('contacts_active')
     .select('*, stage:pipeline_stages(*), tags:contact_tags(tag:tags(*))')
     .eq('id', id)
     .eq('organization_id', orgId) // org isolation enforced here too, not just RLS
@@ -85,7 +85,7 @@ export async function PATCH(
 
   // Confirm contact belongs to this org before updating
   const { data: existing, error: fetchError } = await supabase
-    .from('contacts')
+    .from('contacts_active')
     .select('id, stage_id')
     .eq('id', id)
     .eq('organization_id', orgId)

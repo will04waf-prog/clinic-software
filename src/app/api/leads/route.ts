@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   const archived = searchParams.get('archived') === 'true'
 
   let query = supabase
-    .from('contacts')
+    .from('contacts_active')
     .select('*, stage:pipeline_stages(*), tags:contact_tags(tag:tags(*))')
     .eq('organization_id', profile.organization_id)
     .eq('is_archived', archived)

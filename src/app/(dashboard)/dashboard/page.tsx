@@ -33,15 +33,15 @@ async function getDashboardData(supabase: SupabaseClient, orgId: string) {
   const [
     r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11,
   ] = await Promise.all([
-    supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfToday),
-    supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfWeek),
+    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfToday),
+    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfWeek),
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('scheduled_at', startOfToday).lt('scheduled_at', endOfToday),
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('scheduled_at', startOfWeek),
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'no_show').gte('scheduled_at', startOfWeek),
-    supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'lead').eq('is_archived', false),
-    supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_archived', false),
+    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'lead').eq('is_archived', false),
+    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_archived', false),
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'completed'),
-    supabase.from('contacts').select('*, stage:pipeline_stages(*)').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(5),
+    supabase.from('contacts_active').select('*, stage:pipeline_stages(*)').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(5),
     supabase.from('consultations').select('*, contact:contacts(first_name, last_name)').eq('organization_id', orgId).gte('scheduled_at', now.toISOString()).order('scheduled_at', { ascending: true }).limit(5),
     // Onboarding: total consultations (any status)
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),

@@ -33,7 +33,7 @@ export async function POST(
 
   // Verify contact belongs to this org
   const { data: contact } = await supabase
-    .from('contacts')
+    .from('contacts_active')
     .select('id, first_name, email, organization_id, procedure_interest')
     .eq('id', contactId)
     .eq('organization_id', orgId)

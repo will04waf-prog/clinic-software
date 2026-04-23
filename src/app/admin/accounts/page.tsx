@@ -25,7 +25,7 @@ export default async function AdminAccountsPage() {
     (orgs ?? []).map(async (org) => {
       const [{ count: userCount }, { count: contactCount }] = await Promise.all([
         supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('organization_id', org.id),
-        supabaseAdmin.from('contacts').select('*', { count: 'exact', head: true }).eq('organization_id', org.id).eq('is_archived', false),
+        supabaseAdmin.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', org.id).eq('is_archived', false),
       ])
 
       // Owner profile
