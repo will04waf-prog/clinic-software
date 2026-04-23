@@ -1,4 +1,5 @@
 import twilio from 'twilio'
+import { normalizePhone } from '@/lib/validators'
 
 export function isTwilioConfigured(): boolean {
   return !!(
@@ -24,9 +25,11 @@ export async function sendSMS(
   const fromNumber = process.env.TWILIO_PHONE_NUMBER!
   const client = getTwilioClient()
 
-  // Normalize to E.164
-  const normalized = to.replace(/\D/g, '')
-  const e164 = normalized.startsWith('1') ? `+${normalized}` : `+1${normalized}`
+  const e164 = normalizePhone(to)
+  if (!e164) {
+    console.warn('[sms] Unparseable phone number, skipping send:', to)
+    return null
+  }
 
   const message = await client.messages.create({ body, from: fromNumber, to: e164 })
 
