@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
+  Upload,
   Kanban,
   CalendarCheck,
   Zap,
@@ -17,12 +18,13 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
-  { href: '/leads',          label: 'Leads & Contacts', icon: Users },
-  { href: '/pipeline',       label: 'Pipeline',        icon: Kanban },
-  { href: '/consultations',  label: 'Consultations',   icon: CalendarCheck },
-  { href: '/automations',    label: 'Automations',     icon: Zap },
-  { href: '/settings',       label: 'Settings',        icon: Settings },
+  { href: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard },
+  { href: '/leads',            label: 'Leads & Contacts', icon: Users },
+  { href: '/import-contacts',  label: 'Import Contacts',  icon: Upload },
+  { href: '/pipeline',         label: 'Pipeline',         icon: Kanban },
+  { href: '/consultations',    label: 'Consultations',    icon: CalendarCheck },
+  { href: '/automations',      label: 'Automations',      icon: Zap },
+  { href: '/settings',         label: 'Settings',         icon: Settings },
 ]
 
 export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {

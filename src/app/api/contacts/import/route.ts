@@ -162,6 +162,17 @@ export async function POST(req: NextRequest) {
     if (existing.organization_id !== orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+    // 'undone' gets its own branch ahead of the generic non-processing
+    // check so the UI can show an informational, user-initiated message
+    // ("you undid this yourself, here's what happened") rather than the
+    // generic "already X" error. The wizard's partial-failure screen
+    // relies on this to distinguish cancel-in-progress from crash.
+    if (existing.status === 'undone') {
+      return NextResponse.json(
+        { error: 'Import was undone while in progress. Upload interrupted.' },
+        { status: 409 },
+      )
+    }
     if (existing.status !== 'processing') {
       return NextResponse.json(
         { error: `Import is already ${existing.status}` },
