@@ -8,16 +8,21 @@ export interface SendEmailParams {
   subject: string
   html: string
   replyTo?: string
+  /**
+   * Required. Pass a unique-per-intended-send key (typically the
+   * messages-row id for cron paths, or a fresh randomUUID() for sites
+   * that haven't yet been wired into a deterministic lifecycle).
+   * Forwarded as the Resend `Idempotency-Key` header; Resend dedups
+   * for 24 hours per key.
+   */
+  idempotencyKey: string
 }
 
-export async function sendEmail({ to, subject, html, replyTo }: SendEmailParams) {
-  const { data, error } = await resend.emails.send({
-    from: fromEmail,
-    to,
-    subject,
-    html,
-    replyTo,
-  })
+export async function sendEmail({ to, subject, html, replyTo, idempotencyKey }: SendEmailParams) {
+  const { data, error } = await resend.emails.send(
+    { from: fromEmail, to, subject, html, replyTo },
+    { idempotencyKey },
+  )
 
   if (error) throw new Error(error.message)
 

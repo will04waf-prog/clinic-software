@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail, renderTemplate, wrapEmailHtml } from '@/lib/resend'
@@ -71,7 +72,10 @@ export async function POST(
   let sendError:  string | null = null
 
   try {
-    const result = await sendEmail({ to: contact.email, subject: renderedSubject, html })
+    // TODO(idempotency): random key — no retry dedup yet for this site.
+    // This is a manual user-initiated send. The key guards against an
+    // accidental duplicate POST being deduped by Resend within 24h.
+    const result = await sendEmail({ to: contact.email, subject: renderedSubject, html, idempotencyKey: randomUUID() })
     providerId = result.provider_id ?? null
   } catch (err: any) {
     sendError = err.message ?? 'Failed to send'

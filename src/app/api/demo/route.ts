@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/resend'
@@ -139,11 +140,16 @@ export async function POST(request: Request) {
 
       try {
         console.log('[demo] sending admin notification to:', adminEmail)
+        // TODO(idempotency): random key — no retry dedup yet for this site.
+        // Demo requests are one-shot user submissions; we don't retry. The key
+        // only guards against an accidental duplicate POST being deduped by
+        // Resend within the 24h window.
         const result = await sendEmail({
           to: adminEmail,
           subject: `Demo request: ${String(clinic_name)} — ${String(name)}`,
           html,
           replyTo: String(email),
+          idempotencyKey: randomUUID(),
         })
         console.log('[demo] admin notification sent — Resend id:', result.provider_id)
       } catch (emailErr: any) {

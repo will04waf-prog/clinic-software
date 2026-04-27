@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/resend'
 
@@ -106,7 +107,12 @@ async function sendBatch(
       const firstName = (owner.full_name ?? '').split(' ')[0] || 'there'
       const { subject, html } = buildEmail(firstName, org.name)
 
-      await sendEmail({ to: owner.email, subject, html })
+      // TODO(idempotency): random key — no retry dedup yet for this site.
+      // Trial reminders dedup via per-org `trial_reminder_*_sent_at` columns,
+      // so a retry-from-the-same-tick would already be blocked at the SELECT.
+      // The key here only protects against accidental duplicate calls within
+      // Resend's 24h dedup window.
+      await sendEmail({ to: owner.email, subject, html, idempotencyKey: randomUUID() })
 
       await supabaseAdmin
         .from('organizations')

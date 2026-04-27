@@ -6,6 +6,25 @@
  * Logs every attempt to sms_log.
  */
 
+/**
+ * CAVEAT(idempotency-tradeoff): The email path in this file uses
+ * find-or-insert + Resend Idempotency-Key to allow safe retry after a
+ * mid-flight failure (pre-insert, send, or post-send UPDATE). The SMS
+ * path has no equivalent — Twilio Messaging API does not expose
+ * Idempotency-Key. As a result, when an email failure causes the cron
+ * tick to skip flag-flipping (so the next tick retries the email path),
+ * sendConsultationSms ALSO re-runs and the patient may receive a
+ * duplicate SMS reminder.
+ *
+ * Failure window is narrow (transient Supabase error during the
+ * messages-row INSERT, or during the post-send UPDATE), but real.
+ * Acceptable today because (a) clinic SMS volume is pre-launch,
+ * (b) the duplicate is one extra SMS per failure event. Revisit when
+ * messages/sms_log converge in PR-FU-1+ — at that point, switch to
+ * per-channel reminder_*_sent tracking so the email retry doesn't
+ * re-trigger SMS.
+ */
+
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
@@ -57,6 +76,64 @@ export async function sendConsultationReminders() {
   })
 }
 
+/**
+ * Find an existing 'queued' reminder email row or insert a new one.
+ *
+ * Identity is (organization_id, contact_id, subject, body) under the
+ * cron lock wrapper. We deliberately include `body` because it embeds
+ * the consultation's localized dateStr — without it, two same-subject
+ * back-to-back consultations for the same patient would collide.
+ *
+ * The `messages` table has no `consultation_id` column today (sms_log
+ * does, but they haven't converged yet), so we can't key on consultation
+ * id directly. The body-includes-dateStr workaround is correct under the
+ * current cron-lock serialization. Once PR-FU-1 removes the lock and
+ * sms_log/messages converge, this should switch to a (consultation_id,
+ * message_type) key — see TODO at call site.
+ */
+async function findOrInsertQueuedReminderEmailRow(args: {
+  organization_id: string
+  contact_id: string
+  subject: string
+  body: string
+  to_address: string
+}): Promise<{ id: string } | null> {
+  const { data: existing } = await supabaseAdmin
+    .from('messages')
+    .select('id')
+    .eq('organization_id', args.organization_id)
+    .eq('contact_id', args.contact_id)
+    .eq('subject', args.subject)
+    .eq('body', args.body)
+    .eq('status', 'queued')
+    .eq('channel', 'email')
+    .eq('direction', 'outbound')
+    .is('sequence_step_id', null)
+    .maybeSingle()
+
+  if (existing) return existing
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from('messages')
+    .insert({
+      organization_id: args.organization_id,
+      contact_id: args.contact_id,
+      channel: 'email',
+      direction: 'outbound',
+      status: 'queued',
+      subject: args.subject,
+      body: args.body,
+      to_address: args.to_address,
+    })
+    .select('id')
+    .single()
+
+  if (!error) return inserted
+
+  console.error('[reminders] findOrInsertQueuedReminderEmailRow insert failed:', error.message)
+  return null
+}
+
 async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_2h') {
   const contact = consultation.contact
   const org     = consultation.org
@@ -70,7 +147,15 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
     consultation,
   })
 
-  // ── Email (unchanged behavior) ────────────────────────────────
+  // ── Email ─────────────────────────────────────────────────────
+  // Insert-then-send-then-update lifecycle so a function-dies-mid-flight
+  // crash retries with the same idempotency key on the next tick rather
+  // than double-sending.
+  //
+  // TODO(idempotency): once the messages/sms_log schemas converge with a
+  // (consultation_id, message_type) pair, switch the find-or-insert key
+  // to those columns and drop the body-as-disambiguator workaround.
+  let emailSucceeded = true
   if (contact.email && !contact.opted_out_email) {
     const tz = org.timezone || 'America/New_York'
     const dateStr = new Date(consultation.scheduled_at).toLocaleString('en-US', {
@@ -84,18 +169,59 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
       ? `Hi ${contact.first_name},\n\nThis is a reminder that you have a consultation scheduled for ${dateStr}.\n\nIf you need to reschedule, please contact us as soon as possible.\n\nWe look forward to seeing you!`
       : `Hi ${contact.first_name},\n\nJust a reminder that your consultation is coming up at ${dateStr}.\n\nSee you soon!`
 
-    try {
-      await sendEmail({
-        to: contact.email,
-        subject,
-        html: wrapEmailHtml(body, org.name ?? 'your clinic'),
-      })
-    } catch (err) {
-      console.error(`[reminders] email failed for consultation ${consultation.id}:`, err)
+    const queuedRow = await findOrInsertQueuedReminderEmailRow({
+      organization_id: consultation.organization_id,
+      contact_id: contact.id,
+      subject,
+      body,
+      to_address: contact.email,
+    })
+
+    if (!queuedRow) {
+      // Pre-insert failed → don't flag the reminder as sent → retry next tick.
+      emailSucceeded = false
+    } else {
+      let providerId: string | undefined
+      let sendError: string | undefined
+      try {
+        const result = await sendEmail({
+          to: contact.email,
+          subject,
+          html: wrapEmailHtml(body, org.name ?? 'your clinic'),
+          idempotencyKey: queuedRow.id,
+        })
+        providerId = result.provider_id
+      } catch (err: any) {
+        sendError = err?.message ?? String(err)
+        console.error(`[reminders] email failed for consultation ${consultation.id}:`, err)
+      }
+
+      const finalStatus = sendError ? 'failed' : 'sent'
+      const { error: updErr } = await supabaseAdmin
+        .from('messages')
+        .update({
+          status: finalStatus,
+          provider_id: providerId,
+          error_message: sendError,
+          sent_at: new Date().toISOString(),
+        })
+        .eq('id', queuedRow.id)
+
+      // Post-send UPDATE failed → row stays 'queued', flag stays false →
+      // next tick re-sends with the same key → Resend dedups.
+      if (updErr) {
+        console.error(`[reminders] post-send UPDATE failed for consultation ${consultation.id}; will retry next tick:`, updErr.message)
+        emailSucceeded = false
+      }
     }
   }
 
-  // Mark sent
+  // Mark sent only if we got the email row to a terminal lifecycle state
+  // (or there was no email to send in the first place). Skipping the flag
+  // update on failure gives the next cron tick a chance to retry the email
+  // path; SMS already ran above and has its own dedup via sms_log.
+  if (!emailSucceeded) return
+
   const flag = type === 'reminder_24h' ? 'reminder_24h_sent' : 'reminder_2h_sent'
   await supabaseAdmin
     .from('consultations')
