@@ -40,9 +40,10 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Who We Are</h2>
               <p>
-                Tarhunna, operated by Cesar Adolfo Menjivar Molina, provides CRM software designed for
-                aesthetic clinics, med spas, and plastic surgery practices. Our platform helps clinics
-                capture leads, manage contacts, book consultations, and send appointment reminders.
+                Tarhunna provides CRM software designed for aesthetic clinics, med spas, and
+                plastic surgery practices, operating as a sole proprietorship in Frederick,
+                Maryland. Our platform helps clinics capture leads, manage contacts, book
+                consultations, and send appointment reminders.
               </p>
               <p className="mt-3">
                 When we say &ldquo;Tarhunna,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or

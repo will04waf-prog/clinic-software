@@ -44,10 +44,10 @@ export default function TermsPage() {
                 If you do not agree, do not use the service.
               </p>
               <p className="mt-3">
-                Tarhunna is operated by Cesar Adolfo Menjivar Molina. References to
-                &ldquo;Tarhunna,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;
-                mean Tarhunna and its operator. &ldquo;You&rdquo; means the clinic, business, or
-                individual accessing the service.
+                Tarhunna is a service operating as a sole proprietorship in Frederick, Maryland.
+                References to &ldquo;Tarhunna,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or
+                &ldquo;our&rdquo; mean the operators of the service. &ldquo;You&rdquo; means the
+                clinic, business, or individual accessing the service.
               </p>
             </section>
 
