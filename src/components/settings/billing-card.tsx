@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TIER_DISPLAY_NAMES, TIER_PRICING, type TierId } from '@/lib/billing/tiers'
 
 const STATUS_BADGE: Record<string, string> = {
   trial:     'bg-blue-100 text-blue-700',
@@ -20,19 +21,38 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 interface BillingCardProps {
+  plan: string
   planStatus: string
   hasStripeCustomer: boolean
 }
 
-export function BillingCard({ planStatus, hasStripeCustomer }: BillingCardProps) {
+function formatPlanLabel(plan: string): string {
+  // Legacy 'pro' rows render as "Professional". Real tier values render via
+  // the tier metadata. Trial / unknown values fall back to a neutral label.
+  const tierKey: TierId | null =
+    plan === 'pro'                                                       ? 'professional' :
+    (plan === 'starter' || plan === 'professional' || plan === 'scale')  ? plan          :
+    null
+
+  if (!tierKey) return 'Tarhunna — Trial'
+
+  const name    = TIER_DISPLAY_NAMES[tierKey]
+  const dollars = (TIER_PRICING[tierKey].monthlyCents / 100).toFixed(0)
+  return `Tarhunna ${name} — $${dollars}/mo`
+}
+
+export function BillingCard({ plan, planStatus, hasStripeCustomer }: BillingCardProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
 
-  async function redirect(endpoint: string) {
+  async function redirect(endpoint: string, body?: object) {
     setLoading(true)
     setError(null)
     try {
-      const res  = await fetch(endpoint, { method: 'POST' })
+      const res  = await fetch(endpoint, {
+        method: 'POST',
+        ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+      })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       if (!data.url) throw new Error('No redirect URL returned')
@@ -63,7 +83,7 @@ export function BillingCard({ planStatus, hasStripeCustomer }: BillingCardProps)
 
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Plan</span>
-          <span className="font-medium text-gray-900">Tarhunna Pro — $297/mo</span>
+          <span className="font-medium text-gray-900">{formatPlanLabel(plan)}</span>
         </div>
 
         {planStatus === 'past_due' && (
@@ -83,7 +103,13 @@ export function BillingCard({ planStatus, hasStripeCustomer }: BillingCardProps)
         <Button
           size="sm"
           variant={isActive ? 'outline' : 'default'}
-          onClick={() => redirect(isActive ? '/api/billing/portal' : '/api/billing/checkout')}
+          onClick={() => redirect(
+            isActive ? '/api/billing/portal' : '/api/billing/checkout',
+            // PR-TIERS-A bridge: temporary default tier so the "Start Subscription"
+            // button keeps working until PR-TIERS-B replaces this flow with the
+            // /pricing page. Remove this body argument when /pricing ships.
+            isActive ? undefined : { tier: 'professional', period: 'monthly' },
+          )}
           disabled={loading}
         >
           {buttonLabel}

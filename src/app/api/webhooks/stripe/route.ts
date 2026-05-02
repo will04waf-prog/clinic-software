@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { tierFromPriceId } from '@/lib/billing/tiers'
 
 // Map Stripe subscription statuses → Tarhunna plan_status values
 const STRIPE_STATUS_MAP: Record<string, string> = {
@@ -64,15 +65,29 @@ export async function POST(req: NextRequest) {
           break
         }
 
+        // Derive tier from the subscription's price. If the price doesn't map
+        // to a known tier (e.g., manual subscription created via Stripe
+        // dashboard), don't overwrite the plan column — leave whatever was
+        // there and log so we can investigate.
+        const sub     = await stripe.subscriptions.retrieve(subscriptionId)
+        const priceId = sub.items.data[0]?.price.id ?? null
+        const tier    = priceId ? tierFromPriceId(priceId) : null
+
+        const update: Record<string, unknown> = {
+          stripe_customer_id:     customerId,
+          stripe_subscription_id: subscriptionId,
+          plan_status:            'active',
+          updated_at:             new Date().toISOString(),
+        }
+        if (tier) {
+          update.plan = tier
+        } else {
+          console.error(`[stripe-webhook] checkout.session.completed: unknown price ${priceId} on sub ${subscriptionId} — leaving plan column unchanged`)
+        }
+
         const { error } = await supabaseAdmin
           .from('organizations')
-          .update({
-            stripe_customer_id:     customerId,
-            stripe_subscription_id: subscriptionId,
-            plan:                   'pro',
-            plan_status:            'active',
-            updated_at:             new Date().toISOString(),
-          })
+          .update(update)
           .eq('id', orgId)
 
         if (error) {
@@ -105,7 +120,20 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.updated': {
         const sub        = event.data.object as Stripe.Subscription
         const planStatus = STRIPE_STATUS_MAP[sub.status] ?? 'past_due'
-        await updateOrgBySubscription(sub.id, { plan_status: planStatus })
+
+        // Re-derive tier in case the customer changed plans (upgrade/downgrade
+        // via Stripe portal). If the price is unknown, only update plan_status.
+        const priceId = sub.items.data[0]?.price.id ?? null
+        const tier    = priceId ? tierFromPriceId(priceId) : null
+
+        const update: Record<string, unknown> = { plan_status: planStatus }
+        if (tier) {
+          update.plan = tier
+        } else if (priceId) {
+          console.error(`[stripe-webhook] customer.subscription.updated: unknown price ${priceId} on sub ${sub.id} — leaving plan column unchanged`)
+        }
+
+        await updateOrgBySubscription(sub.id, update)
         break
       }
 

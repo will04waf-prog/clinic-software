@@ -2,7 +2,7 @@
 // Tarhunna – Core Types
 // ============================================================
 
-export type Plan = 'trial' | 'starter' | 'pro'
+export type Plan = 'trial' | 'starter' | 'professional' | 'scale' | 'pro' | 'canceled'
 export type PlanStatus = 'active' | 'past_due' | 'canceled'
 export type UserRole = 'owner' | 'admin' | 'staff'
 export type ContactStatus = 'lead' | 'patient' | 'inactive'

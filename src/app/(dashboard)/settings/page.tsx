@@ -55,6 +55,7 @@ export default async function SettingsPage() {
         </Card>
 
         <BillingCard
+          plan={org?.plan ?? 'trial'}
           planStatus={org?.plan_status ?? 'trial'}
           hasStripeCustomer={!!org?.stripe_customer_id}
         />
