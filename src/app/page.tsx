@@ -236,6 +236,12 @@ export default function LandingPage() {
               For Med Spas
             </Link>
             <Link
+              href="/pricing"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link
               href="/login"
               className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >

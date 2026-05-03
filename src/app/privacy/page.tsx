@@ -22,9 +22,14 @@ export default function PrivacyPage() {
           <Link href="/" className="flex items-center gap-2">
             <Logo size="sm" />
           </Link>
-          <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-            Sign in
-          </Link>
+          <div className="flex items-center gap-5">
+            <Link href="/pricing" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+              Pricing
+            </Link>
+            <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+              Sign in
+            </Link>
+          </div>
         </div>
       </header>
 
