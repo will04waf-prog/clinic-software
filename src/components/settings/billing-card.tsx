@@ -45,16 +45,13 @@ export function BillingCard({ plan, planStatus, hasStripeCustomer }: BillingCard
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
 
-  async function redirect(endpoint: string, body?: object) {
+  async function openPortal() {
     setLoading(true)
     setError(null)
     try {
-      const res  = await fetch(endpoint, {
-        method: 'POST',
-        ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
-      })
+      const res  = await fetch('/api/billing/portal', { method: 'POST' })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
+      if (!res.ok)   throw new Error(data.error ?? `HTTP ${res.status}`)
       if (!data.url) throw new Error('No redirect URL returned')
       window.location.href = data.url
     } catch (err: any) {
@@ -103,13 +100,13 @@ export function BillingCard({ plan, planStatus, hasStripeCustomer }: BillingCard
         <Button
           size="sm"
           variant={isActive ? 'outline' : 'default'}
-          onClick={() => redirect(
-            isActive ? '/api/billing/portal' : '/api/billing/checkout',
-            // PR-TIERS-A bridge: temporary default tier so the "Start Subscription"
-            // button keeps working until PR-TIERS-B replaces this flow with the
-            // /pricing page. Remove this body argument when /pricing ships.
-            isActive ? undefined : { tier: 'professional', period: 'monthly' },
-          )}
+          onClick={() => {
+            if (isActive) {
+              openPortal()
+            } else {
+              window.location.href = '/pricing'
+            }
+          }}
           disabled={loading}
         >
           {buttonLabel}

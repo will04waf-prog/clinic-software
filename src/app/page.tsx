@@ -494,6 +494,7 @@ export default function LandingPage() {
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">
+            <Link href="/pricing" className="hover:text-gray-900 transition-colors">Pricing</Link>
             <Link href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-gray-900 transition-colors">Terms</Link>
             <Link href="/sms-consent" className="hover:text-gray-900 transition-colors">SMS Consent</Link>
