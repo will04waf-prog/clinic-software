@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { checkFeatureAccess } from '@/lib/billing/enforce-tier'
 import { z } from 'zod'
 
 const StepSchema = z.object({
@@ -55,6 +56,12 @@ export async function POST(request: Request) {
   const parsed = CreateSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  }
+
+  // Tier gate: block sequence creation on tiers without automation access.
+  const featureCheck = await checkFeatureAccess(supabase, orgId, 'automation')
+  if (!featureCheck.ok) {
+    return NextResponse.json(featureCheck.error, { status: featureCheck.status })
   }
 
   const { steps, ...seqData } = parsed.data

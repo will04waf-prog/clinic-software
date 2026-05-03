@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrollContact } from '@/lib/automation-engine'
 import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
+import { checkContactLimit } from '@/lib/billing/enforce-tier'
 import { z } from 'zod'
 
 const VALID_SOURCES = ['website', 'referral', 'instagram', 'facebook', 'walkin', 'other'] as const
@@ -100,6 +101,12 @@ export async function POST(req: NextRequest) {
       .single()
 
     resolvedStageId = defaultStage?.id ?? undefined
+  }
+
+  // Tier gate: block insert if at/over maxContacts for current plan.
+  const limitCheck = await checkContactLimit(supabase, profile.organization_id)
+  if (!limitCheck.ok) {
+    return NextResponse.json(limitCheck.error, { status: limitCheck.status })
   }
 
   // Create the contact

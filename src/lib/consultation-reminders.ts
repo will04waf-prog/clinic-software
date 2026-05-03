@@ -30,6 +30,7 @@ import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 import { renderSmsForConsultation, type SmsMessageType } from '@/lib/sms-messages'
 import { withCronLock } from '@/lib/cron-locks'
+import { isFeatureAllowedForPlan, planToTier } from '@/lib/billing/enforce-tier'
 
 export async function sendConsultationReminders() {
   await withCronLock('sendConsultationReminders', 90, async () => {
@@ -41,7 +42,7 @@ export async function sendConsultationReminders() {
     const window2End    = new Date(now.getTime() +  3 * 3600_000).toISOString()
 
     const orgSelect = `
-      name, timezone,
+      name, timezone, plan,
       sms_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
       sms_template_reminder_24h, sms_template_reminder_2h,
       phone, email
@@ -138,6 +139,22 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
   const contact = consultation.contact
   const org     = consultation.org
   if (!contact || !org) return
+
+  // Tier gate: starter does not allow automated reminders; canceled blocks all
+  // gated features. The org's per-channel sms_reminder_*_enabled flags remain
+  // the user's preference; tier limit takes precedence over the flag.
+  //
+  // Policy asymmetry (deliberate, may unify in a future PR):
+  //   • Reminders are gated at SEND time (this code path). Downgrade → reminders stop.
+  //   • Automation sequences are gated at CREATION time (/api/automations).
+  //     Downgrade → pre-existing sequences continue running.
+  if (!isFeatureAllowedForPlan(org.plan, 'automated_reminders')) {
+    const tier = planToTier(org.plan)
+    console.log(
+      `[reminders] tier ${tier} does not allow automated reminders, skipping org ${consultation.organization_id}`,
+    )
+    return
+  }
 
   // ── SMS ───────────────────────────────────────────────────────
   await sendConsultationSms({

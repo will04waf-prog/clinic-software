@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { validateEmail, normalizePhone } from '@/lib/validators'
+import { checkBulkImportSize } from '@/lib/billing/enforce-tier'
 import type {
   ImportChunkResponse,
   ImportRowWarning,
@@ -125,6 +126,15 @@ export async function POST(req: NextRequest) {
         { error: `Rate limit exceeded. Max ${RATE_LIMIT_PER_HOUR} imports per hour.` },
         { status: 429, headers: { 'Retry-After': String(retryAfter) } },
       )
+    }
+
+    // Tier gate: block if the import requires bulk_import on a tier that
+    // doesn't allow it, or if total_rows would push the org past maxContacts.
+    // Only checked at chunk 0 — once an import is approved, subsequent chunks
+    // proceed without re-checking (total_rows is committed at this point).
+    const sizeCheck = await checkBulkImportSize(supabaseAdmin, orgId, body.total_rows)
+    if (!sizeCheck.ok) {
+      return NextResponse.json(sizeCheck.error, { status: sizeCheck.status })
     }
 
     const { data: created, error: createErr } = await supabaseAdmin
