@@ -117,22 +117,19 @@ const CLINIC_TYPES = [
 
 const COMPARISONS = [
   {
-    pill:    'Spreadsheets',
     heading: 'vs. Spreadsheets and sticky notes',
     tagline: 'The default — and the most expensive.',
     before:  'Miss one follow-up, the lead goes cold. Nobody notices until you wonder why bookings dropped.',
     after:   'Every inquiry captured automatically. Every follow-up scheduled. Every consultation tracked. Nothing slips.',
   },
   {
-    pill:    'Generic CRMs',
-    heading: 'vs. Generic CRMs (HubSpot, Salesforce, GoHighLevel)',
+    heading: 'vs. Generic CRMs',
     tagline: 'Built for B2B sales reps. Retrofitted, awkwardly, for clinics.',
     before:  'Generic "deals" and "leads" that don\'t match how aesthetic clinics actually work. Weeks of customization and you\'re still not happy.',
     after:   'Built around aesthetic-clinic workflows from day one. Procedure-based intake, consultation tracking, no setup gymnastics.',
   },
   {
-    pill:    'Practice management suites',
-    heading: 'vs. Full-stack practice management (Aesthetix, Pabau, AestheticsPro)',
+    heading: 'vs. Full-stack practice management platforms',
     tagline: 'Built to replace your entire stack — often with steep onboarding fees.',
     before:  'Replatform your whole clinic to get one new tool. Pay onboarding fees. Learn five new things.',
     after:   'Sits alongside your existing EMR. No replacement. No onboarding fee. Just better lead-to-consult conversion.',
@@ -368,14 +365,11 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-3">
-              {COMPARISONS.map(({ pill, heading, tagline, before, after }) => (
-                <div key={pill} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+              {COMPARISONS.map(({ heading, tagline, before, after }) => (
+                <div key={heading} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4">
                   <div>
-                    <div className="mb-3 inline-flex rounded-full bg-red-50 px-3 py-1">
-                      <span className="text-xs font-semibold text-red-500">vs. {pill}</span>
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-900">{heading}</h3>
-                    <p className="mt-1 text-sm italic text-gray-500 leading-relaxed">{tagline}</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{heading}</h3>
+                    <p className="mt-2 text-sm italic text-gray-500 leading-relaxed">{tagline}</p>
                   </div>
                   <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3">
                     <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Without Tarhunna</p>
