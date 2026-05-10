@@ -52,7 +52,7 @@ export default function SmsConsentPage() {
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">SMS consent is optional</h2>
               <p>
-                SMS consent is <strong>not required</strong> to use any clinic&apos;s service.
+                SMS consent is <strong>not required</strong>{' '}to use any clinic&apos;s service.
                 Patients can submit intake forms, schedule consultations, and receive treatment
                 from clinics on the Tarhunna platform without ever consenting to SMS
                 communications. Consent to receive SMS messages is not a condition of any
