@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { ProductShowcase } from './product-showcase'
 import { Logo } from '@/components/ui/logo'
+import { AnimatedSection } from '@/components/marketing/animated-section'
+import { AnimatedCard } from '@/components/marketing/animated-card'
 
 export const metadata: Metadata = {
   title: 'CRM for Med Spas — Tarhunna',
@@ -187,7 +189,7 @@ export default function MedSpaCRMPage() {
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150"
             >
               Start free trial
             </Link>
@@ -216,7 +218,7 @@ export default function MedSpaCRMPage() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4" />
@@ -244,7 +246,7 @@ export default function MedSpaCRMPage() {
 
         {/* ── Problem ──────────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
-          <div className="mx-auto max-w-3xl">
+          <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-10 text-center">
               <p className="text-xs font-semibold uppercase tracking-widest text-red-400 mb-3">Sound familiar?</p>
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -269,13 +271,13 @@ export default function MedSpaCRMPage() {
             <p className="mt-8 text-center text-sm font-medium text-gray-500">
               Tarhunna was built to solve exactly these problems — for med spas specifically.
             </p>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── Features ─────────────────────────────────────────── */}
         <section className="bg-white px-6 py-20">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-12 text-center">
+            <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Every tool a med spa needs to fill the schedule
               </h2>
@@ -283,16 +285,16 @@ export default function MedSpaCRMPage() {
                 Not a generic CRM adapted for healthcare. Every feature is built around
                 how medical spas and aesthetic clinics actually run their business.
               </p>
-            </div>
+            </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map(({ icon: Icon, title, body }) => (
-                <div key={title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              {FEATURES.map(({ icon: Icon, title, body }, index) => (
+                <AnimatedCard key={title} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                   <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
                     <Icon className="h-5 w-5 text-indigo-600" />
                   </div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
-                </div>
+                </AnimatedCard>
               ))}
             </div>
           </div>
@@ -301,7 +303,7 @@ export default function MedSpaCRMPage() {
         {/* ── Why Tarhunna ─────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-12 text-center">
+            <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Why med spas choose Tarhunna over spreadsheets and generic CRMs
               </h2>
@@ -309,10 +311,10 @@ export default function MedSpaCRMPage() {
                 Most practices try to make do with tools that were never built for them.
                 There is a better option.
               </p>
-            </div>
+            </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-3">
-              {COMPARISONS.map(({ vs, heading, before, after }) => (
-                <div key={vs} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+              {COMPARISONS.map(({ vs, heading, before, after }, index) => (
+                <AnimatedCard key={vs} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                   <div>
                     <div className="mb-3 inline-flex rounded-full bg-red-50 px-3 py-1">
                       <span className="text-xs font-semibold text-red-500">vs. {vs}</span>
@@ -327,7 +329,7 @@ export default function MedSpaCRMPage() {
                     <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">With Tarhunna</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{after}</p>
                   </div>
-                </div>
+                </AnimatedCard>
               ))}
             </div>
           </div>
@@ -335,7 +337,7 @@ export default function MedSpaCRMPage() {
 
         {/* ── Mid-page CTA ─────────────────────────────────────── */}
         <section className="bg-indigo-600 px-6 py-12">
-          <div className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+          <AnimatedSection className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>
               <p className="text-base font-semibold text-white">Ready to see how it works?</p>
               <p className="mt-1 text-sm text-indigo-200">Try Tarhunna free for 14 days — no credit card required.</p>
@@ -343,7 +345,7 @@ export default function MedSpaCRMPage() {
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:shrink-0">
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Try free for 14 days
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -355,12 +357,12 @@ export default function MedSpaCRMPage() {
                 or book a 20-minute walkthrough
               </Link>
             </div>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <section className="bg-white px-6 py-20">
-          <div className="mx-auto max-w-3xl">
+          <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Frequently asked questions about med spa CRM software
@@ -374,12 +376,12 @@ export default function MedSpaCRMPage() {
                 </div>
               ))}
             </dl>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
         <section className="bg-indigo-600 px-6 py-20">
-          <div className="mx-auto max-w-2xl text-center">
+          <AnimatedSection className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start filling your med spa schedule today
             </h2>
@@ -392,7 +394,7 @@ export default function MedSpaCRMPage() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-indigo-600 hover:bg-indigo-50 hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4" />
@@ -404,7 +406,7 @@ export default function MedSpaCRMPage() {
                 Book a demo
               </Link>
             </div>
-          </div>
+          </AnimatedSection>
         </section>
 
       </main>

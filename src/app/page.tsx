@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { HomeProductShowcase } from './home-product-showcase'
 import { Logo } from '@/components/ui/logo'
+import { AnimatedSection } from '@/components/marketing/animated-section'
+import { AnimatedCard } from '@/components/marketing/animated-card'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
@@ -270,7 +272,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150"
             >
               Start free trial
             </Link>
@@ -299,7 +301,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4" />
@@ -327,7 +329,7 @@ export default function LandingPage() {
 
         {/* ── Problem ──────────────────────────────────────────── */}
         <section className="bg-white px-6 py-20">
-          <div className="mx-auto max-w-3xl">
+          <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-10 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Most clinic leads go cold before they ever book
@@ -349,13 +351,13 @@ export default function LandingPage() {
             <p className="mt-8 text-center text-sm font-medium text-gray-500">
               Tarhunna fixes all three — in one platform built specifically for aesthetic clinics.
             </p>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── Built differently ────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-12 text-center">
+            <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Built differently from the alternatives
               </h2>
@@ -363,10 +365,10 @@ export default function LandingPage() {
                 Most clinic owners try one of three options before finding Tarhunna.
                 Each one fails in a specific way.
               </p>
-            </div>
+            </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-3">
-              {COMPARISONS.map(({ heading, tagline, before, after }) => (
-                <div key={heading} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+              {COMPARISONS.map(({ heading, tagline, before, after }, index) => (
+                <AnimatedCard key={heading} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{heading}</h3>
                     <p className="mt-2 text-sm italic text-gray-500 leading-relaxed">{tagline}</p>
@@ -379,7 +381,7 @@ export default function LandingPage() {
                     <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">With Tarhunna</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{after}</p>
                   </div>
-                </div>
+                </AnimatedCard>
               ))}
             </div>
           </div>
@@ -388,7 +390,7 @@ export default function LandingPage() {
         {/* ── Features ─────────────────────────────────────────── */}
         <section className="bg-white px-6 py-20">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-12 text-center">
+            <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 CRM tools built for med spas and aesthetic practices
               </h2>
@@ -396,16 +398,16 @@ export default function LandingPage() {
                 Not a generic CRM retrofitted for healthcare. Every feature is designed around
                 how aesthetic clinics actually work.
               </p>
-            </div>
+            </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map(({ icon: Icon, title, body }) => (
-                <div key={title} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              {FEATURES.map(({ icon: Icon, title, body }, index) => (
+                <AnimatedCard key={title} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                   <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
                     <Icon className="h-5 w-5 text-indigo-600" />
                   </div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
-                </div>
+                </AnimatedCard>
               ))}
             </div>
           </div>
@@ -414,21 +416,21 @@ export default function LandingPage() {
         {/* ── How it works ─────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
           <div className="mx-auto max-w-4xl">
-            <div className="mb-12 text-center">
+            <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 From first inquiry to booked consultation
               </h2>
               <p className="mt-3 text-gray-500">
                 Four steps — automated, organized, and built into one simple workflow.
               </p>
-            </div>
+            </AnimatedSection>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {STEPS.map(({ number, title, body }) => (
-                <div key={number}>
+              {STEPS.map(({ number, title, body }, index) => (
+                <AnimatedCard key={number} index={index}>
                   <div className="mb-4 text-3xl font-black text-indigo-100">{number}</div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
-                </div>
+                </AnimatedCard>
               ))}
             </div>
           </div>
@@ -437,16 +439,16 @@ export default function LandingPage() {
         {/* ── Who it's for ─────────────────────────────────────── */}
         <section className="bg-white px-6 py-20">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-12 text-center">
+            <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Built for med spas, aesthetic clinics, and plastic surgery practices
               </h2>
               <p className="mt-3 text-gray-500">
                 Whether you are a solo injector or a multi-provider practice, Tarhunna fits your workflow.
               </p>
-            </div>
+            </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-3">
-              {CLINIC_TYPES.map((type) => {
+              {CLINIC_TYPES.map((type, index) => {
                 const { label, description } = type
                 const href = 'href' in type ? type.href : undefined
                 const content = (
@@ -464,17 +466,18 @@ export default function LandingPage() {
                   </>
                 )
                 return href ? (
-                  <Link
-                    key={label}
-                    href={href}
-                    className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all"
-                  >
-                    {content}
-                  </Link>
+                  <AnimatedCard key={label} index={index}>
+                    <Link
+                      href={href}
+                      className="group block rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-indigo-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                    >
+                      {content}
+                    </Link>
+                  </AnimatedCard>
                 ) : (
-                  <div key={label} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <AnimatedCard key={label} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                     {content}
-                  </div>
+                  </AnimatedCard>
                 )
               })}
             </div>
@@ -483,7 +486,7 @@ export default function LandingPage() {
 
         {/* ── Med Spa callout ──────────────────────────────────── */}
         <section className="bg-white px-6 pb-2">
-          <div className="mx-auto max-w-5xl">
+          <AnimatedSection className="mx-auto max-w-5xl">
             <Link
               href="/med-spa-crm"
               className="group flex items-center justify-between gap-4 rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-4 hover:border-indigo-200 hover:bg-indigo-100/70 transition-colors"
@@ -496,12 +499,12 @@ export default function LandingPage() {
               </div>
               <ArrowRight className="h-4 w-4 shrink-0 text-indigo-400 transition-transform group-hover:translate-x-0.5" />
             </Link>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <section className="bg-gray-50 px-6 py-20">
-          <div className="mx-auto max-w-3xl">
+          <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Frequently asked questions
@@ -515,12 +518,12 @@ export default function LandingPage() {
                 </div>
               ))}
             </dl>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── Founder-led ──────────────────────────────────────── */}
         <section className="bg-white px-6 py-16">
-          <div className="mx-auto max-w-2xl text-center">
+          <AnimatedSection className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">
               Built by people who care about your clinic
             </h2>
@@ -536,18 +539,18 @@ export default function LandingPage() {
             <div className="mt-8">
               <Link
                 href="/book-demo"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Book a demo
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          </div>
+          </AnimatedSection>
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
         <section className="bg-indigo-600 px-6 py-20">
-          <div className="mx-auto max-w-2xl text-center">
+          <AnimatedSection className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start converting more leads today
             </h2>
@@ -557,7 +560,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-indigo-600 hover:bg-indigo-50 hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4" />
@@ -569,7 +572,7 @@ export default function LandingPage() {
                 Log in
               </Link>
             </div>
-          </div>
+          </AnimatedSection>
         </section>
 
       </main>

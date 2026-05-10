@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Logo } from '@/components/ui/logo'
 import { createClient } from '@/lib/supabase/client'
+import { AnimatedCard } from '@/components/marketing/animated-card'
 import {
   TIER_DISPLAY_NAMES,
   TIER_PRICING,
@@ -164,7 +165,7 @@ export default function PricingPage() {
 
           {/* Pricing columns */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-            {TIERS.map((tier) => {
+            {TIERS.map((tier, index) => {
               const isPopular      = tier === 'professional'
               const name           = TIER_DISPLAY_NAMES[tier]
               const features       = TIER_FEATURES[tier]
@@ -172,12 +173,13 @@ export default function PricingPage() {
               const annualDollars  = formatDollars(TIER_ANNUAL_TOTAL_CENTS[tier])
 
               return (
-                <div
+                <AnimatedCard
                   key={tier}
+                  index={index}
                   className={`relative flex flex-col rounded-2xl border bg-white p-7 ${
                     isPopular
-                      ? 'border-indigo-200 shadow-lg ring-1 ring-indigo-100 md:-translate-y-2'
-                      : 'border-gray-200 shadow-sm'
+                      ? 'border-indigo-200 shadow-lg ring-1 ring-indigo-100 md:-translate-y-2 hover:shadow-xl transition-shadow duration-200'
+                      : 'border-gray-200 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200'
                   }`}
                 >
                   {isPopular && (
@@ -231,15 +233,15 @@ export default function PricingPage() {
                     type="button"
                     onClick={() => handleGetStarted(tier)}
                     disabled={loadingTier !== null}
-                    className={`mt-8 w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`mt-8 w-full rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
                       isPopular
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-[1.02] transition-all duration-150'
+                        : 'bg-gray-900 hover:bg-gray-800 text-white transition-colors'
                     }`}
                   >
                     {loadingTier === tier ? 'Loading…' : 'Get started'}
                   </button>
-                </div>
+                </AnimatedCard>
               )
             })}
           </div>
