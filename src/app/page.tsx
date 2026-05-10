@@ -115,6 +115,30 @@ const CLINIC_TYPES = [
   },
 ] as const
 
+const COMPARISONS = [
+  {
+    pill:    'Spreadsheets',
+    heading: 'vs. Spreadsheets and sticky notes',
+    tagline: 'The default — and the most expensive.',
+    before:  'Miss one follow-up, the lead goes cold. Nobody notices until you wonder why bookings dropped.',
+    after:   'Every inquiry captured automatically. Every follow-up scheduled. Every consultation tracked. Nothing slips.',
+  },
+  {
+    pill:    'Generic CRMs',
+    heading: 'vs. Generic CRMs (HubSpot, Salesforce, GoHighLevel)',
+    tagline: 'Built for B2B sales reps. Retrofitted, awkwardly, for clinics.',
+    before:  'Generic "deals" and "leads" that don\'t match how aesthetic clinics actually work. Weeks of customization and you\'re still not happy.',
+    after:   'Built around aesthetic-clinic workflows from day one. Procedure-based intake, consultation tracking, no setup gymnastics.',
+  },
+  {
+    pill:    'Practice management suites',
+    heading: 'vs. Full-stack practice management (Aesthetix, Pabau, AestheticsPro)',
+    tagline: 'Built to replace your entire stack — often with steep onboarding fees.',
+    before:  'Replatform your whole clinic to get one new tool. Pay onboarding fees. Learn five new things.',
+    after:   'Sits alongside your existing EMR. No replacement. No onboarding fee. Just better lead-to-consult conversion.',
+  },
+] as const
+
 const FAQ_ITEMS = [
   {
     q: 'What is Tarhunna?',
@@ -271,8 +295,9 @@ export default function LandingPage() {
               Stop losing leads.<br className="hidden sm:block" /> Start booking <span className="text-indigo-600">more consultations</span>.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
-              Tarhunna is the CRM for med spas and aesthetic clinics. Capture every inquiry,
-              follow up automatically, and convert more leads into booked consultations.
+              Purpose-built for aesthetic clinics — not a generic CRM retrofitted for
+              healthcare. Capture every inquiry, follow up automatically, and convert more
+              leads into booked consultations.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -304,7 +329,7 @@ export default function LandingPage() {
         <HomeProductShowcase />
 
         {/* ── Problem ──────────────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
+        <section className="bg-white px-6 py-20">
           <div className="mx-auto max-w-3xl">
             <div className="mb-10 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -327,6 +352,42 @@ export default function LandingPage() {
             <p className="mt-8 text-center text-sm font-medium text-gray-500">
               Tarhunna fixes all three — in one platform built specifically for aesthetic clinics.
             </p>
+          </div>
+        </section>
+
+        {/* ── Built differently ────────────────────────────────── */}
+        <section className="bg-gray-50 px-6 py-20">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                Built differently from the alternatives
+              </h2>
+              <p className="mt-3 text-gray-500 max-w-xl mx-auto">
+                Most clinic owners try one of three options before finding Tarhunna.
+                Each one fails in a specific way.
+              </p>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-3">
+              {COMPARISONS.map(({ pill, heading, tagline, before, after }) => (
+                <div key={pill} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+                  <div>
+                    <div className="mb-3 inline-flex rounded-full bg-red-50 px-3 py-1">
+                      <span className="text-xs font-semibold text-red-500">vs. {pill}</span>
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900">{heading}</h3>
+                    <p className="mt-1 text-sm italic text-gray-500 leading-relaxed">{tagline}</p>
+                  </div>
+                  <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3">
+                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Without Tarhunna</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{before}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
+                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">With Tarhunna</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{after}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -460,6 +521,33 @@ export default function LandingPage() {
                 </div>
               ))}
             </dl>
+          </div>
+        </section>
+
+        {/* ── Founder-led ──────────────────────────────────────── */}
+        <section className="bg-white px-6 py-16">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+              Built by people who care about your clinic
+            </h2>
+            <p className="mt-4 text-gray-500 leading-relaxed">
+              Tarhunna isn&apos;t backed by venture capital or built by an enterprise software
+              team. It&apos;s built by two founders in Frederick, Maryland who saw clinics
+              losing thousands of dollars a month in leads that just disappeared.
+            </p>
+            <p className="mt-4 text-gray-500 leading-relaxed">
+              Want to talk about your clinic? Book a demo — you&apos;ll talk to a founder, not a
+              sales rep.
+            </p>
+            <div className="mt-8">
+              <Link
+                href="/book-demo"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                Book a demo
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </section>
 
