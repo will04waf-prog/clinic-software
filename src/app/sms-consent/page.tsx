@@ -50,34 +50,47 @@ export default function SmsConsentPage() {
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">SMS consent is optional</h2>
+              <p>
+                SMS consent is <strong>not required</strong> to use any clinic&apos;s service.
+                Patients can submit intake forms, schedule consultations, and receive treatment
+                from clinics on the Tarhunna platform without ever consenting to SMS
+                communications. Consent to receive SMS messages is not a condition of any
+                purchase, service, or treatment.
+              </p>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">How patients opt in to receive SMS</h2>
               <p>
-                Patients and prospective patients provide consent to receive SMS messages by
-                submitting one of the following:
-              </p>
-              <ul className="list-disc pl-5 mt-3 space-y-2">
-                <li>An online intake or appointment-request form on a clinic&apos;s website (powered by Tarhunna)</li>
-                <li>An in-clinic paper intake form</li>
-                <li>A booking confirmation flow during an in-person or phone consultation request</li>
-              </ul>
-              <p className="mt-4">
-                In each case, the patient explicitly provides their phone number and agrees to
-                receive SMS communications from the clinic regarding their consultation,
-                appointment reminders, and related follow-up. Consent language presented to the
-                patient at the time of submission reads:
+                When a patient submits an intake or appointment-request form on a clinic&apos;s
+                website (powered by Tarhunna), they see a separate, optional checkbox for SMS
+                consent. This checkbox is unchecked by default. The exact label reads:
               </p>
               <blockquote className="mt-4 border-l-4 border-gray-200 pl-4 italic text-gray-600">
-                &ldquo;By providing your phone number, you agree to receive SMS messages from
-                [Clinic Name] regarding your consultation, appointments, and related
-                communications. Message and data rates may apply. Reply STOP to opt out at any
-                time.&rdquo;
+                &ldquo;I agree to receive appointment reminders by SMS from [Clinic Name].
+                Message and data rates may apply. Reply STOP at any time to opt out.&rdquo;
               </blockquote>
+              <p className="mt-4">
+                Patients may submit the form with or without checking this box. If unchecked, the
+                clinic still receives the patient&apos;s information and may follow up by phone
+                or email as the patient prefers &mdash; but no SMS will ever be sent to that
+                number.
+              </p>
+              <p className="mt-4">
+                A patient may also provide express written consent through:
+              </p>
+              <ul className="list-disc pl-5 mt-3 space-y-2">
+                <li>An in-clinic paper intake form with a separate SMS consent line</li>
+                <li>A booking confirmation flow during an in-person or phone consultation request, where the staff member confirms verbally and records consent</li>
+              </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">What we send</h2>
               <p>
-                Tarhunna sends the following types of SMS messages on behalf of clinics:
+                If a patient has consented, Tarhunna sends the following types of SMS messages
+                on behalf of clinics:
               </p>
               <ul className="list-disc pl-5 mt-3 space-y-2">
                 <li>Appointment reminders (typically 24 hours and 2 hours before a scheduled consultation)</li>
@@ -86,6 +99,8 @@ export default function SmsConsentPage() {
               </ul>
               <p className="mt-4">
                 All messages identify the originating clinic and include opt-out instructions.
+                SMS messages are transactional in nature &mdash; appointment confirmations and
+                reminders only &mdash; not marketing.
               </p>
             </section>
 
