@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
 
@@ -71,6 +72,19 @@ export default function SmsConsentPage() {
                 &ldquo;I agree to receive appointment reminders by SMS from [Clinic Name].
                 Message and data rates may apply. Reply STOP at any time to opt out.&rdquo;
               </blockquote>
+              <figure className="mt-6 rounded-lg border border-gray-200 bg-white overflow-hidden">
+                <Image
+                  src="/sms-consent-form-example.png"
+                  alt="Tarhunna intake form showing the optional SMS consent checkbox unchecked, with full label text and Request Consultation submit button."
+                  width={2930}
+                  height={1594}
+                  className="w-full h-auto"
+                  priority={false}
+                />
+                <figcaption className="border-t border-gray-100 px-4 py-3 text-sm text-gray-500 italic leading-relaxed">
+                  Example: Tarhunna&apos;s intake form as it appears to a patient on a clinic&apos;s website. The SMS consent checkbox appears at the bottom of the form, unchecked by default. Patients may submit the form with or without checking this box; submission is not contingent on consenting to SMS.
+                </figcaption>
+              </figure>
               <p className="mt-4">
                 Patients may submit the form with or without checking this box. If unchecked, the
                 clinic still receives the patient&apos;s information and may follow up by phone
