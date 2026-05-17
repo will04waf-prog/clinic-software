@@ -1,6 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+type TestBanner = { kind: 'success' | 'warning' | 'error'; text: string }
 
 const PLACEHOLDER_CONFIRMATION =
   'Hi {{first_name}}, your consultation with {{clinic_name}} is confirmed for {{date}} at {{time}}. Reply STOP to opt out.'
@@ -24,6 +26,40 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  const [testPhone, setTestPhone]   = useState('')
+  const [testing, setTesting]       = useState(false)
+  const [testBanner, setTestBanner] = useState<TestBanner | null>(null)
+
+  useEffect(() => {
+    if (!testBanner) return
+    const t = setTimeout(() => setTestBanner(null), 10000)
+    return () => clearTimeout(t)
+  }, [testBanner])
+
+  async function sendTest() {
+    setTesting(true)
+    setTestBanner(null)
+    try {
+      const res = await fetch('/api/org/test-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: testPhone.trim() }),
+      })
+      const j = await res.json().catch(() => ({} as Record<string, string>))
+      if (res.ok) {
+        setTestBanner({ kind: 'success', text: `Test SMS sent to ${j.sent_to}` })
+      } else if (res.status === 429 || res.status === 503) {
+        setTestBanner({ kind: 'warning', text: j.message ?? 'Request blocked.' })
+      } else {
+        setTestBanner({ kind: 'error', text: j.message ?? 'Failed to send test SMS.' })
+      }
+    } catch (err: any) {
+      setTestBanner({ kind: 'error', text: err?.message ?? 'Network error.' })
+    } finally {
+      setTesting(false)
+    }
+  }
 
   function toggle(key: keyof SmsSettings) {
     setSettings((s) => ({ ...s, [key]: !s[key] }))
@@ -179,6 +215,57 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
         >
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save SMS settings'}
         </button>
+
+        {/* Test SMS section */}
+        <div className="border-t border-gray-100 pt-5 space-y-4">
+          <div>
+            <p className="font-medium text-gray-900 mb-1">Test your setup</p>
+            <p className="text-xs text-gray-400">Send a test SMS to verify everything is configured correctly.</p>
+          </div>
+
+          <div>
+            <label htmlFor="test-sms-phone" className="block text-xs font-medium text-gray-600 mb-1.5">Phone number</label>
+            <input
+              id="test-sms-phone"
+              type="tel"
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+              placeholder="+1 (555) 555-5555"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p className="text-xs text-gray-400 mt-1">Enter the phone number where you want to receive the test message.</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={sendTest}
+            disabled={testing || !testPhone.trim()}
+            className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-2.5 transition-colors"
+          >
+            {testing ? 'Sending...' : 'Send test SMS'}
+          </button>
+
+          {testBanner && (
+            <div
+              className={[
+                'flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm',
+                testBanner.kind === 'success' && 'bg-green-50 border-green-200 text-green-700',
+                testBanner.kind === 'warning' && 'bg-amber-50 border-amber-200 text-amber-700',
+                testBanner.kind === 'error'   && 'bg-red-50   border-red-200   text-red-700',
+              ].filter(Boolean).join(' ')}
+            >
+              <span>{testBanner.text}</span>
+              <button
+                type="button"
+                onClick={() => setTestBanner(null)}
+                className="text-current opacity-50 hover:opacity-100 leading-none text-lg"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
