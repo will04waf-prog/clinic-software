@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { GreetingHeader } from '@/components/dashboard/greeting-header'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist'
+import { LeadsChart, type LeadsTimeseriesPoint } from '@/components/dashboard/leads-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatRelative, formatDateTime } from '@/lib/utils'
@@ -24,14 +25,40 @@ const EMPTY_STATS: DashboardStats = {
   total_contacts: 0,
 }
 
+// "YYYY-MM-DD" key in local time. Matches how the rest of the dashboard
+// reasons about day boundaries (startOfToday is local-midnight, not UTC).
+function toDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function bucketLeadsTimeseries(
+  rows:    Array<{ created_at: string }>,
+  startMs: number,
+  days:    number,
+): LeadsTimeseriesPoint[] {
+  const counts = new Map<string, number>()
+  for (let i = 0; i < days; i++) {
+    counts.set(toDateKey(new Date(startMs + i * 86_400_000)), 0)
+  }
+  for (const row of rows) {
+    const key = toDateKey(new Date(row.created_at))
+    if (counts.has(key)) counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return Array.from(counts, ([date, count]) => ({ date, count }))
+}
+
 async function getDashboardData(supabase: SupabaseClient, orgId: string) {
   const now = new Date()
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
   const startOfWeek  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const endOfToday   = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
 
+  // 90-day window for the leads chart, anchored at local midnight so day
+  // buckets align with how the user perceives "today".
+  const startOfRange = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 89)
+
   const [
-    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11,
+    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12,
   ] = await Promise.all([
     supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfToday),
     supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfWeek),
@@ -47,6 +74,8 @@ async function getDashboardData(supabase: SupabaseClient, orgId: string) {
     supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
     // Onboarding: active automations with at least one step
     supabase.from('automation_sequences').select('id, sequence_steps!inner(id)', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
+    // 90-day leads timeseries — raw created_at, bucketed in JS below.
+    supabase.from('contacts_active').select('created_at').eq('organization_id', orgId).gte('created_at', startOfRange.toISOString()).order('created_at', { ascending: true }),
   ])
 
   const totalContacts = r6.count ?? 0
@@ -63,10 +92,17 @@ async function getDashboardData(supabase: SupabaseClient, orgId: string) {
     conversion_rate:      totalContacts > 0 ? (totalDone / totalContacts) * 100 : 0,
   }
 
+  const leadsTimeseries = bucketLeadsTimeseries(
+    (r12.data ?? []) as Array<{ created_at: string }>,
+    startOfRange.getTime(),
+    90,
+  )
+
   return {
     stats,
     recentLeads:      r8.data ?? [],
     upcomingConsults: r9.data ?? [],
+    leadsTimeseries,
     hasLeads:         (r6.count ?? 0) > 0,
     hasConsultations: (r10.count ?? 0) > 0,
     hasAutomations:   (r11.count ?? 0) > 0,
@@ -91,6 +127,7 @@ export default async function DashboardPage() {
   let stats = EMPTY_STATS
   let recentLeads:      any[] = []
   let upcomingConsults: any[] = []
+  let leadsTimeseries:  LeadsTimeseriesPoint[] = []
   let hasLeads         = false
   let hasConsultations = false
   let hasAutomations   = false
@@ -101,6 +138,7 @@ export default async function DashboardPage() {
     stats            = result.stats
     recentLeads      = result.recentLeads
     upcomingConsults = result.upcomingConsults
+    leadsTimeseries  = result.leadsTimeseries
     hasLeads         = result.hasLeads
     hasConsultations = result.hasConsultations
     hasAutomations   = result.hasAutomations
@@ -135,6 +173,8 @@ export default async function DashboardPage() {
         />
 
         <StatsCards stats={stats} />
+
+        <LeadsChart data={leadsTimeseries} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Recent Leads */}
