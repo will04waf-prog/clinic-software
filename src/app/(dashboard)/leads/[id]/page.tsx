@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/header'
 import { BookConsultationDialog } from '@/components/consultations/book-consultation-dialog'
 import { SendEmailDialog } from '@/components/leads/send-email-dialog'
+import { SendSmsDialog } from '@/components/leads/send-sms-dialog'
 import { formatDate, formatDateTime, formatRelative, formatPhone, formatProcedure, formatLeadSource } from '@/lib/utils'
 import type { Contact, Message, ActivityLog, Consultation } from '@/types'
 
@@ -62,6 +63,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         subtitle={contact.email ?? contact.phone ?? 'No contact info'}
         actions={
           <div className="flex items-center gap-2">
+            <SendSmsDialog
+              contactId={contact.id}
+              contactPhone={contact.phone ?? null}
+              firstName={contact.first_name}
+              smsConsent={contact.sms_consent === true}
+              optedOutSms={contact.opted_out_sms === true}
+            />
             <SendEmailDialog
               contactId={contact.id}
               contactEmail={contact.email ?? null}
