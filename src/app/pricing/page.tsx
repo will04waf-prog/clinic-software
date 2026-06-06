@@ -44,10 +44,9 @@ const TIER_FEATURES: Record<TierId, string[]> = {
   scale: [
     'Unlimited contacts',
     'Everything in Professional',
-    'Multi-location support',
     'Advanced automation workflows',
     '5,000 SMS messages/month',
-    'Phone & chat support',
+    'Direct founder support',
     'Dedicated onboarding session',
   ],
 }
