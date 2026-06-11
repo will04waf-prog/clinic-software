@@ -43,17 +43,110 @@
     }
   }
 
-  .bg-gradient-brand {
-    background-image: linear-gradient(90deg, #028090 0%, #02C39A 100%);
-  }
-  .bg-gradient-brand:hover {
-    background-image: linear-gradient(90deg, #036b78 0%, #02b08c 100%);
-  }
-
   .divider-brand {
     height: 2px;
     width: 100%;
     background-image: linear-gradient(90deg, transparent 0%, #028090 30%, #02C39A 70%, transparent 100%);
     border: 0;
+  }
+
+  @keyframes signature-sweep {
+    from { background-position: 0 0; }
+    to   { background-position: 600px 0; }
+  }
+  @keyframes brand-sweep {
+    from { background-position: 0 0, 0 0; }
+    to   { background-position: 600px 0, 0 0; }
+  }
+
+  .text-gradient-signature-dark-anim {
+    color: #02C39A;
+    background-image: repeating-linear-gradient(
+      90deg,
+      #ffffff 0px,
+      #ffffff 180px,
+      #02C39A 260px,
+      #5CEAB8 300px,
+      #02C39A 340px,
+      #ffffff 420px,
+      #ffffff 600px
+    );
+  }
+  .text-gradient-signature-light-anim {
+    color: #02C39A;
+    background-image: repeating-linear-gradient(
+      90deg,
+      #0B2027 0px,
+      #0B2027 180px,
+      #02C39A 260px,
+      #5CEAB8 300px,
+      #02C39A 340px,
+      #0B2027 420px,
+      #0B2027 600px
+    );
+  }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .text-gradient-signature-dark-anim,
+    .text-gradient-signature-light-anim {
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    .signature-animate {
+      background-size: 600px 100%;
+      background-position: 0 0;
+      background-repeat: repeat;
+      animation: signature-sweep 6s linear infinite;
+      will-change: background-position;
+    }
+  }
+
+  .bg-gradient-brand {
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 200px,
+        rgba(255, 255, 255, 0.55) 300px,
+        transparent 400px,
+        transparent 600px
+      ),
+      linear-gradient(90deg, #028090 0%, #02C39A 100%);
+    background-size: 600px 100%, 100% 100%;
+    background-position: 0 0, 0 0;
+    background-repeat: repeat, no-repeat;
+    animation: brand-sweep 6s linear infinite;
+    will-change: background-position;
+  }
+  .bg-gradient-brand:hover {
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 200px,
+        rgba(255, 255, 255, 0.55) 300px,
+        transparent 400px,
+        transparent 600px
+      ),
+      linear-gradient(90deg, #036b78 0%, #02b08c 100%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .signature-animate {
+      animation: none;
+    }
+    .text-gradient-signature-dark-anim {
+      background-image: linear-gradient(90deg, #ffffff 0%, #ffffff 66%, #02C39A 100%);
+    }
+    .text-gradient-signature-light-anim {
+      background-image: linear-gradient(90deg, #0B2027 0%, #0B2027 66%, #02C39A 100%);
+    }
+    .bg-gradient-brand,
+    .bg-gradient-brand:hover {
+      animation: none;
+      background-image: linear-gradient(90deg, #028090 0%, #02C39A 100%);
+      background-size: 100% 100%;
+    }
   }
 }

@@ -38,7 +38,7 @@ export default function LoginPage() {
     <div className="flex min-h-full flex-col items-center justify-center bg-gray-50 px-4 py-12">
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-2">
-        <SignatureLogo size="xl" variant="light-bg" />
+        <SignatureLogo size="xl" variant="light-bg" animated />
         <p className="text-[11px] font-semibold uppercase tracking-widest text-[#028090]">
           Every Lead. Every Time.
         </p>

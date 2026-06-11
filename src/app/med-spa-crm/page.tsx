@@ -178,7 +178,7 @@ export default function MedSpaCRMPage() {
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <SignatureLogo size="md" variant="light-bg" />
+            <SignatureLogo size="md" variant="light-bg" animated />
           </Link>
           <nav className="flex items-center gap-3">
             <Link
@@ -382,7 +382,7 @@ export default function MedSpaCRMPage() {
         {/* ── Final CTA ────────────────────────────────────────── */}
         <section className="bg-[#0B2027] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
-            <SignatureLogo size="lg" variant="dark-bg" className="mb-3 block" />
+            <SignatureLogo size="lg" variant="dark-bg" animated className="mb-3 block" />
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start filling your med spa schedule today
             </h2>
@@ -416,7 +416,7 @@ export default function MedSpaCRMPage() {
       <footer className="border-t border-gray-200 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <SignatureLogo size="sm" variant="light-bg" />
+            <SignatureLogo size="sm" variant="light-bg" animated />
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">

@@ -249,7 +249,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <SignatureLogo size="md" variant="light-bg" />
+            <SignatureLogo size="md" variant="light-bg" animated />
           </Link>
           <nav className="flex items-center gap-3">
             <Link
@@ -286,7 +286,7 @@ export default function LandingPage() {
         <section className="bg-white px-6 py-20 sm:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-3 flex flex-col items-center gap-2">
-              <SignatureLogo size="xl" variant="light-bg" />
+              <SignatureLogo size="xl" variant="light-bg" animated />
               <p className="text-xs font-semibold uppercase tracking-widest text-[#028090]">
                 Every Lead. Every Time.
               </p>
@@ -562,7 +562,7 @@ export default function LandingPage() {
         {/* ── Final CTA ────────────────────────────────────────── */}
         <section className="bg-[#0B2027] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
-            <SignatureLogo size="lg" variant="dark-bg" className="mb-3 block" />
+            <SignatureLogo size="lg" variant="dark-bg" animated className="mb-3 block" />
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start converting more leads today
             </h2>
@@ -593,7 +593,7 @@ export default function LandingPage() {
       <footer className="border-t border-gray-200 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <SignatureLogo size="sm" variant="light-bg" />
+            <SignatureLogo size="sm" variant="light-bg" animated />
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">

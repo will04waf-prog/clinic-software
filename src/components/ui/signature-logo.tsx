@@ -10,20 +10,27 @@ const SIZE_CLASS: Record<SignatureLogoSize, string> = {
   xl: 'text-6xl sm:text-7xl',
 }
 
-const VARIANT_CLASS: Record<SignatureLogoVariant, string> = {
+const STATIC_VARIANT_CLASS: Record<SignatureLogoVariant, string> = {
   'dark-bg': 'text-gradient-signature-dark',
   'light-bg': 'text-gradient-signature-light',
+}
+
+const ANIMATED_VARIANT_CLASS: Record<SignatureLogoVariant, string> = {
+  'dark-bg': 'text-gradient-signature-dark-anim',
+  'light-bg': 'text-gradient-signature-light-anim',
 }
 
 interface SignatureLogoProps {
   size?: SignatureLogoSize
   variant?: SignatureLogoVariant
+  animated?: boolean
   className?: string
 }
 
 export function SignatureLogo({
   size = 'md',
   variant = 'light-bg',
+  animated = false,
   className,
 }: SignatureLogoProps) {
   return (
@@ -32,7 +39,8 @@ export function SignatureLogo({
       className={cn(
         'font-signature leading-none select-none',
         SIZE_CLASS[size],
-        VARIANT_CLASS[variant],
+        animated ? ANIMATED_VARIANT_CLASS[variant] : STATIC_VARIANT_CLASS[variant],
+        animated && 'signature-animate',
         className,
       )}
     >
