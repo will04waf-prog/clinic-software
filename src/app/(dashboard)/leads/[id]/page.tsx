@@ -9,6 +9,7 @@ import { Header } from '@/components/layout/header'
 import { BookConsultationDialog } from '@/components/consultations/book-consultation-dialog'
 import { SendEmailDialog } from '@/components/leads/send-email-dialog'
 import { SendSmsDialog } from '@/components/leads/send-sms-dialog'
+import { LeadSummaryCard } from '@/components/leads/lead-summary-card'
 import { formatDate, formatDateTime, formatRelative, formatPhone, formatProcedure, formatLeadSource } from '@/lib/utils'
 import type { Contact, Message, ActivityLog, Consultation } from '@/types'
 
@@ -86,6 +87,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       />
 
       <div className="flex-1 overflow-y-auto p-6">
+        <LeadSummaryCard contactId={contact.id} className="mb-6" />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left column: contact info */}
           <div className="space-y-4 lg:col-span-1">
