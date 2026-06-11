@@ -177,13 +177,13 @@ export default function PricingPage() {
                   index={index}
                   className={`relative flex flex-col rounded-2xl border bg-white p-7 ${
                     isPopular
-                      ? 'border-indigo-200 shadow-lg ring-1 ring-indigo-100 md:-translate-y-2 hover:shadow-xl transition-shadow duration-200'
+                      ? 'border-[#02C39A]/40 shadow-lg ring-1 ring-[#02C39A]/20 md:-translate-y-2 hover:shadow-xl transition-shadow duration-200'
                       : 'border-gray-200 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200'
                   }`}
                 >
                   {isPopular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-flex items-center rounded-full bg-indigo-600 text-white px-3 py-1 text-xs font-medium">
+                      <span className="inline-flex items-center rounded-full bg-gradient-brand text-white px-3 py-1 text-xs font-medium">
                         Most Popular
                       </span>
                     </div>
@@ -234,7 +234,7 @@ export default function PricingPage() {
                     disabled={loadingTier !== null}
                     className={`mt-8 w-full rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
                       isPopular
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-[1.02] transition-all duration-150'
+                        ? 'bg-gradient-brand text-white hover:scale-[1.02] transition-all duration-150'
                         : 'bg-gray-900 hover:bg-gray-800 text-white transition-colors'
                     }`}
                   >

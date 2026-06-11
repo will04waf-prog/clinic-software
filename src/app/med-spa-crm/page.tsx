@@ -202,8 +202,8 @@ export default function MedSpaCRMPage() {
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="bg-gradient-to-b from-white to-gray-50 px-6 py-20 sm:py-28">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#02C39A]/20 bg-[#02C39A]/10 px-4 py-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#028090]">
                 Med Spa CRM · 14-day free trial
               </span>
             </div>
@@ -289,8 +289,8 @@ export default function MedSpaCRMPage() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map(({ icon: Icon, title, body }, index) => (
                 <AnimatedCard key={title} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
-                    <Icon className="h-5 w-5 text-indigo-600" />
+                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/10">
+                    <Icon className="h-5 w-5 text-[#028090]" />
                   </div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
@@ -336,23 +336,23 @@ export default function MedSpaCRMPage() {
         </section>
 
         {/* ── Mid-page CTA ─────────────────────────────────────── */}
-        <section className="bg-indigo-600 px-6 py-12">
+        <section className="bg-[#0B2027] px-6 py-12">
           <AnimatedSection className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>
               <p className="text-base font-semibold text-white">Ready to see how it works?</p>
-              <p className="mt-1 text-sm text-indigo-200">Try Tarhunna free for 14 days — no credit card required.</p>
+              <p className="mt-1 text-sm text-gray-300">Try Tarhunna free for 14 days — no credit card required.</p>
             </div>
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:shrink-0">
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Try free for 14 days
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/book-demo"
-                className="text-sm font-medium text-indigo-200 hover:text-white transition-colors"
+                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
               >
                 or book a 20-minute walkthrough
               </Link>

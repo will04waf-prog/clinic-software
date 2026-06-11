@@ -61,6 +61,7 @@ export default function LoginPage() {
                 placeholder="you@clinic.com"
                 required
                 autoFocus
+                className="focus-visible:ring-[#028090] focus-visible:border-[#028090]"
               />
             </div>
             <div className="space-y-1.5">
@@ -68,7 +69,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-indigo-600 hover:underline font-medium"
+                  className="text-xs text-[#028090] hover:underline font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -80,6 +81,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                className="focus-visible:ring-[#028090] focus-visible:border-[#028090]"
               />
             </div>
 
@@ -100,7 +102,7 @@ export default function LoginPage() {
 
           <p className="mt-4 text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <Link href="/signup" className="text-indigo-600 hover:underline font-medium">
+            <Link href="/signup" className="text-[#028090] hover:underline font-medium">
               Get started
             </Link>
           </p>

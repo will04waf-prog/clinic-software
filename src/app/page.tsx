@@ -291,13 +291,13 @@ export default function LandingPage() {
                 Every Lead. Every Time.
               </p>
             </div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#02C39A]/20 bg-[#02C39A]/10 px-4 py-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#028090]">
                 14-day free trial · No credit card
               </span>
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Stop losing leads.<br className="hidden sm:block" /> Start booking <span className="text-indigo-600">more consultations</span>.
+              Stop losing leads.<br className="hidden sm:block" /> Start booking <span className="text-[#028090]">more consultations</span>.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
               Purpose-built for aesthetic clinics — not a generic CRM retrofitted for
@@ -413,8 +413,8 @@ export default function LandingPage() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map(({ icon: Icon, title, body }, index) => (
                 <AnimatedCard key={title} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
-                    <Icon className="h-5 w-5 text-indigo-600" />
+                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/10">
+                    <Icon className="h-5 w-5 text-[#028090]" />
                   </div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
@@ -438,7 +438,7 @@ export default function LandingPage() {
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map(({ number, title, body }, index) => (
                 <AnimatedCard key={number} index={index}>
-                  <div className="mb-4 text-3xl font-black text-indigo-100">{number}</div>
+                  <div className="mb-4 text-3xl font-black text-[#028090]">{number}</div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
                 </AnimatedCard>
@@ -464,12 +464,12 @@ export default function LandingPage() {
                 const href = 'href' in type ? type.href : undefined
                 const content = (
                   <>
-                    <div className="mb-3 inline-flex rounded-full bg-indigo-50 px-3 py-1">
-                      <span className="text-sm font-semibold text-indigo-600">{label}</span>
+                    <div className="mb-3 inline-flex rounded-full bg-[#02C39A]/10 px-3 py-1">
+                      <span className="text-sm font-semibold text-[#028090]">{label}</span>
                     </div>
                     <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
                     {href && (
-                      <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 group-hover:gap-1.5 transition-all">
+                      <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#028090] group-hover:gap-1.5 transition-all">
                         Learn more
                         <ArrowRight className="h-3.5 w-3.5" />
                       </span>
@@ -480,7 +480,7 @@ export default function LandingPage() {
                   <AnimatedCard key={label} index={index}>
                     <Link
                       href={href}
-                      className="group block rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-indigo-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                      className="group block rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-[#02C39A]/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
                     >
                       {content}
                     </Link>
@@ -500,15 +500,15 @@ export default function LandingPage() {
           <AnimatedSection className="mx-auto max-w-5xl">
             <Link
               href="/med-spa-crm"
-              className="group flex items-center justify-between gap-4 rounded-xl border border-indigo-100 bg-indigo-50 px-6 py-4 hover:border-indigo-200 hover:bg-indigo-100/70 transition-colors"
+              className="group flex items-center justify-between gap-4 rounded-xl border border-[#02C39A]/20 bg-[#02C39A]/10 px-6 py-4 hover:border-[#02C39A]/40 hover:bg-[#02C39A]/15 transition-colors"
             >
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-sm font-semibold text-indigo-700">Running a med spa?</span>
-                <span className="text-sm text-indigo-600/80">
+                <span className="text-sm font-semibold text-[#0B2027]">Running a med spa?</span>
+                <span className="text-sm text-[#028090]/90">
                   See how Tarhunna helps med spas capture leads and book more consultations.
                 </span>
               </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-indigo-400 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 shrink-0 text-[#028090] transition-transform group-hover:translate-x-0.5" />
             </Link>
           </AnimatedSection>
         </section>
@@ -550,7 +550,7 @@ export default function LandingPage() {
             <div className="mt-8">
               <Link
                 href="/book-demo"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Book a demo
                 <ArrowRight className="h-4 w-4" />

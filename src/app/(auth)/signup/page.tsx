@@ -81,6 +81,7 @@ export default function SignupPage() {
                 onChange={(e) => update('clinic_name', e.target.value)}
                 placeholder="Miami Aesthetics Center"
                 required
+                className="focus-visible:ring-[#028090] focus-visible:border-[#028090]"
               />
             </div>
 
@@ -92,6 +93,7 @@ export default function SignupPage() {
                 onChange={(e) => update('full_name', e.target.value)}
                 placeholder="Dr. Maria Rivera"
                 required
+                className="focus-visible:ring-[#028090] focus-visible:border-[#028090]"
               />
             </div>
 
@@ -104,6 +106,7 @@ export default function SignupPage() {
                 onChange={(e) => update('email', e.target.value)}
                 placeholder="you@clinic.com"
                 required
+                className="focus-visible:ring-[#028090] focus-visible:border-[#028090]"
               />
             </div>
 
@@ -117,6 +120,7 @@ export default function SignupPage() {
                 placeholder="Min. 8 characters"
                 minLength={8}
                 required
+                className="focus-visible:ring-[#028090] focus-visible:border-[#028090]"
               />
             </div>
 
@@ -141,7 +145,7 @@ export default function SignupPage() {
 
           <p className="mt-4 text-center text-sm text-gray-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-indigo-600 hover:underline font-medium">
+            <Link href="/login" className="text-[#028090] hover:underline font-medium">
               Sign in
             </Link>
           </p>
