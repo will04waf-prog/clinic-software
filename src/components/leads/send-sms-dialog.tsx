@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -42,6 +42,8 @@ export function SendSmsDialog({
   const [consentChecked,   setConsentChecked]   = useState(false)
   const [status,           setStatus]           = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [errorMsg,         setErrorMsg]         = useState('')
+  const [draftStatus,      setDraftStatus]      = useState<'idle' | 'drafting' | 'confirming' | 'error'>('idle')
+  const [draftError,       setDraftError]       = useState('')
 
   // Props drive the gate every render — never copied into state, so a
   // STOP received between page load and dialog open is reflected as soon
@@ -61,6 +63,8 @@ export function SendSmsDialog({
     setConsentChecked(false)
     setStatus('idle')
     setErrorMsg('')
+    setDraftStatus('idle')
+    setDraftError('')
   }, [open])
 
   const { chars, segments } = smsSegmentInfo(body)
@@ -72,6 +76,42 @@ export function SendSmsDialog({
   function handleOpenChange(v: boolean) {
     if (!v && status === 'sending') return
     setOpen(v)
+  }
+
+  async function runDraft() {
+    setDraftStatus('drafting')
+    setDraftError('')
+    try {
+      const res = await fetch(`/api/leads/${contactId}/draft-message`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ channel: 'sms' }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        const msg = res.status === 429
+          ? 'AI draft limit reached for this hour — try again in a bit, or write your message manually.'
+          : (json.message ?? json.error ?? `HTTP ${res.status}`)
+        throw new Error(msg)
+      }
+      if (typeof json.draft !== 'string' || !json.draft) {
+        throw new Error("Couldn't generate draft — try again.")
+      }
+      setBody(json.draft)
+      setDraftStatus('idle')
+    } catch (err: any) {
+      setDraftError(err.message ?? 'Failed to draft')
+      setDraftStatus('error')
+    }
+  }
+
+  function handleDraftClick() {
+    if (draftStatus === 'drafting') return
+    if (body.trim().length > 0) {
+      setDraftStatus('confirming')
+      return
+    }
+    runDraft()
   }
 
   async function handleSend() {
@@ -150,7 +190,46 @@ export function SendSmsDialog({
 
               {/* Body */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">Message</label>
+                <div className="mb-1.5 flex items-center justify-between gap-3">
+                  <label className="block text-sm font-medium text-gray-700">Message</label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleDraftClick}
+                    disabled={busy || draftStatus === 'drafting'}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {draftStatus === 'drafting' ? 'Drafting…' : 'Draft with AI'}
+                  </Button>
+                </div>
+
+                {draftStatus === 'confirming' && (
+                  <div className="mb-2 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
+                    <span>Replace your current text with an AI draft?</span>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { setDraftStatus('idle'); runDraft() }}
+                        className="rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                      >
+                        Replace
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDraftStatus('idle')}
+                        className="rounded-md bg-white border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {draftStatus === 'error' && (
+                  <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{draftError}</p>
+                )}
+
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
