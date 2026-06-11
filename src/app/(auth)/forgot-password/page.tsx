@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Logo } from '@/components/ui/logo'
+import { SignatureLogo } from '@/components/ui/signature-logo'
 
 function ForgotPasswordInner() {
   const searchParams = useSearchParams()
@@ -35,8 +35,10 @@ function ForgotPasswordInner() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center bg-gray-50 px-4 py-12">
       <div className="mb-8 flex flex-col items-center gap-2">
-        <Logo size="lg" />
-        <p className="text-sm text-gray-500">CRM for Aesthetic Clinics</p>
+        <SignatureLogo size="xl" variant="light-bg" animated />
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[#028090]">
+          Every Lead. Every Time.
+        </p>
       </div>
 
       <Card className="w-full max-w-sm">
