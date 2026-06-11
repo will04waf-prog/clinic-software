@@ -12,7 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { HomeProductShowcase } from './home-product-showcase'
-import { Logo } from '@/components/ui/logo'
+import { SignatureLogo } from '@/components/ui/signature-logo'
 import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
 
@@ -249,7 +249,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <Logo size="md" />
+            <SignatureLogo size="md" variant="light-bg" />
           </Link>
           <nav className="flex items-center gap-3">
             <Link
@@ -272,7 +272,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150"
+              className="rounded-lg bg-gradient-brand px-4 py-2 text-sm font-semibold text-white hover:scale-[1.02] transition-all duration-150"
             >
               Start free trial
             </Link>
@@ -285,6 +285,12 @@ export default function LandingPage() {
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="bg-white px-6 py-20 sm:py-28">
           <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-3 flex flex-col items-center gap-2">
+              <SignatureLogo size="xl" variant="light-bg" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#028090]">
+                Every Lead. Every Time.
+              </p>
+            </div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5">
               <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
                 14-day free trial · No credit card
@@ -301,7 +307,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4" />
@@ -323,6 +329,11 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Brand divider ────────────────────────────────────── */}
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="divider-brand" role="presentation" aria-hidden="true" />
+        </div>
 
         {/* ── Product Showcase ─────────────────────────────────── */}
         <HomeProductShowcase />
@@ -549,25 +560,26 @@ export default function LandingPage() {
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
-        <section className="bg-indigo-600 px-6 py-20">
+        <section className="bg-[#0B2027] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
+            <SignatureLogo size="lg" variant="dark-bg" className="mb-3 block" />
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Start converting more leads today
             </h2>
-            <p className="mt-4 text-indigo-200">
+            <p className="mt-4 text-gray-300">
               14-day free trial. No credit card required. Set up in minutes.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-indigo-600 hover:bg-indigo-50 hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-indigo-400 px-6 py-3 text-base font-semibold text-white hover:border-indigo-300 hover:bg-indigo-500 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white hover:border-white/60 hover:bg-white/5 transition-colors"
               >
                 Log in
               </Link>
@@ -581,7 +593,7 @@ export default function LandingPage() {
       <footer className="border-t border-gray-200 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <Logo size="sm" />
+            <SignatureLogo size="sm" variant="light-bg" />
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">

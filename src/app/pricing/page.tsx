@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Logo } from '@/components/ui/logo'
+import { SignatureLogo } from '@/components/ui/signature-logo'
 import { createClient } from '@/lib/supabase/client'
 import { AnimatedCard } from '@/components/marketing/animated-card'
 import {
@@ -99,7 +99,7 @@ export default function PricingPage() {
       <header className="border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Logo size="sm" />
+            <SignatureLogo size="sm" variant="light-bg" />
           </Link>
           <div className="flex items-center gap-5">
             <Link href="/pricing" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
