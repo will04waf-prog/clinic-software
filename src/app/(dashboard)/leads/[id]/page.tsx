@@ -220,28 +220,41 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </CardContent>
             </Card>
 
-            {/* Message history */}
+            {/* Conversation */}
             <Card>
-              <CardHeader><CardTitle>Message History ({messages.length})</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Conversation ({messages.length})</CardTitle></CardHeader>
               <CardContent>
                 {messages.length === 0 ? (
-                  <p className="text-sm text-gray-400">No messages sent yet.</p>
+                  <p className="text-sm text-gray-400">No messages yet.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {messages.map((m: any) => (
-                      <div key={m.id} className={`rounded-lg p-3 text-sm ${m.direction === 'inbound' ? 'bg-gray-50 border border-gray-200' : 'bg-indigo-50'}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                            {m.channel === 'sms' ? <MessageSquare className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
-                            {m.channel.toUpperCase()} · {m.direction}
-                          </span>
-                          <span className="text-xs text-gray-400">{formatRelative(m.created_at)}</span>
+                  <div className="space-y-3">
+                    {[...messages].reverse().map((m: any) => {
+                      const inbound = m.direction === 'inbound'
+                      const failed  = m.status === 'failed'
+                      return (
+                        <div key={m.id} className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}>
+                          <div className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
+                            inbound
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-indigo-50 text-gray-800'
+                          }`}>
+                            <div className={`flex items-center gap-1.5 text-xs font-medium ${
+                              inbound ? 'text-gray-500' : 'text-indigo-600'
+                            }`}>
+                              {m.channel === 'sms' ? <MessageSquare className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
+                              <span>{m.channel.toUpperCase()}</span>
+                              <span className="text-gray-400">·</span>
+                              <span className="text-gray-400">{formatRelative(m.created_at)}</span>
+                            </div>
+                            {m.subject && <p className="font-medium text-gray-700 mt-1">{m.subject}</p>}
+                            <p className="mt-1 whitespace-pre-line">{m.body}</p>
+                            {failed && (
+                              <p className="mt-1 text-xs font-medium text-red-600">Failed to send</p>
+                            )}
+                          </div>
                         </div>
-                        {m.subject && <p className="font-medium text-gray-700 mb-1">{m.subject}</p>}
-                        <p className="text-gray-600 whitespace-pre-line">{m.body}</p>
-                        <p className="mt-1 text-xs text-gray-400">{m.status}</p>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>
