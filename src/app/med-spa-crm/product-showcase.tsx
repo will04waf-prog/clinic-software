@@ -114,7 +114,7 @@ function DashboardPanel() {
     { label: 'New Leads Today',     value: 8,     sub: '24 this week',        Icon: UserPlus,     color: 'text-brand-600',  bg: 'bg-brand-50'  },
     { label: 'Consultations Today', value: 3,     sub: '11 this week',        Icon: CalendarCheck,color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'No-Shows This Week',  value: 1,     sub: 'Needs recovery',      Icon: AlertCircle,  color: 'text-amber-600',   bg: 'bg-amber-50'   },
-    { label: 'Conversion Rate',     value: '71%', sub: 'Lead → Consultation', Icon: TrendingUp,   color: 'text-purple-600',  bg: 'bg-purple-50'  },
+    { label: 'Conversion Rate',     value: '71%', sub: 'Lead → Consultation', Icon: TrendingUp,   color: 'text-brand-700',   bg: 'bg-brand-100'  },
   ]
 
   return (
@@ -181,7 +181,7 @@ function DashboardPanel() {
                     <p className="text-[10px] text-gray-400">{c.time}</p>
                   </div>
                   <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    c.type === 'Virtual' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
+                    c.type === 'Virtual' ? 'bg-brand-50 text-brand-700' : 'bg-gray-100 text-gray-500'
                   }`}>
                     {c.type}
                   </span>
@@ -325,9 +325,9 @@ function MobileLeadsCard() {
           <p className="text-2xl font-bold text-brand-600">8</p>
           <p className="mt-0.5 text-xs font-medium text-brand-700">New Leads Today</p>
         </div>
-        <div className="rounded-xl bg-emerald-50 px-4 py-3">
-          <p className="text-2xl font-bold text-emerald-600">3</p>
-          <p className="mt-0.5 text-xs font-medium text-emerald-700">Consultations Today</p>
+        <div className="rounded-xl bg-brand-100 px-4 py-3">
+          <p className="text-2xl font-bold text-brand-700">3</p>
+          <p className="mt-0.5 text-xs font-medium text-brand-800">Consultations Today</p>
         </div>
       </div>
       {/* Lead rows — larger text, more breathing room */}

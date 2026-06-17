@@ -782,7 +782,7 @@ type Tone = 'indigo' | 'blue' | 'gray'
 
 const TONE_CLASSES: Record<Tone, string> = {
   indigo: 'bg-brand-50 text-brand-700',
-  blue:   'bg-blue-50 text-blue-700',
+  blue:   'bg-brand-100 text-brand-800',
   gray:   'bg-gray-50 text-gray-700',
 }
 

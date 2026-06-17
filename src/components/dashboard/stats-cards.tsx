@@ -22,8 +22,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.consultations_today,
       sub: `${stats.consultations_week} this week`,
       icon: CalendarCheck,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
+      color: 'text-brand-700',
+      bg: 'bg-brand-100',
     },
     {
       label: 'No-Shows This Week',
@@ -38,16 +38,16 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.total_active_leads,
       sub: `${stats.total_contacts} total contacts`,
       icon: Users,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
+      color: 'text-brand-600',
+      bg: 'bg-brand-50',
     },
     {
       label: 'Conversion Rate',
       value: `${stats.conversion_rate.toFixed(1)}%`,
       sub: 'Lead → Consultation',
       icon: TrendingUp,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
+      color: 'text-brand-800',
+      bg: 'bg-brand-200',
     },
   ]
 

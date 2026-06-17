@@ -28,7 +28,7 @@ function formatPreferredDate(date: string | null) {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  new:       'bg-blue-50 text-blue-700',
+  new:       'bg-brand-50 text-brand-700',
   contacted: 'bg-amber-50 text-amber-700',
   booked:    'bg-emerald-50 text-emerald-700',
   completed: 'bg-gray-100 text-gray-600',

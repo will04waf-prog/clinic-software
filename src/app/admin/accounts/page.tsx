@@ -10,7 +10,7 @@ const PLAN_STATUS_COLORS: Record<string, string> = {
 
 const PLAN_COLORS: Record<string, string> = {
   trial:   'bg-gray-100 text-gray-600',
-  starter: 'bg-blue-100 text-blue-700',
+  starter: 'bg-brand-50 text-brand-700',
   pro:     'bg-brand-100 text-brand-700',
 }
 

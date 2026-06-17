@@ -206,7 +206,7 @@ export default function PricingPage() {
                         <span className="text-gray-500">/year</span>
                       </div>
                       <div className="mt-2">
-                        <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-xs font-medium">
+                        <span className="inline-flex items-center rounded-full bg-brand-100 text-brand-800 px-2.5 py-0.5 text-xs font-medium">
                           Save 20%
                         </span>
                       </div>

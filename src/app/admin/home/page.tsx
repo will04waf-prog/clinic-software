@@ -9,7 +9,7 @@ const PLAN_STATUS_COLORS: Record<string, string> = {
 
 const PLAN_COLORS: Record<string, string> = {
   trial:   'bg-gray-100 text-gray-600',
-  starter: 'bg-blue-100 text-blue-700',
+  starter: 'bg-brand-50 text-brand-700',
   pro:     'bg-brand-100 text-brand-700',
 }
 
@@ -41,7 +41,7 @@ export default async function AdminHomePage() {
     { label: 'Total Users',     value: totalUsers ?? 0 },
     { label: 'Active',          value: activeCount   ?? 0, color: 'text-emerald-600' },
     { label: 'Trial',           value: trialCount    ?? 0, color: 'text-gray-600'    },
-    { label: 'Starter',         value: starterCount  ?? 0, color: 'text-blue-600'    },
+    { label: 'Starter',         value: starterCount  ?? 0, color: 'text-brand-500'   },
     { label: 'Pro',             value: proCount      ?? 0, color: 'text-brand-600'  },
     { label: 'Past Due',        value: pastDueCount  ?? 0, color: 'text-yellow-600'  },
     { label: 'Canceled',        value: canceledCount ?? 0, color: 'text-red-600'     },

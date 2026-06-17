@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TIER_DISPLAY_NAMES, TIER_PRICING, type TierId } from '@/lib/billing/tiers'
 
 const STATUS_BADGE: Record<string, string> = {
-  trial:     'bg-blue-100 text-blue-700',
+  trial:     'bg-brand-50 text-brand-700',
   active:    'bg-emerald-100 text-emerald-700',
   past_due:  'bg-yellow-100 text-yellow-700',
   suspended: 'bg-orange-100 text-orange-700',
