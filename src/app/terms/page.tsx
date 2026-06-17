@@ -183,7 +183,7 @@ export default function TermsPage() {
               <p className="mt-3">
                 Upon termination, your access to the service will end. You may request a copy of
                 your data before termination by contacting us at{' '}
-                <a href={`mailto:${CONTACT_EMAIL}`} className="text-indigo-600 hover:underline">{CONTACT_EMAIL}</a>.
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a>.
               </p>
             </section>
 
@@ -209,7 +209,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-3">12. Contact</h2>
               <p>
                 Questions about these Terms? Contact us at{' '}
-                <a href={`mailto:${CONTACT_EMAIL}`} className="text-indigo-600 hover:underline">{CONTACT_EMAIL}</a>.
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a>.
               </p>
             </section>
 

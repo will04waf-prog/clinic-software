@@ -181,7 +181,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Recent Leads</CardTitle>
-              <Link href="/leads" className="text-xs text-indigo-600 hover:underline">View all</Link>
+              <Link href="/leads" className="text-xs text-brand-600 hover:underline">View all</Link>
             </CardHeader>
             <CardContent className="pt-0">
               {recentLeads.length === 0 ? (
@@ -191,7 +191,7 @@ export default async function DashboardPage() {
                   {recentLeads.map((lead: any) => (
                     <div key={lead.id} className="flex items-center justify-between py-3">
                       <div>
-                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-gray-900 hover:text-indigo-600">
+                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-gray-900 hover:text-brand-600">
                           {lead.first_name} {lead.last_name}
                         </Link>
                         <p className="text-xs text-gray-400">{lead.email ?? lead.phone ?? '—'}</p>
@@ -218,7 +218,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Upcoming Consultations</CardTitle>
-              <Link href="/consultations" className="text-xs text-indigo-600 hover:underline">View all</Link>
+              <Link href="/consultations" className="text-xs text-brand-600 hover:underline">View all</Link>
             </CardHeader>
             <CardContent className="pt-0">
               {upcomingConsults.length === 0 ? (

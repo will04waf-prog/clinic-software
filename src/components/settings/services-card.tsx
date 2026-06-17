@@ -46,7 +46,7 @@ export function ServicesCard({ initial }: ServicesCardProps) {
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save Services'}
           </Button>
-          {saved && <span className="text-sm text-green-600">Saved!</span>}
+          {saved && <span className="text-sm text-emerald-600">Saved!</span>}
         </div>
       </CardContent>
     </Card>

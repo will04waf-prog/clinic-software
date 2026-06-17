@@ -90,7 +90,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
       </div>
     )
   }
@@ -160,8 +160,8 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
                     onClick={() => toggleProcedure(label)}
                     className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                       procedures.includes(label)
-                        ? 'border-indigo-600 bg-indigo-600 text-white'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300'
+                        ? 'border-brand-600 bg-brand-600 text-white'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-brand-300'
                     }`}
                   >
                     {label}
@@ -189,7 +189,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
                 type="checkbox"
                 checked={smsConsent}
                 onChange={(e) => setSmsConsent(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
               />
               <span className="text-xs text-gray-500 leading-relaxed">
                 I agree to receive appointment reminders by SMS from {orgName}. Message and data rates may apply. Reply STOP at any time to opt out.

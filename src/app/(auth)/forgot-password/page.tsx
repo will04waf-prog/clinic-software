@@ -65,7 +65,7 @@ function ForgotPasswordInner() {
               </div>
               <Link
                 href="/login"
-                className="block text-center text-sm text-indigo-600 hover:underline font-medium"
+                className="block text-center text-sm text-brand-600 hover:underline font-medium"
               >
                 Back to sign in
               </Link>
@@ -91,7 +91,7 @@ function ForgotPasswordInner() {
 
               <p className="text-center text-sm text-gray-500">
                 Remembered it?{' '}
-                <Link href="/login" className="text-indigo-600 hover:underline font-medium">
+                <Link href="/login" className="text-brand-600 hover:underline font-medium">
                   Back to sign in
                 </Link>
               </p>

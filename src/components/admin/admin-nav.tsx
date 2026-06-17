@@ -22,7 +22,7 @@ export function AdminNav() {
           className={cn(
             'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
             pathname.startsWith(href)
-              ? 'bg-indigo-50 text-indigo-700 font-medium'
+              ? 'bg-brand-50 text-brand-700 font-medium'
               : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           )}
         >

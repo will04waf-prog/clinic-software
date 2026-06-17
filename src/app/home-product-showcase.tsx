@@ -3,16 +3,16 @@
 // ── Mock data ─────────────────────────────────────────────────
 
 const LEADS = [
-  { name: 'Sofia Martinez',  email: 'sofia.m@email.com',   stage: 'New Inquiry',       color: '#6366f1', time: '2h ago'    },
+  { name: 'Sofia Martinez',  email: 'sofia.m@email.com',   stage: 'New Inquiry',       color: '#02C39A', time: '2h ago'    },
   { name: 'Emma Chen',       email: 'emma.c@email.com',    stage: 'Follow-Up Sent',    color: '#d97706', time: '5h ago'    },
   { name: 'Olivia Patel',    email: 'olivia.p@email.com',  stage: 'Consultation Booked', color: '#059669', time: 'Yesterday' },
-  { name: 'James Wilson',    email: 'j.wilson@email.com',  stage: 'New Inquiry',       color: '#6366f1', time: 'Yesterday' },
+  { name: 'James Wilson',    email: 'j.wilson@email.com',  stage: 'New Inquiry',       color: '#02C39A', time: 'Yesterday' },
   { name: 'Priya Sharma',    email: 'priya.s@email.com',   stage: 'Follow-Up Sent',    color: '#d97706', time: '2d ago'    },
 ]
 
 const PIPELINE = [
   {
-    name: 'New Inquiry', color: '#6366f1',
+    name: 'New Inquiry', color: '#02C39A',
     leads: [
       { name: 'Sofia Martinez', procedure: 'Botox'      },
       { name: 'James Wilson',   procedure: 'Filler'     },
@@ -157,10 +157,10 @@ function ConsultationsPanel() {
               className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-2.5 sm:p-3"
             >
               {/* Date block — matches real ConsultationList */}
-              <div className="flex flex-col items-center rounded-lg bg-indigo-50 px-2.5 py-1.5 text-center shrink-0 min-w-[46px]">
-                <span className="text-[10px] font-medium text-indigo-600">{c.month}</span>
-                <span className="text-lg font-bold leading-none text-indigo-700">{c.day}</span>
-                <span className="text-[10px] text-indigo-500">{c.time}</span>
+              <div className="flex flex-col items-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-center shrink-0 min-w-[46px]">
+                <span className="text-[10px] font-medium text-brand-600">{c.month}</span>
+                <span className="text-lg font-bold leading-none text-brand-700">{c.day}</span>
+                <span className="text-[10px] text-brand-500">{c.time}</span>
               </div>
               {/* Details */}
               <div className="min-w-0">
@@ -176,7 +176,7 @@ function ConsultationsPanel() {
                 </div>
                 <p className="mt-0.5 truncate text-xs text-gray-500">{c.procedure}</p>
                 {c.reminder && (
-                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-brand-600">
                     SMS Reminder Sent
                   </span>
                 )}
@@ -194,8 +194,8 @@ function ConsultationsPanel() {
 function StepLabel({ number, label }: { number: string; label: string }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <span className="text-xs font-bold text-indigo-400">{number}</span>
-      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">{label}</span>
+      <span className="text-xs font-bold text-[#5CEAB8]">{number}</span>
+      <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">{label}</span>
     </div>
   )
 }
@@ -208,7 +208,7 @@ export function HomeProductShowcase() {
       <div className="mx-auto max-w-6xl">
         {/* Headline */}
         <div className="mb-6 sm:mb-10 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#5CEAB8]">
             The platform
           </p>
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
@@ -235,7 +235,7 @@ export function HomeProductShowcase() {
         </div>
 
         {/* Caption */}
-        <p className="mt-6 text-center text-xs text-slate-500">
+        <p className="mt-6 text-center text-xs text-slate-400">
           One platform for every step — no patchwork of tools required
         </p>
       </div>

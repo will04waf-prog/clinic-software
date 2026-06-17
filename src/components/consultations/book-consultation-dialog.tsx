@@ -159,7 +159,7 @@ export function BookConsultationDialog({ contactId, onSuccess }: BookConsultatio
                   onClick={() => toggleProcedure(p)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     selectedProcedures.includes(p)
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-brand-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >

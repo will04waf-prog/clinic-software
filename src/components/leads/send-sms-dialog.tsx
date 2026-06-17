@@ -211,7 +211,7 @@ export function SendSmsDialog({
                       <button
                         type="button"
                         onClick={() => { setDraftStatus('idle'); runDraft() }}
-                        className="rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                        className="rounded-md bg-brand-600 px-2 py-1 text-xs font-medium text-white hover:bg-brand-700"
                       >
                         Replace
                       </button>
@@ -236,7 +236,7 @@ export function SendSmsDialog({
                   rows={5}
                   placeholder={`Hi ${firstName}, ...`}
                   disabled={busy}
-                  className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+                  className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-gray-50 disabled:text-gray-400"
                 />
                 <div className="mt-1.5 flex items-start justify-between gap-3 text-xs">
                   <p className="text-gray-400">
@@ -264,7 +264,7 @@ export function SendSmsDialog({
                     checked={consentChecked}
                     onChange={(e) => setConsentChecked(e.target.checked)}
                     disabled={busy}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                   />
                   <span>I confirm I have consent to message this contact.</span>
                 </label>

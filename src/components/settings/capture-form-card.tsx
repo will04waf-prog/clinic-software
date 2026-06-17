@@ -36,13 +36,13 @@ export function CaptureFormCard({ url }: CaptureFormCardProps) {
             className="shrink-0 h-7 px-2"
             onClick={handleCopy}
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center justify-center h-7 px-2 rounded-md text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-100 transition-colors"
+            className="shrink-0 inline-flex items-center justify-center h-7 px-2 rounded-md text-sm text-gray-500 hover:text-brand-600 hover:bg-gray-100 transition-colors"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>

@@ -11,7 +11,7 @@ const PLAN_STATUS_COLORS: Record<string, string> = {
 const PLAN_COLORS: Record<string, string> = {
   trial:   'bg-gray-100 text-gray-600',
   starter: 'bg-blue-100 text-blue-700',
-  pro:     'bg-indigo-100 text-indigo-700',
+  pro:     'bg-brand-100 text-brand-700',
 }
 
 export default async function AdminAccountsPage() {
@@ -99,7 +99,7 @@ export default async function AdminAccountsPage() {
                 <td className="px-5 py-3">
                   <Link
                     href={`/admin/accounts/${org.id}`}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    className="text-xs text-brand-600 hover:text-brand-800 font-medium"
                   >
                     View →
                   </Link>

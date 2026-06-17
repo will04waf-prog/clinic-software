@@ -14,8 +14,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.new_leads_today,
       sub: `${stats.new_leads_week} this week`,
       icon: UserPlus,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
+      color: 'text-brand-600',
+      bg: 'bg-brand-50',
     },
     {
       label: 'Consultations Today',

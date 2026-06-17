@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       function field(label: string, value: string | null | undefined, href?: string) {
         const display = value || '—'
         const valueHtml = href && value
-          ? `<a href="${href}" style="color:#6366f1;text-decoration:none;">${display}</a>`
+          ? `<a href="${href}" style="color:#02C39A;text-decoration:none;">${display}</a>`
           : `<span style="color:${value ? '#111827' : '#9ca3af'};">${display}</span>`
         return `
           <div style="margin-bottom:16px;">
@@ -84,10 +84,10 @@ export async function POST(request: Request) {
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;">
 
         <!-- Header -->
-        <tr><td style="background:#6366f1;border-radius:12px 12px 0 0;padding:24px 28px;">
-          <div style="font-size:11px;font-weight:600;color:#c7d2fe;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">New Demo Request</div>
+        <tr><td style="background:#02C39A;border-radius:12px 12px 0 0;padding:24px 28px;">
+          <div style="font-size:11px;font-weight:600;color:#9FE1CB;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">New Demo Request</div>
           <div style="font-size:22px;font-weight:700;color:#ffffff;line-height:1.2;">${String(clinic_name)}</div>
-          <div style="font-size:13px;color:#a5b4fc;margin-top:4px;">${submittedAt}</div>
+          <div style="font-size:13px;color:#5CEAB8;margin-top:4px;">${submittedAt}</div>
         </td></tr>
 
         <!-- Body -->
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
           <!-- CTA -->
           <a href="https://tarhunna.net/admin/demo-requests"
-             style="display:block;background:#6366f1;color:#ffffff;font-weight:600;font-size:15px;text-align:center;text-decoration:none;padding:14px 20px;border-radius:8px;">
+             style="display:block;background:#02C39A;color:#ffffff;font-weight:600;font-size:15px;text-align:center;text-decoration:none;padding:14px 20px;border-radius:8px;">
             View in Admin &rarr;
           </a>
 

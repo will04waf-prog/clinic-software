@@ -20,7 +20,7 @@ function ContactCard({ contact, onMove, stages }: {
   return (
     <div className="group rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md transition-all cursor-pointer">
       <Link href={`/leads/${contact.id}`}>
-        <p className="font-medium text-sm text-gray-900 group-hover:text-indigo-600">
+        <p className="font-medium text-sm text-gray-900 group-hover:text-brand-600">
           {contact.first_name} {contact.last_name}
         </p>
       </Link>

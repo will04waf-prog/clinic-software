@@ -66,14 +66,14 @@ export function OnboardingChecklist({
         </div>
 
         {/* Capture form CTA */}
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2.5">
-          <p className="min-w-0 flex-1 truncate text-sm text-indigo-700">
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2.5">
+          <p className="min-w-0 flex-1 truncate text-sm text-brand-700">
             <span className="font-medium">Your capture form is live —</span>{' '}
-            <span className="text-indigo-500">{captureUrl}</span>
+            <span className="text-brand-500">{captureUrl}</span>
           </p>
           <button
             onClick={copyUrl}
-            className="flex shrink-0 items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+            className="flex shrink-0 items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-800"
           >
             {copied
               ? <Check className="h-3.5 w-3.5" />
@@ -114,7 +114,7 @@ export function OnboardingChecklist({
               {!step.done && (
                 <Link
                   href={step.href}
-                  className="shrink-0 whitespace-nowrap text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                  className="shrink-0 whitespace-nowrap text-xs font-semibold text-brand-600 hover:text-brand-800"
                 >
                   {step.cta} →
                 </Link>

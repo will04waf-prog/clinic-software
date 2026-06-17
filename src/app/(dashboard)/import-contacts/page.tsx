@@ -445,7 +445,7 @@ function StepsIndicator({ step }: { step: Step }) {
         <div key={key} className="flex items-center gap-2">
           <div
             className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-              i <= activeIndex ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'
+              i <= activeIndex ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-500'
             }`}
           >
             {i + 1}
@@ -484,7 +484,7 @@ function InputStep(props: {
         onChange={(e) => props.setPasteText(e.target.value)}
         onPaste={props.onPaste}
         placeholder={'First Name\tEmail\tPhone\nSarah\tsarah@example.com\t555-0100\n…'}
-        className="w-full h-56 rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full h-56 rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
 
       <div className="flex items-center gap-3">
@@ -574,7 +574,7 @@ function MapStep(props: {
             <select
               value={props.mapping[i] ?? 'ignore'}
               onChange={(e) => setField(i, e.target.value as ContactField)}
-              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {FIELD_OPTIONS.map((f) => (
                 <option key={f} value={f}>{FIELD_LABELS[f]}</option>
@@ -647,12 +647,12 @@ function ImportingStep(props: {
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+        <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
         <h2 className="text-lg font-semibold text-gray-900">Importing…</h2>
       </div>
       <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
         <div
-          className="h-full bg-indigo-600 transition-[width] duration-200"
+          className="h-full bg-brand-600 transition-[width] duration-200"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -698,7 +698,7 @@ function ResultStep(props: {
         {isPartial ? (
           <AlertCircle className="h-6 w-6 text-amber-500 flex-shrink-0" />
         ) : (
-          <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0" />
+          <CheckCircle2 className="h-6 w-6 text-emerald-600 flex-shrink-0" />
         )}
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
@@ -743,7 +743,7 @@ function ResultStep(props: {
 
         <Link
           href="/leads"
-          className="text-sm text-indigo-600 hover:underline"
+          className="text-sm text-brand-600 hover:underline"
         >
           View your contacts →
         </Link>
@@ -760,7 +760,7 @@ function ResultStep(props: {
       )}
 
       {props.undoResult && (
-        <div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
+        <div className="flex items-start gap-2 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">
           <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <span>Undone. {props.undoResult.count.toLocaleString()} contacts removed.</span>
         </div>
@@ -781,7 +781,7 @@ function ResultStep(props: {
 type Tone = 'indigo' | 'blue' | 'gray'
 
 const TONE_CLASSES: Record<Tone, string> = {
-  indigo: 'bg-indigo-50 text-indigo-700',
+  indigo: 'bg-brand-50 text-brand-700',
   blue:   'bg-blue-50 text-blue-700',
   gray:   'bg-gray-50 text-gray-700',
 }

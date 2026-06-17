@@ -158,8 +158,8 @@ export default function AutomationsPage() {
           <AutomationsSkeleton />
         ) : sequences.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50">
-              <Zap className="h-6 w-6 text-indigo-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50">
+              <Zap className="h-6 w-6 text-brand-600" />
             </div>
             <h2 className="text-base font-semibold text-gray-900">No sequences yet</h2>
             <p className="text-sm text-gray-500 max-w-sm">

@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <aside className="w-56 shrink-0 flex flex-col border-r border-gray-200 bg-white">
         <div className="px-4 py-5 border-b border-gray-100">
-          <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Tarhunna</p>
+          <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider">Tarhunna</p>
           <p className="text-sm font-bold text-gray-900 mt-0.5">Super Admin</p>
           <p className="text-xs text-gray-400 mt-0.5">{profile.full_name}</p>
         </div>

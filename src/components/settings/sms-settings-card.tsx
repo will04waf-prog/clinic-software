@@ -94,7 +94,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
   }
 
   const vars = (
-    <span className="font-mono text-indigo-600">
+    <span className="font-mono text-brand-600">
       {'{{first_name}} {{clinic_name}} {{date}} {{time}}'}
     </span>
   )
@@ -116,8 +116,8 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
             type="button"
             onClick={() => toggle('sms_enabled')}
             className={[
-              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
-              settings.sms_enabled ? 'bg-indigo-600' : 'bg-gray-200',
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2',
+              settings.sms_enabled ? 'bg-brand-600' : 'bg-gray-200',
             ].join(' ')}
           >
             <span
@@ -149,8 +149,8 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
                   type="button"
                   onClick={() => toggle(key)}
                   className={[
-                    'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
-                    settings[key] ? 'bg-indigo-600' : 'bg-gray-200',
+                    'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2',
+                    settings[key] ? 'bg-brand-600' : 'bg-gray-200',
                   ].join(' ')}
                 >
                   <span
@@ -187,7 +187,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
                     onChange={(e) => setTemplate(key, e.target.value)}
                     placeholder={placeholder}
                     maxLength={320}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none"
                   />
                   <p className="text-right text-xs text-gray-300 mt-0.5">
                     {((settings[key] as string) ?? '').length}/320
@@ -211,7 +211,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
           type="button"
           onClick={save}
           disabled={saving}
-          className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold text-sm py-2.5 transition-colors"
+          className="w-full rounded-lg bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white font-semibold text-sm py-2.5 transition-colors"
         >
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save SMS settings'}
         </button>
@@ -231,7 +231,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
               value={testPhone}
               onChange={(e) => setTestPhone(e.target.value)}
               placeholder="+1 (555) 555-5555"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             />
             <p className="text-xs text-gray-400 mt-1">Enter the phone number where you want to receive the test message.</p>
           </div>
@@ -240,7 +240,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
             type="button"
             onClick={sendTest}
             disabled={testing || !testPhone.trim()}
-            className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-2.5 transition-colors"
+            className="w-full rounded-lg bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 disabled:cursor-not-allowed text-white font-semibold text-sm py-2.5 transition-colors"
           >
             {testing ? 'Sending...' : 'Send test SMS'}
           </button>
@@ -249,7 +249,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
             <div
               className={[
                 'flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm',
-                testBanner.kind === 'success' && 'bg-green-50 border-green-200 text-green-700',
+                testBanner.kind === 'success' && 'bg-emerald-50 border-emerald-200 text-emerald-700',
                 testBanner.kind === 'warning' && 'bg-amber-50 border-amber-200 text-amber-700',
                 testBanner.kind === 'error'   && 'bg-red-50   border-red-200   text-red-700',
               ].filter(Boolean).join(' ')}

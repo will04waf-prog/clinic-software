@@ -109,7 +109,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
               <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <Link href={`/leads/${contact.id}`} className="block">
-                    <p className="font-medium text-gray-900 hover:text-indigo-600">
+                    <p className="font-medium text-gray-900 hover:text-brand-600">
                       {contact.first_name} {contact.last_name}
                     </p>
                     <div className="flex items-center gap-3 mt-0.5">

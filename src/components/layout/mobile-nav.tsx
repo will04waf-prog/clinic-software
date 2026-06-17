@@ -26,10 +26,10 @@ export function MobileNav() {
             prefetch
             className={cn(
               'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors duration-100 active:bg-gray-50 active:scale-[0.96]',
-              active ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-900'
+              active ? 'text-brand-600' : 'text-gray-500 hover:text-gray-900'
             )}
           >
-            <Icon className={cn('h-5 w-5', active ? 'text-indigo-600' : 'text-gray-400')} />
+            <Icon className={cn('h-5 w-5', active ? 'text-brand-600' : 'text-gray-400')} />
             <span>{label}</span>
           </Link>
         )

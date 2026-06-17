@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
             <CardContent>
               <Link
                 href="/forgot-password"
-                className="block w-full rounded-md bg-indigo-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-indigo-700"
+                className="block w-full rounded-md bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
               >
                 Request a new link
               </Link>

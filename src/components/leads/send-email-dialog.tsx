@@ -149,7 +149,7 @@ export function SendEmailDialog({ contactId, contactEmail, firstName }: SendEmai
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={`Following up, ${firstName}`}
                 disabled={busy}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-gray-50 disabled:text-gray-400"
               />
             </div>
 
@@ -176,7 +176,7 @@ export function SendEmailDialog({ contactId, contactEmail, firstName }: SendEmai
                     <button
                       type="button"
                       onClick={() => { setDraftStatus('idle'); runDraft() }}
-                      className="rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                      className="rounded-md bg-brand-600 px-2 py-1 text-xs font-medium text-white hover:bg-brand-700"
                     >
                       Replace
                     </button>
@@ -201,7 +201,7 @@ export function SendEmailDialog({ contactId, contactEmail, firstName }: SendEmai
                 rows={6}
                 placeholder={`Hi {{first_name}},\n\nJust wanted to follow up on your interest in {{procedure_name}}...`}
                 disabled={busy}
-                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-gray-50 disabled:text-gray-400"
               />
               <p className="mt-1.5 text-xs text-gray-400">
                 Available merge fields:{' '}

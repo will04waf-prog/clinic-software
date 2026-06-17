@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+/* Brand palette — single source of truth for the brand teal.
+   Generates the bg-brand, text-brand, ring-brand and border-brand
+   utilities so the whole product matches the marketing and auth
+   pages instead of the default indigo. Anchored on the signature
+   colors: 02C39A (bright), 028090 (deep accent), 0B2027 (ink). */
+@theme {
+  --color-brand-50:  #e7faf5;
+  --color-brand-100: #c5f3e7;
+  --color-brand-200: #97e9d4;
+  --color-brand-300: #5ceab8;
+  --color-brand-400: #2ed3ac;
+  --color-brand-500: #02c39a;
+  --color-brand-600: #028090;
+  --color-brand-700: #036b78;
+  --color-brand-800: #054c57;
+  --color-brand-900: #0b2027;
+}
+
+/* Lenis smooth-scroll baseline (recommended defaults) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -48,6 +81,26 @@
     width: 100%;
     background-image: linear-gradient(90deg, transparent 0%, #028090 30%, #02C39A 70%, transparent 100%);
     border: 0;
+  }
+
+  /* Soft mint aura behind the hero so the headline reads as a focal point
+     instead of floating on flat white. Sits below content (z-0) and is
+     non-interactive. */
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(60% 55% at 50% 0%, rgba(2, 195, 154, 0.16) 0%, rgba(2, 195, 154, 0) 70%),
+      radial-gradient(40% 40% at 85% 25%, rgba(2, 128, 144, 0.10) 0%, rgba(2, 128, 144, 0) 70%),
+      radial-gradient(45% 45% at 12% 30%, rgba(92, 234, 184, 0.10) 0%, rgba(92, 234, 184, 0) 70%);
+  }
+
+  /* Faint dotted texture for section backgrounds that would otherwise be flat. */
+  .bg-dot-grid {
+    background-image: radial-gradient(rgba(2, 128, 144, 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
 
   @keyframes signature-sweep {

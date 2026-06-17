@@ -161,7 +161,7 @@ export default function PrivacyPage() {
                 We retain account and clinic data for as long as your account is active or as
                 needed to provide the service. If you cancel your account, you may request
                 deletion of your data by contacting us at{' '}
-                <a href={`mailto:${CONTACT_EMAIL}`} className="text-indigo-600 hover:underline">{CONTACT_EMAIL}</a>.
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a>.
                 We will process deletion requests within a reasonable timeframe.
               </p>
             </section>
@@ -202,7 +202,7 @@ export default function PrivacyPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-3">10. Contact</h2>
               <p>
                 Questions about this Privacy Policy? Contact us at{' '}
-                <a href={`mailto:${CONTACT_EMAIL}`} className="text-indigo-600 hover:underline">{CONTACT_EMAIL}</a>.
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a>.
               </p>
             </section>
 

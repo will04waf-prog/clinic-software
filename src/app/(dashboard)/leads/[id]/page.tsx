@@ -236,10 +236,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                           <div className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
                             inbound
                               ? 'bg-gray-100 text-gray-800'
-                              : 'bg-indigo-50 text-gray-800'
+                              : 'bg-brand-50 text-gray-800'
                           }`}>
                             <div className={`flex items-center gap-1.5 text-xs font-medium ${
-                              inbound ? 'text-gray-500' : 'text-indigo-600'
+                              inbound ? 'text-gray-500' : 'text-brand-600'
                             }`}>
                               {m.channel === 'sms' ? <MessageSquare className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
                               <span>{m.channel.toUpperCase()}</span>

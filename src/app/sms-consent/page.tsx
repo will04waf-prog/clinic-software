@@ -132,7 +132,7 @@ export default function SmsConsentPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Contact</h2>
               <p>
                 Questions about this policy or about SMS communications received:{' '}
-                <a href={`mailto:${CONTACT_EMAIL}`} className="text-indigo-600 hover:underline">{CONTACT_EMAIL}</a>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a>
               </p>
             </section>
 

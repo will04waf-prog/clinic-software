@@ -56,11 +56,11 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 active:scale-[0.98]',
                 active
-                  ? 'bg-indigo-50 text-indigo-700 active:bg-indigo-100'
+                  ? 'bg-brand-50 text-brand-700 active:bg-brand-100'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100'
               )}
             >
-              <Icon className={cn('h-4 w-4', active ? 'text-indigo-600' : 'text-gray-400')} />
+              <Icon className={cn('h-4 w-4', active ? 'text-brand-600' : 'text-gray-400')} />
               {label}
             </Link>
           )
@@ -73,7 +73,7 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
           <Link
             href="/admin"
             prefetch
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 active:bg-indigo-100 transition-colors duration-100 active:scale-[0.98]"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 active:bg-brand-100 transition-colors duration-100 active:scale-[0.98]"
           >
             <ShieldCheck className="h-4 w-4" />
             Super Admin

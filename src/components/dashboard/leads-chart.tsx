@@ -91,8 +91,8 @@ export function LeadsChart({ data }: LeadsChartProps) {
             <AreaChart data={filtered} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="leadsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#6366F1" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#6366F1" stopOpacity={0} />
+                  <stop offset="0%"   stopColor="#02C39A" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#02C39A" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -116,7 +116,7 @@ export function LeadsChart({ data }: LeadsChartProps) {
               <Area
                 type="monotone"
                 dataKey="count"
-                stroke="#4F46E5"
+                stroke="#028090"
                 strokeWidth={2}
                 fill="url(#leadsGradient)"
               />

@@ -29,10 +29,10 @@ const NAV_ITEMS = [
 
 // ── Shared mock data ──────────────────────────────────────────
 const RECENT_LEADS = [
-  { name: 'Sofia Martinez',  contact: 'sofia.m@email.com',  stage: 'New Inquiry',    color: '#6366f1', time: '2h ago'    },
+  { name: 'Sofia Martinez',  contact: 'sofia.m@email.com',  stage: 'New Inquiry',    color: '#02C39A', time: '2h ago'    },
   { name: 'Emma Chen',       contact: 'emma.c@email.com',   stage: 'Follow-Up Sent', color: '#d97706', time: '5h ago'    },
   { name: 'Olivia Patel',    contact: 'olivia.p@email.com', stage: 'Consult Booked', color: '#059669', time: 'Yesterday' },
-  { name: 'Isabella Torres', contact: 'isa.t@email.com',    stage: 'New Inquiry',    color: '#6366f1', time: 'Yesterday' },
+  { name: 'Isabella Torres', contact: 'isa.t@email.com',    stage: 'New Inquiry',    color: '#02C39A', time: 'Yesterday' },
 ]
 
 const UPCOMING = [
@@ -43,7 +43,7 @@ const UPCOMING = [
 
 const PIPELINE = [
   {
-    name: 'New Inquiry', color: '#6366f1',
+    name: 'New Inquiry', color: '#02C39A',
     leads: [
       { name: 'Sofia Martinez',  procedure: 'Botox'       },
       { name: 'Isabella Torres', procedure: 'Lip Filler'  },
@@ -65,7 +65,7 @@ const PIPELINE = [
     ],
   },
   {
-    name: 'Treatment Scheduled', color: '#7c3aed',
+    name: 'Treatment Scheduled', color: '#028090',
     leads: [
       { name: 'Priya Sharma', procedure: 'Filler Package' },
     ],
@@ -96,10 +96,10 @@ function MockSidebar({ activeTab }: { activeTab: Tab }) {
             <div
               key={id}
               className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
-                active ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600'
+                active ? 'bg-brand-50 text-brand-700' : 'text-gray-600'
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-brand-600' : 'text-gray-400'}`} />
               {label}
             </div>
           )
@@ -111,7 +111,7 @@ function MockSidebar({ activeTab }: { activeTab: Tab }) {
 
 function DashboardPanel() {
   const stats = [
-    { label: 'New Leads Today',     value: 8,     sub: '24 this week',        Icon: UserPlus,     color: 'text-indigo-600',  bg: 'bg-indigo-50'  },
+    { label: 'New Leads Today',     value: 8,     sub: '24 this week',        Icon: UserPlus,     color: 'text-brand-600',  bg: 'bg-brand-50'  },
     { label: 'Consultations Today', value: 3,     sub: '11 this week',        Icon: CalendarCheck,color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'No-Shows This Week',  value: 1,     sub: 'Needs recovery',      Icon: AlertCircle,  color: 'text-amber-600',   bg: 'bg-amber-50'   },
     { label: 'Conversion Rate',     value: '71%', sub: 'Lead → Consultation', Icon: TrendingUp,   color: 'text-purple-600',  bg: 'bg-purple-50'  },
@@ -146,7 +146,7 @@ function DashboardPanel() {
           <div className="rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
               <span className="text-xs font-semibold text-gray-900">Recent Leads</span>
-              <span className="text-[10px] text-indigo-600">View all</span>
+              <span className="text-[10px] text-brand-600">View all</span>
             </div>
             <div className="divide-y divide-gray-100 px-4">
               {RECENT_LEADS.map((lead) => (
@@ -171,7 +171,7 @@ function DashboardPanel() {
           <div className="rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
               <span className="text-xs font-semibold text-gray-900">Upcoming Consultations</span>
-              <span className="text-[10px] text-indigo-600">View all</span>
+              <span className="text-[10px] text-brand-600">View all</span>
             </div>
             <div className="divide-y divide-gray-100 px-4">
               {UPCOMING.map((c) => (
@@ -258,10 +258,10 @@ function ConsultationsPanel() {
               className="flex items-start justify-between rounded-xl border border-gray-200 bg-white p-3"
             >
               <div className="flex items-start gap-3">
-                <div className="flex flex-col items-center rounded-lg bg-indigo-50 px-2.5 py-1.5 text-center min-w-[46px]">
-                  <span className="text-[10px] font-medium text-indigo-600">{c.month}</span>
-                  <span className="text-lg font-bold leading-none text-indigo-700">{c.day}</span>
-                  <span className="text-[10px] text-indigo-500">{c.time}</span>
+                <div className="flex flex-col items-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-center min-w-[46px]">
+                  <span className="text-[10px] font-medium text-brand-600">{c.month}</span>
+                  <span className="text-lg font-bold leading-none text-brand-700">{c.day}</span>
+                  <span className="text-[10px] text-brand-500">{c.time}</span>
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -299,7 +299,7 @@ function ConsultationsPanel() {
 function MobileStepLabel({ number, label }: { number: string; label: string }) {
   return (
     <div className="flex items-center gap-3 mb-3">
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600">
         <span className="text-[10px] font-bold text-white">{number}</span>
       </div>
       <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">{label}</span>
@@ -321,9 +321,9 @@ function MobileLeadsCard() {
       </div>
       {/* Stat chips */}
       <div className="grid grid-cols-2 gap-2 p-3">
-        <div className="rounded-xl bg-indigo-50 px-4 py-3">
-          <p className="text-2xl font-bold text-indigo-600">8</p>
-          <p className="mt-0.5 text-xs font-medium text-indigo-700">New Leads Today</p>
+        <div className="rounded-xl bg-brand-50 px-4 py-3">
+          <p className="text-2xl font-bold text-brand-600">8</p>
+          <p className="mt-0.5 text-xs font-medium text-brand-700">New Leads Today</p>
         </div>
         <div className="rounded-xl bg-emerald-50 px-4 py-3">
           <p className="text-2xl font-bold text-emerald-600">3</p>
@@ -406,10 +406,10 @@ function MobileConsultationsCard() {
             className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4"
           >
             {/* Larger date block for mobile readability */}
-            <div className="flex flex-col items-center rounded-xl bg-indigo-50 px-3 py-2 text-center shrink-0 min-w-[54px]">
-              <span className="text-[10px] font-semibold text-indigo-600">{c.month}</span>
-              <span className="text-2xl font-bold leading-none text-indigo-700">{c.day}</span>
-              <span className="mt-0.5 text-[10px] text-indigo-500">{c.time}</span>
+            <div className="flex flex-col items-center rounded-xl bg-brand-50 px-3 py-2 text-center shrink-0 min-w-[54px]">
+              <span className="text-[10px] font-semibold text-brand-600">{c.month}</span>
+              <span className="text-2xl font-bold leading-none text-brand-700">{c.day}</span>
+              <span className="mt-0.5 text-[10px] text-brand-500">{c.time}</span>
             </div>
             {/* Details — name + status only */}
             <div>
@@ -466,7 +466,7 @@ export function ProductShowcase() {
       <div className="mx-auto max-w-6xl">
         {/* Headline — shown on all sizes */}
         <div className="mb-8 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand-400">
             See it in action
           </p>
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
@@ -483,7 +483,7 @@ export function ProductShowcase() {
                 onClick={() => setTab(id)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   tab === id
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >

@@ -59,7 +59,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
         </p>
         <Link
           href="/leads"
-          className="mt-4 inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
+          className="mt-4 inline-flex items-center rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
         >
           Go to Leads →
         </Link>
@@ -84,14 +84,14 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
           >
             <div className="flex items-start gap-4">
               {/* Time */}
-              <div className="flex flex-col items-center rounded-lg bg-indigo-50 px-3 py-2 text-center min-w-[60px]">
-                <span className="text-xs font-medium text-indigo-600">
+              <div className="flex flex-col items-center rounded-lg bg-brand-50 px-3 py-2 text-center min-w-[60px]">
+                <span className="text-xs font-medium text-brand-600">
                   {new Date(consult.scheduled_at).toLocaleDateString('en', { month: 'short' })}
                 </span>
-                <span className="text-xl font-bold text-indigo-700">
+                <span className="text-xl font-bold text-brand-700">
                   {new Date(consult.scheduled_at).getDate()}
                 </span>
-                <span className="text-xs text-indigo-500">
+                <span className="text-xs text-brand-500">
                   {new Date(consult.scheduled_at).toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit' })}
                 </span>
               </div>
@@ -101,7 +101,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/leads/${consult.contact_id}`}
-                    className="font-semibold text-gray-900 hover:text-indigo-600"
+                    className="font-semibold text-gray-900 hover:text-brand-600"
                   >
                     {consult.contact?.first_name} {consult.contact?.last_name}
                   </Link>
@@ -136,7 +136,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isPending}>
                   {isPending
-                    ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                    ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
                     : <MoreHorizontal className="h-4 w-4" />
                   }
                 </Button>

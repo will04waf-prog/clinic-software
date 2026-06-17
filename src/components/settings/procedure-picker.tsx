@@ -58,8 +58,8 @@ export function ProcedurePicker({ selected, onChange }: ProcedurePickerProps) {
                   onClick={() => toggle(item)}
                   className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                     on
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:text-indigo-600'
+                      ? 'border-brand-600 bg-brand-600 text-white'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600'
                   }`}
                 >
                   {item}
@@ -78,13 +78,13 @@ export function ProcedurePicker({ selected, onChange }: ProcedurePickerProps) {
             {customSelected.map((label) => (
               <span
                 key={label}
-                className="flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700"
+                className="flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700"
               >
                 {label}
                 <button
                   type="button"
                   onClick={() => onChange(selected.filter((s) => s !== label))}
-                  className="ml-0.5 text-indigo-400 hover:text-indigo-600"
+                  className="ml-0.5 text-brand-400 hover:text-brand-600"
                 >
                   <X className="h-3 w-3" />
                 </button>

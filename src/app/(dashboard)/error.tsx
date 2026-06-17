@@ -23,7 +23,7 @@ export default function DashboardError({
       </div>
       <button
         onClick={reset}
-        className="text-sm text-indigo-600 hover:underline"
+        className="text-sm text-brand-600 hover:underline"
       >
         Try again
       </button>

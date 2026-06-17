@@ -176,7 +176,7 @@ export function SequenceEditor({ sequence, onSave, onCancel }: SequenceEditorPro
           <label className="flex items-center gap-2 cursor-pointer">
             <div
               onClick={() => setIsActive(!isActive)}
-              className={`relative h-5 w-9 rounded-full transition-colors ${isActive ? 'bg-indigo-600' : 'bg-gray-200'}`}
+              className={`relative h-5 w-9 rounded-full transition-colors ${isActive ? 'bg-brand-600' : 'bg-gray-200'}`}
             >
               <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </div>

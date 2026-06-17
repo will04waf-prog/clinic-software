@@ -30,7 +30,7 @@ function formatPreferredDate(date: string | null) {
 const STATUS_COLORS: Record<string, string> = {
   new:       'bg-blue-50 text-blue-700',
   contacted: 'bg-amber-50 text-amber-700',
-  booked:    'bg-green-50 text-green-700',
+  booked:    'bg-emerald-50 text-emerald-700',
   completed: 'bg-gray-100 text-gray-600',
   cancelled: 'bg-red-50 text-red-600',
 }
@@ -81,7 +81,7 @@ function QuickActions({
         <button
           disabled={busy}
           onClick={() => onUpdate(req.id, 'booked')}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-colors whitespace-nowrap"
         >
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -174,7 +174,7 @@ export function DemoRequestsTable({ requests }: { requests: DemoRequest[] }) {
                   disabled={updating === req.id}
                   onChange={(e) => updateStatus(req.id, e.target.value)}
                   className={[
-                    'text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:ring-2 focus:ring-indigo-500',
+                    'text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:ring-2 focus:ring-brand-500',
                     STATUS_COLORS[req.status] ?? 'bg-gray-100 text-gray-600',
                     updating === req.id ? 'opacity-50' : '',
                   ].join(' ')}

@@ -47,7 +47,7 @@ export default async function AdminUsersPage() {
                   <td className="px-5 py-3">
                     <p className="font-medium text-gray-900">{user.full_name}</p>
                     {user.is_super_admin && (
-                      <span className="text-xs text-indigo-600 font-medium">super admin</span>
+                      <span className="text-xs text-brand-600 font-medium">super admin</span>
                     )}
                   </td>
                   <td className="px-5 py-3 text-gray-600">{user.email}</td>
@@ -56,7 +56,7 @@ export default async function AdminUsersPage() {
                     {org ? (
                       <Link
                         href={`/admin/accounts/${user.organization_id}`}
-                        className="text-indigo-600 hover:text-indigo-800"
+                        className="text-brand-600 hover:text-brand-800"
                       >
                         {org.name}
                       </Link>
