@@ -462,7 +462,7 @@ export function ProductShowcase() {
   ]
 
   return (
-    <section className="bg-slate-900 px-6 py-20">
+    <section className="bg-[#14241d] px-6 py-20">
       <div className="mx-auto max-w-6xl">
         {/* Headline — shown on all sizes */}
         <div className="mb-8 text-center">

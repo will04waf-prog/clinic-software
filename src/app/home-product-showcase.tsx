@@ -204,7 +204,7 @@ function StepLabel({ number, label }: { number: string; label: string }) {
 
 export function HomeProductShowcase() {
   return (
-    <section className="bg-slate-900 px-6 py-12 sm:py-20">
+    <section className="bg-[#14241d] px-6 py-12 sm:py-20">
       <div className="mx-auto max-w-6xl">
         {/* Headline */}
         <div className="mb-6 sm:mb-10 text-center">

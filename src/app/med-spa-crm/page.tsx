@@ -336,7 +336,7 @@ export default function MedSpaCRMPage() {
         </section>
 
         {/* ── Mid-page CTA ─────────────────────────────────────── */}
-        <section className="bg-[#0B2027] px-6 py-12">
+        <section className="bg-[#14241d] px-6 py-12">
           <AnimatedSection className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>
               <p className="text-base font-semibold text-white">Ready to see how it works?</p>
@@ -380,7 +380,7 @@ export default function MedSpaCRMPage() {
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
-        <section className="bg-[#0B2027] px-6 py-20">
+        <section className="bg-[#14241d] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
             <SignatureLogo size="lg" variant="dark-bg" animated className="mb-3 block" />
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">

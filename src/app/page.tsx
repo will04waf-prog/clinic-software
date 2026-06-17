@@ -560,7 +560,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
-        <section className="bg-[#0B2027] px-6 py-20">
+        <section className="bg-[#14241d] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
             <SignatureLogo size="lg" variant="dark-bg" animated className="mb-3 block" />
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
