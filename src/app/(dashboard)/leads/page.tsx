@@ -1,10 +1,18 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { LeadsTable } from '@/components/leads/leads-table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
 import type { Contact } from '@/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+const POLL_INTERVAL_MS = 12_000
+
+function contactsSignature(rows: Contact[]): string {
+  return rows
+    .map((c) => `${c.id}:${c.has_unread ? 1 : 0}:${c.last_activity_at ?? ''}:${c.status}:${c.is_archived ? 1 : 0}`)
+    .join('|')
+}
 
 function LeadsSkeleton() {
   return (
@@ -35,26 +43,72 @@ export default function LeadsPage() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('all')
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  // Holds the signature of the last applied contacts array, so a
+  // background poll that returns identical data can skip setContacts
+  // and avoid an unnecessary re-render.
+  const signatureRef = useRef<string>('')
+
+  // `silent: true` means a background poll: don't toggle loading and
+  // skip the setState if nothing the UI cares about changed.
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    if (!silent) setError(null)
     try {
       const res = await fetch('/api/leads')
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
       }
-      const data = await res.json()
+      const data: Contact[] = await res.json()
+      const sig = contactsSignature(data)
+      if (silent && sig === signatureRef.current) return
+      signatureRef.current = sig
       setContacts(data)
     } catch (err: any) {
       console.error('[leads] load error:', err)
-      setError(err.message ?? 'Failed to load contacts')
+      if (!silent) setError(err.message ?? 'Failed to load contacts')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Poll every 12s for new inbound messages so the unread indicator
+  // updates without a manual refresh. Pause while the tab is hidden
+  // (no point polling when the user isn't looking) and fire an
+  // immediate refresh on re-show so the list is fresh when they
+  // come back.
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null
+
+    const start = () => {
+      if (intervalId !== null) return
+      intervalId = setInterval(() => load(true), POLL_INTERVAL_MS)
+    }
+    const stop = () => {
+      if (intervalId === null) return
+      clearInterval(intervalId)
+      intervalId = null
+    }
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stop()
+      } else {
+        load(true)
+        start()
+      }
+    }
+
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [load])
 
   const [search, setSearch] = useState('')
 
@@ -101,7 +155,7 @@ export default function LeadsPage() {
       <Header
         title="Leads & Contacts"
         subtitle={`${contacts.length} total contacts`}
-        actions={<AddLeadDialog onSuccess={load} />}
+        actions={<AddLeadDialog onSuccess={() => load()} />}
       />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -130,7 +184,7 @@ export default function LeadsPage() {
         {!loading && !error && (
           <LeadsTable
             contacts={filtered}
-            onRefresh={load}
+            onRefresh={() => load()}
             search={search}
             onSearchChange={setSearch}
             totalForTab={tabFiltered.length}

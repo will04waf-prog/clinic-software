@@ -49,15 +49,41 @@ export async function GET(req: NextRequest) {
 
   if (status) query = query.eq('status', status)
 
-  const { data: contacts, error } = await query
+  // Run in parallel: contacts + latest inbound timestamp per contact.
+  // The inbound query is org-scoped and indexed on contact_id; we then
+  // reduce in JS to a Map<contact_id, latestCreatedAt>.
+  const [{ data: contacts, error }, { data: inbound, error: inboundError }] = await Promise.all([
+    query,
+    supabase
+      .from('messages')
+      .select('contact_id, created_at')
+      .eq('organization_id', profile.organization_id)
+      .eq('direction', 'inbound')
+      .order('created_at', { ascending: false }),
+  ])
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error)        return NextResponse.json({ error: error.message },        { status: 500 })
+  if (inboundError) return NextResponse.json({ error: inboundError.message }, { status: 500 })
 
-  // Flatten the nested tags join
-  const normalized = (contacts ?? []).map((c: any) => ({
-    ...c,
-    tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
-  }))
+  const latestInboundByContact = new Map<string, string>()
+  for (const row of inbound ?? []) {
+    if (!row.contact_id) continue
+    // Rows are ordered created_at desc, so the first hit per contact wins.
+    if (!latestInboundByContact.has(row.contact_id)) {
+      latestInboundByContact.set(row.contact_id, row.created_at)
+    }
+  }
+
+  // Flatten the nested tags join + derive has_unread.
+  const normalized = (contacts ?? []).map((c: any) => {
+    const latest = latestInboundByContact.get(c.id)
+    const seen   = c.messages_last_seen_at
+    return {
+      ...c,
+      tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
+      has_unread: !!latest && (!seen || latest > seen),
+    }
+  })
 
   return NextResponse.json(normalized)
 }

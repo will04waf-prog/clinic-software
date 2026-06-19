@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { MoreHorizontal, Mail, Phone, Search } from 'lucide-react'
+import { MoreHorizontal, Mail, Phone, Search, MessageCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -109,7 +109,17 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
               <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <Link href={`/leads/${contact.id}`} className="block">
-                    <p className="font-medium text-gray-900 hover:text-brand-600">
+                    <p className={`flex items-center gap-1.5 text-gray-900 hover:text-brand-600 ${contact.has_unread ? 'font-semibold' : 'font-medium'}`}>
+                      {contact.has_unread && (
+                        <span
+                          className="relative inline-flex h-4 w-4 items-center justify-center"
+                          aria-label="New message"
+                          title="New message"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 text-brand-600" />
+                          <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-brand-500 ring-2 ring-white" />
+                        </span>
+                      )}
                       {contact.first_name} {contact.last_name}
                     </p>
                     <div className="flex items-center gap-3 mt-0.5">

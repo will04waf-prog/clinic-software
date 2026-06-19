@@ -46,6 +46,19 @@ async function getContactData(id: string) {
       .order('scheduled_at', { ascending: false }),
   ])
 
+  // Mark the conversation as seen. Fire-and-forget: a failure here
+  // shouldn't break page render — the indicator will just persist until
+  // the next view. RLS scopes the update to the caller's org.
+  if (contact) {
+    void supabase
+      .from('contacts')
+      .update({ messages_last_seen_at: new Date().toISOString() })
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) console.error('[leads/[id]] mark-as-seen failed:', error.message)
+      })
+  }
+
   return { contact, messages: messages ?? [], activity: activity ?? [], consultations: consultations ?? [] }
 }
 

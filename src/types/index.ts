@@ -131,11 +131,15 @@ export interface Contact {
   notes: string | null
   last_contacted_at: string | null
   last_activity_at: string | null
+  messages_last_seen_at: string | null
   created_at: string
   updated_at: string
   // Joined fields
   stage?: PipelineStage
   tags?: Tag[]
+  // Derived by /api/leads — true when an inbound message arrived
+  // after messages_last_seen_at.
+  has_unread?: boolean
 }
 
 export interface Consultation {
