@@ -41,7 +41,7 @@ export function LogoMark({
         src="/tarhunna-mark.png"
         alt={standalone ? 'Tarhunna' : ''}
         width={540}
-        height={488}
+        height={484}
         priority={priority}
         unoptimized
         className={SIZE_CLASS[size]}
