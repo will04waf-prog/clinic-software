@@ -160,7 +160,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How long does it take to get started?',
-    a: 'Most clinics are fully set up in under 10 minutes. Add your services, share your intake form link, and your first leads start coming in right away. No technical setup required.',
+    a: 'Most clinics are fully set up in less than 20 minutes. Add your services, share your intake form link, and your first leads start coming in right away. No technical setup required.',
   },
 ]
 
@@ -325,7 +325,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6">
-              {['No credit card required', 'Setup in under 5 minutes', 'Cancel anytime'].map((item) => (
+              {['No credit card required', 'Setup in less than 20 minutes', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
                   <CheckCircle className="h-4 w-4 text-[#02C39A] shrink-0" />
                   {item}
@@ -346,7 +346,7 @@ export default function LandingPage() {
             <div className="grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-3">
               {[
                 { stat: 'Purpose-built', label: 'For aesthetic clinics — not a retrofitted sales CRM' },
-                { stat: 'Under 10 min', label: 'From sign-up to your first lead captured' },
+                { stat: 'Under 20 min', label: 'From sign-up to your first lead captured' },
                 { stat: 'Founder-led', label: 'Talk to a founder, never a sales rep' },
               ].map(({ stat, label }) => (
                 <div key={stat} className="bg-[#F5EFE1] px-6 py-6 text-center">
@@ -604,7 +604,7 @@ export default function LandingPage() {
               Start converting more leads today
             </h2>
             <p className="mt-4 text-[#F5EFE1]/70">
-              14-day free trial. No credit card required. Set up in minutes.
+              14-day free trial. No credit card required. Set up in less than 20 minutes.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
