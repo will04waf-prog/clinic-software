@@ -42,8 +42,8 @@ export function LogoMark({
         alt={standalone ? 'Tarhunna' : ''}
         width={540}
         height={488}
-        quality={95}
         priority={priority}
+        unoptimized
         className={SIZE_CLASS[size]}
       />
     </span>
