@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { BookDemoForm } from './book-demo-form'
-import { SignatureLogo } from '@/components/ui/signature-logo'
+import { LogoMark } from '@/components/ui/logo-mark'
 
 export const metadata: Metadata = {
   title: 'Book a Demo — Tarhunna',
@@ -16,7 +16,7 @@ export default function BookDemoPage() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
-            <SignatureLogo size="sm" variant="light-bg" animated />
+            <LogoMark size="sm" standalone />
           </a>
           <a
             href="/login"

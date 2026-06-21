@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import {
   Users,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react'
 import { HomeProductShowcase } from './home-product-showcase'
 import { SignatureLogo } from '@/components/ui/signature-logo'
+import { LogoMark } from '@/components/ui/logo-mark'
 import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
 import { SmoothScrollProvider } from '@/components/marketing/smooth-scroll-provider'
@@ -253,16 +253,8 @@ export default function LandingPage() {
       {/* ── Nav ──────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-[#F5EFE1] pointer-fine:bg-[#F5EFE1]/90 pointer-fine:backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/tarhunna-mark.png"
-              alt=""
-              width={270}
-              height={244}
-              className="h-11 w-auto"
-              priority
-            />
-            <SignatureLogo size="md" variant="light-bg" animated />
+          <Link href="/" aria-label="Tarhunna" className="flex items-center">
+            <LogoMark size="md" priority />
           </Link>
           <nav className="flex items-center gap-3">
             <Link
@@ -608,7 +600,7 @@ export default function LandingPage() {
         {/* ── Final CTA ────────────────────────────────────────── */}
         <section className="bg-[#14241d] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
-            <SignatureLogo size="lg" variant="dark-bg" animated className="mb-3 block" />
+            <LogoMark size="lg" standalone className="mb-3" />
             <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1] sm:text-4xl">
               Start converting more leads today
             </h2>
@@ -639,7 +631,7 @@ export default function LandingPage() {
       <footer className="border-t border-gray-200 bg-[#F5EFE1] px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <SignatureLogo size="sm" variant="light-bg" animated />
+            <LogoMark size="sm" standalone />
             <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
           </div>
           <div className="flex items-center gap-5 text-sm text-gray-500">

@@ -13,7 +13,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { SignatureLogo } from '@/components/ui/signature-logo'
+import { LogoMark } from '@/components/ui/logo-mark'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -41,7 +41,7 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
     <aside className="hidden md:flex h-full w-60 flex-col border-r border-gray-200 bg-white">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-gray-200 px-5">
-        <SignatureLogo size="md" variant="light-bg" animated />
+        <LogoMark size="md" standalone />
       </div>
 
       {/* Nav */}

@@ -13,7 +13,7 @@ import {
   TrendingUp,
   MoreHorizontal,
 } from 'lucide-react'
-import { SignatureLogo } from '@/components/ui/signature-logo'
+import { LogoMark } from '@/components/ui/logo-mark'
 
 type Tab = 'dashboard' | 'pipeline' | 'consultations'
 
@@ -87,7 +87,7 @@ function MockSidebar({ activeTab }: { activeTab: Tab }) {
   return (
     <aside className="hidden w-44 flex-none flex-col border-r border-gray-200 bg-white sm:flex">
       <div className="flex h-12 items-center gap-2 border-b border-gray-200 px-4">
-        <SignatureLogo size="md" variant="light-bg" animated />
+        <LogoMark size="md" standalone />
       </div>
       <nav className="flex-1 px-2 py-3 space-y-0.5">
         {NAV_ITEMS.map(({ label, icon: Icon, id }) => {
