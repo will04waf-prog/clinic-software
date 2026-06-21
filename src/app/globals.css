@@ -98,6 +98,65 @@ html.lenis body {
       radial-gradient(45% 45% at 12% 30%, rgba(92, 234, 184, 0.10) 0%, rgba(92, 234, 184, 0) 70%);
   }
 
+  /* ─── LogoMark sheen sweep ─────────────────────────────────────
+     A translucent highlight band travels across the T mark on the
+     same 6s cadence as the signature wordmark's mint sweep, so the
+     two read as one brand identity. The sheen is masked to the T's
+     alpha silhouette via mask-image so it never bleeds outside the
+     glyph. mix-blend-mode: screen brightens the mark's existing
+     3D-rendered colors instead of painting over them.
+
+     IMPORTANT: the size class lives on the <img>, NOT on the wrapper.
+     If both the wrapper has w-auto AND the img has width:100%, the
+     browser resolves a circular sizing dependency, and mobile Safari
+     in particular stretches the image. The wrapper is purely a
+     positioning container — it sizes itself to whatever the img
+     decides. */
+  .logo-mark {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    vertical-align: middle;
+  }
+  .logo-mark > img {
+    display: block;
+  }
+  .logo-mark::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 38%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0) 62%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 240% 100%;
+    background-position: -140% 0;
+    mask-image: url('/tarhunna-mark.png');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: url('/tarhunna-mark.png');
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mix-blend-mode: screen;
+    animation: logo-mark-sheen 6s linear infinite;
+    will-change: background-position;
+  }
+  @keyframes logo-mark-sheen {
+    0%   { background-position: -140% 0; }
+    100% { background-position:  140% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .logo-mark::after { animation: none; opacity: 0; }
+  }
+
   /* Faint dotted texture for section backgrounds that would otherwise be flat. */
   .bg-dot-grid {
     background-image: radial-gradient(rgba(2, 128, 144, 0.07) 1px, transparent 1px);
