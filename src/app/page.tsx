@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Users,
@@ -252,7 +253,15 @@ export default function LandingPage() {
       {/* ── Nav ──────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-[#F5EFE1] pointer-fine:bg-[#F5EFE1]/90 pointer-fine:backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/tarhunna-mark.png"
+              alt=""
+              width={270}
+              height={360}
+              className="h-9 w-auto"
+              priority
+            />
             <SignatureLogo size="md" variant="light-bg" animated />
           </Link>
           <nav className="flex items-center gap-3">
