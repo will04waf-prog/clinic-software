@@ -259,7 +259,7 @@ export default function LandingPage() {
               alt=""
               width={270}
               height={360}
-              className="h-9 w-auto"
+              className="h-11 w-auto"
               priority
             />
             <SignatureLogo size="md" variant="light-bg" animated />
