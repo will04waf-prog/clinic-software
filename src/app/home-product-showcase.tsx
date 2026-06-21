@@ -5,7 +5,7 @@
 const LEADS = [
   { name: 'Sofia Martinez',  email: 'sofia.m@email.com',   stage: 'New Inquiry',       color: '#02C39A', time: '2h ago'    },
   { name: 'Emma Chen',       email: 'emma.c@email.com',    stage: 'Follow-Up Sent',    color: '#d97706', time: '5h ago'    },
-  { name: 'Olivia Patel',    email: 'olivia.p@email.com',  stage: 'Consultation Booked', color: '#059669', time: 'Yesterday' },
+  { name: 'Olivia Patel',    email: 'olivia.p@email.com',  stage: 'Consultation Booked', color: '#02C39A', time: 'Yesterday' },
   { name: 'James Wilson',    email: 'j.wilson@email.com',  stage: 'New Inquiry',       color: '#02C39A', time: 'Yesterday' },
   { name: 'Priya Sharma',    email: 'priya.s@email.com',   stage: 'Follow-Up Sent',    color: '#d97706', time: '2d ago'    },
 ]
@@ -26,7 +26,7 @@ const PIPELINE = [
     ],
   },
   {
-    name: 'Consultation Booked', color: '#059669',
+    name: 'Consultation Booked', color: '#02C39A',
     leads: [
       { name: 'Olivia Patel', procedure: 'Filler Package' },
       { name: 'Ava Nguyen',   procedure: 'Botox'          },
@@ -50,7 +50,7 @@ function ChromeBar({ url }: { url: string }) {
         <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
         <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
       </div>
-      <div className="flex-1 rounded-md bg-[#F5EFE1]/80 px-3 py-0.5">
+      <div className="flex-1 rounded-md bg-white/80 px-3 py-0.5">
         <span className="text-xs text-gray-400 select-none">app.tarhunna.net/{url}</span>
       </div>
     </div>
@@ -65,18 +65,18 @@ function LeadsPanel() {
       <ChromeBar url="leads" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-[#F5EFE1] px-5 py-2 sm:py-3">
+        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Leads &amp; Contacts</p>
           <p className="text-xs text-gray-400">26 contacts</p>
         </div>
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-gray-100 bg-[#F5EFE1] px-5 py-2">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-gray-100 bg-white px-5 py-2">
           <span className="text-xs font-medium text-gray-400">Contact</span>
           <span className="text-xs font-medium text-gray-400">Stage</span>
           <span className="text-xs font-medium text-gray-400">Added</span>
         </div>
         {/* Rows */}
-        <div className="divide-y divide-gray-100 bg-[#F5EFE1]">
+        <div className="divide-y divide-gray-100 bg-white">
           {LEADS.map((lead) => (
             <div key={lead.name} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-5 py-2 sm:py-3">
               <div className="min-w-0">
@@ -106,14 +106,14 @@ function PipelinePanel() {
       <ChromeBar url="pipeline" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-[#F5EFE1] px-5 py-2 sm:py-3">
+        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Pipeline</p>
           <p className="text-xs text-gray-400">8 active contacts</p>
         </div>
         {/* Kanban */}
         <div className="flex gap-2 overflow-x-auto p-3">
           {PIPELINE.map((col) => (
-            <div key={col.name} className="w-36 flex-none rounded-xl border border-gray-200 bg-[#F5EFE1]">
+            <div key={col.name} className="w-36 flex-none rounded-xl border border-gray-200 bg-white">
               <div className="flex items-center gap-1.5 border-b border-gray-100 px-2.5 py-2">
                 <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
                 <span className="truncate text-xs font-medium text-gray-700">{col.name}</span>
@@ -145,7 +145,7 @@ function ConsultationsPanel() {
       <ChromeBar url="consultations" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-[#F5EFE1] px-5 py-2 sm:py-3">
+        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Consultations</p>
           <p className="text-xs text-gray-400">4 upcoming · 2 today</p>
         </div>
@@ -154,12 +154,12 @@ function ConsultationsPanel() {
           {CONSULTS.map((c) => (
             <div
               key={`${c.name}-${c.day}`}
-              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-[#F5EFE1] p-2.5 sm:p-3"
+              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-2.5 sm:p-3"
             >
               {/* Date block — matches real ConsultationList */}
               <div className="flex flex-col items-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-center shrink-0 min-w-[46px]">
-                <span className="text-[10px] font-medium text-brand-600">{c.month}</span>
-                <span className="text-lg font-bold leading-none text-brand-700">{c.day}</span>
+                <span className="text-[10px] font-medium text-[#14241d]">{c.month}</span>
+                <span className="text-lg font-bold leading-none text-[#14241d]">{c.day}</span>
                 <span className="text-[10px] text-brand-500">{c.time}</span>
               </div>
               {/* Details */}
@@ -168,7 +168,7 @@ function ConsultationsPanel() {
                   <span className="text-xs font-semibold text-gray-900">{c.name}</span>
                   <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                     c.status === 'Confirmed'
-                      ? 'bg-emerald-50 text-emerald-700'
+                      ? 'bg-[#02C39A]/15 text-[#14241d]'
                       : 'bg-gray-100 text-gray-500'
                   }`}>
                     {c.status}
@@ -176,7 +176,7 @@ function ConsultationsPanel() {
                 </div>
                 <p className="mt-0.5 truncate text-xs text-gray-500">{c.procedure}</p>
                 {c.reminder && (
-                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-brand-600">
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-[#14241d]">
                     SMS Reminder Sent
                   </span>
                 )}
@@ -194,8 +194,8 @@ function ConsultationsPanel() {
 function StepLabel({ number, label }: { number: string; label: string }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <span className="text-xs font-bold text-[#5CEAB8]">{number}</span>
-      <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">{label}</span>
+      <span className="text-xs font-bold text-[#02C39A]">{number}</span>
+      <span className="text-xs font-semibold uppercase tracking-widest text-[#F5EFE1]/70">{label}</span>
     </div>
   )
 }
@@ -208,10 +208,10 @@ export function HomeProductShowcase() {
       <div className="mx-auto max-w-6xl">
         {/* Headline */}
         <div className="mb-6 sm:mb-10 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#5CEAB8]">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#02C39A]">
             The platform
           </p>
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+          <h2 className="text-2xl font-bold text-[#F5EFE1] sm:text-3xl">
             From first inquiry to booked consultation
           </h2>
         </div>
@@ -235,7 +235,7 @@ export function HomeProductShowcase() {
         </div>
 
         {/* Caption */}
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-[#F5EFE1]/50">
           One platform for every step — no patchwork of tools required
         </p>
       </div>

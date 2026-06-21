@@ -10,11 +10,14 @@ import {
   CheckCircle,
   ArrowRight,
   AlertCircle,
+  ChevronDown,
 } from 'lucide-react'
 import { HomeProductShowcase } from './home-product-showcase'
 import { SignatureLogo } from '@/components/ui/signature-logo'
 import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
+import { SmoothScrollProvider } from '@/components/marketing/smooth-scroll-provider'
+import { ParallaxGlow } from '@/components/marketing/parallax-glow'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — CRM for Med Spas and Aesthetic Clinics',
@@ -165,6 +168,7 @@ const FAQ_ITEMS = [
 
 export default function LandingPage() {
   return (
+    <SmoothScrollProvider>
     <div className="flex min-h-screen flex-col bg-[#F5EFE1]">
 
       {/* Organization schema — helps Google's knowledge graph recognize the brand */}
@@ -246,7 +250,7 @@ export default function LandingPage() {
       />
 
       {/* ── Nav ──────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-[#F5EFE1]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
             <SignatureLogo size="md" variant="light-bg" animated />
@@ -283,21 +287,22 @@ export default function LandingPage() {
       <main className="flex-1">
 
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="bg-[#F5EFE1] px-6 py-20 sm:py-28">
-          <div className="mx-auto max-w-3xl text-center">
+        <section className="relative overflow-hidden bg-[#F5EFE1] px-6 py-20 sm:py-28">
+          <ParallaxGlow />
+          <div className="relative z-10 mx-auto max-w-3xl text-center">
             <div className="mb-3 flex flex-col items-center gap-2">
               <SignatureLogo size="xl" variant="light-bg" animated />
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#028090]">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#14241d]">
                 Every Lead. Every Time.
               </p>
             </div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#02C39A]/20 bg-[#02C39A]/10 px-4 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#028090]">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#02C39A]/40 bg-[#02C39A]/15 px-4 py-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#14241d]">
                 14-day free trial · No credit card
               </span>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Stop losing leads.<br className="hidden sm:block" /> Start booking <span className="text-[#028090]">more consultations</span>.
+            <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+              Stop losing leads.<br className="hidden sm:block" /> Start booking <span className="text-[#14241d]">more consultations</span>.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
               Purpose-built for aesthetic clinics — not a generic CRM retrofitted for
@@ -314,7 +319,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-6 py-3 text-base font-semibold text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-200 bg-[#F5EFE1] px-6 py-3 text-base font-semibold text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
               >
                 Log in
               </Link>
@@ -322,7 +327,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6">
               {['No credit card required', 'Setup in under 5 minutes', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
-                  <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                  <CheckCircle className="h-4 w-4 text-[#02C39A] shrink-0" />
                   {item}
                 </div>
               ))}
@@ -334,6 +339,24 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="divider-brand" role="presentation" aria-hidden="true" />
         </div>
+
+        {/* ── Value pillars strip ──────────────────────────────── */}
+        <section className="bg-[#F5EFE1] px-6 pt-10">
+          <AnimatedSection className="mx-auto max-w-5xl">
+            <div className="grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-3">
+              {[
+                { stat: 'Purpose-built', label: 'For aesthetic clinics — not a retrofitted sales CRM' },
+                { stat: 'Under 10 min', label: 'From sign-up to your first lead captured' },
+                { stat: 'Founder-led', label: 'Talk to a founder, never a sales rep' },
+              ].map(({ stat, label }) => (
+                <div key={stat} className="bg-[#F5EFE1] px-6 py-6 text-center">
+                  <div className="text-xl font-extrabold tracking-tight text-[#14241d]">{stat}</div>
+                  <p className="mt-1 text-sm text-gray-500 leading-relaxed">{label}</p>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+        </section>
 
         {/* ── Product Showcase ─────────────────────────────────── */}
         <HomeProductShowcase />
@@ -353,20 +376,20 @@ export default function LandingPage() {
             </div>
             <ul className="space-y-4 max-w-xl mx-auto">
               {PAIN_POINTS.map((point) => (
-                <li key={point} className="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50 px-5 py-4">
-                  <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                <li key={point} className="flex items-start gap-3 rounded-lg border border-red-200 border-l-4 border-l-red-400 bg-red-50 px-5 py-4 shadow-sm">
+                  <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
                   <span className="text-sm text-gray-700">{point}</span>
                 </li>
               ))}
             </ul>
-            <p className="mt-8 text-center text-sm font-medium text-gray-500">
+            <p className="mt-8 text-center text-sm font-medium text-gray-700">
               Tarhunna fixes all three — in one platform built specifically for aesthetic clinics.
             </p>
           </AnimatedSection>
         </section>
 
         {/* ── Built differently ────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
+        <section className="bg-dot-grid bg-[#F5EFE1] px-6 py-20">
           <div className="mx-auto max-w-6xl">
             <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -379,7 +402,7 @@ export default function LandingPage() {
             </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-3">
               {COMPARISONS.map(({ heading, tagline, before, after }, index) => (
-                <AnimatedCard key={heading} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                <AnimatedCard key={heading} index={index} className="rounded-xl border border-gray-200 bg-[#F5EFE1] p-6 shadow-sm flex flex-col gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{heading}</h3>
                     <p className="mt-2 text-sm italic text-gray-500 leading-relaxed">{tagline}</p>
@@ -388,8 +411,8 @@ export default function LandingPage() {
                     <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Without Tarhunna</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{before}</p>
                   </div>
-                  <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
-                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">With Tarhunna</p>
+                  <div className="rounded-lg bg-[#02C39A]/15 border border-[#02C39A]/30 px-4 py-3">
+                    <p className="text-xs font-semibold text-[#14241d] uppercase tracking-wide mb-1">With Tarhunna</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{after}</p>
                   </div>
                 </AnimatedCard>
@@ -399,25 +422,25 @@ export default function LandingPage() {
         </section>
 
         {/* ── Features ─────────────────────────────────────────── */}
-        <section className="bg-[#F5EFE1] px-6 py-20">
+        <section className="bg-[#14241d] px-6 py-20">
           <div className="mx-auto max-w-6xl">
             <AnimatedSection className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+              <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1]">
                 CRM tools built for med spas and aesthetic practices
               </h2>
-              <p className="mt-3 text-gray-500 max-w-xl mx-auto">
+              <p className="mt-3 text-[#F5EFE1]/70 max-w-xl mx-auto">
                 Not a generic CRM retrofitted for healthcare. Every feature is designed around
                 how aesthetic clinics actually work.
               </p>
             </AnimatedSection>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map(({ icon: Icon, title, body }, index) => (
-                <AnimatedCard key={title} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/10">
-                    <Icon className="h-5 w-5 text-[#028090]" />
+                <AnimatedCard key={title} index={index} className="rounded-xl border border-[#02C39A]/30 bg-[#F5EFE1] p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 hover:border-[#02C39A]/60">
+                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/20">
+                    <Icon className="h-5 w-5 text-[#14241d]" />
                   </div>
                   <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{body}</p>
                 </AnimatedCard>
               ))}
             </div>
@@ -425,7 +448,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── How it works ─────────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
+        <section className="bg-[#F5EFE1] px-6 py-20">
           <div className="mx-auto max-w-4xl">
             <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -435,14 +458,25 @@ export default function LandingPage() {
                 Four steps — automated, organized, and built into one simple workflow.
               </p>
             </AnimatedSection>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {STEPS.map(({ number, title, body }, index) => (
-                <AnimatedCard key={number} index={index}>
-                  <div className="mb-4 text-3xl font-black text-[#028090]">{number}</div>
-                  <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
-                </AnimatedCard>
-              ))}
+            <div className="relative">
+              {/* Connecting flow line behind the steps (desktop only) */}
+              <div
+                className="pointer-events-none absolute left-0 right-0 top-6 hidden lg:block"
+                aria-hidden="true"
+              >
+                <div className="mx-auto h-px w-3/4 bg-gradient-to-r from-transparent via-[#02C39A]/40 to-transparent" />
+              </div>
+              <div className="relative grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                {STEPS.map(({ number, title, body }, index) => (
+                  <AnimatedCard key={number} index={index} className="group text-center sm:text-left">
+                    <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#02C39A]/30 bg-[#F5EFE1] text-lg font-black text-[#14241d] shadow-sm transition-all duration-200 group-hover:border-[#02C39A] group-hover:shadow-md">
+                      {number}
+                    </div>
+                    <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
+                  </AnimatedCard>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -464,12 +498,12 @@ export default function LandingPage() {
                 const href = 'href' in type ? type.href : undefined
                 const content = (
                   <>
-                    <div className="mb-3 inline-flex rounded-full bg-[#02C39A]/10 px-3 py-1">
-                      <span className="text-sm font-semibold text-[#028090]">{label}</span>
+                    <div className="mb-3 inline-flex rounded-full bg-[#02C39A]/15 px-3 py-1">
+                      <span className="text-sm font-semibold text-[#14241d]">{label}</span>
                     </div>
                     <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
                     {href && (
-                      <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#028090] group-hover:gap-1.5 transition-all">
+                      <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#14241d] group-hover:gap-1.5 transition-all">
                         Learn more
                         <ArrowRight className="h-3.5 w-3.5" />
                       </span>
@@ -480,13 +514,13 @@ export default function LandingPage() {
                   <AnimatedCard key={label} index={index}>
                     <Link
                       href={href}
-                      className="group block rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:border-[#02C39A]/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                      className="group block rounded-xl border border-gray-200 bg-[#F5EFE1] p-6 shadow-sm hover:border-[#02C39A]/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
                     >
                       {content}
                     </Link>
                   </AnimatedCard>
                 ) : (
-                  <AnimatedCard key={label} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                  <AnimatedCard key={label} index={index} className="rounded-xl border border-gray-200 bg-[#F5EFE1] p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                     {content}
                   </AnimatedCard>
                 )
@@ -500,35 +534,38 @@ export default function LandingPage() {
           <AnimatedSection className="mx-auto max-w-5xl">
             <Link
               href="/med-spa-crm"
-              className="group flex items-center justify-between gap-4 rounded-xl border border-[#02C39A]/20 bg-[#02C39A]/10 px-6 py-4 hover:border-[#02C39A]/40 hover:bg-[#02C39A]/15 transition-colors"
+              className="group flex items-center justify-between gap-4 rounded-xl border border-[#02C39A]/40 bg-[#02C39A]/15 px-6 py-4 hover:border-[#02C39A]/70 hover:bg-[#02C39A]/25 transition-colors"
             >
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-sm font-semibold text-[#0B2027]">Running a med spa?</span>
-                <span className="text-sm text-[#028090]/90">
+                <span className="text-sm font-semibold text-[#14241d]">Running a med spa?</span>
+                <span className="text-sm text-gray-600">
                   See how Tarhunna helps med spas capture leads and book more consultations.
                 </span>
               </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-[#028090] transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 shrink-0 text-[#14241d] transition-transform group-hover:translate-x-0.5" />
             </Link>
           </AnimatedSection>
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
+        <section className="bg-[#F5EFE1] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 Frequently asked questions
               </h2>
             </div>
-            <dl className="space-y-0 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <div className="space-y-0 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-[#F5EFE1] overflow-hidden shadow-sm">
               {FAQ_ITEMS.map(({ q, a }) => (
-                <div key={q} className="px-6 py-5">
-                  <dt className="mb-2 text-sm font-semibold text-gray-900">{q}</dt>
-                  <dd className="text-sm text-gray-500 leading-relaxed">{a}</dd>
-                </div>
+                <details key={q} className="group px-6 [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-sm font-semibold text-gray-900 transition-colors hover:text-[#14241d]">
+                    {q}
+                    <ChevronDown className="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <p className="pb-5 text-sm text-gray-500 leading-relaxed">{a}</p>
+                </details>
               ))}
-            </dl>
+            </div>
           </AnimatedSection>
         </section>
 
@@ -563,10 +600,10 @@ export default function LandingPage() {
         <section className="bg-[#14241d] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
             <SignatureLogo size="lg" variant="dark-bg" animated className="mb-3 block" />
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1] sm:text-4xl">
               Start converting more leads today
             </h2>
-            <p className="mt-4 text-gray-300">
+            <p className="mt-4 text-[#F5EFE1]/70">
               14-day free trial. No credit card required. Set up in minutes.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -579,7 +616,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white hover:border-white/60 hover:bg-white/5 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white hover:border-white/60 hover:bg-[#F5EFE1]/5 transition-colors"
               >
                 Log in
               </Link>
@@ -609,5 +646,6 @@ export default function LandingPage() {
       </footer>
 
     </div>
+    </SmoothScrollProvider>
   )
 }
