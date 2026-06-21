@@ -1,38 +1,58 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import type { ReactNode } from 'react'
-import { useIsTouchDevice } from './use-is-touch-device'
+import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 type Props = {
   children: ReactNode
+  /** Per-card stagger index. Multiplied by 100ms and applied via --stagger.
+   *  Touch CSS overrides --stagger to 0 so phones don't cascade. */
   index?: number
   className?: string
 }
 
 /**
- * Per-card entrance animation. Cards in a grid stagger on desktop for a
- * cascading effect, but on touch the stagger is dropped — phones render
- * grids as single columns, so cards enter the viewport one at a time
- * naturally as the user scrolls, and synthetic stagger only adds work.
+ * Per-card entrance — IntersectionObserver + CSS transition, matching
+ * AnimatedSection. See animated-section.tsx for the rationale on moving
+ * off Framer Motion. The only difference here is the stagger index, which
+ * drives a CSS variable so multi-column grids get a cascading entrance
+ * on desktop and a synchronized one on touch.
  */
 export function AnimatedCard({ children, index = 0, className }: Props) {
-  const isTouch = useIsTouchDevice()
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
 
-  const initialY = isTouch ? 12 : 24
-  const duration = isTouch ? 0.35 : 0.7
-  const margin = isTouch ? '-40px' : '-60px'
-  const stagger = isTouch ? 0 : index * 0.1
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true)
+      return
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisible(true)
+          obs.disconnect()
+        }
+      },
+      { rootMargin: '0px 0px -15% 0px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  const style: CSSProperties | undefined =
+    index > 0 ? ({ '--stagger': `${index * 100}ms` } as CSSProperties) : undefined
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: initialY }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin }}
-      transition={{ duration, delay: stagger, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
+    <div
+      ref={ref}
+      data-visible={visible ? 'true' : undefined}
+      style={style}
+      className={['marketing-fade-up', className].filter(Boolean).join(' ')}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
