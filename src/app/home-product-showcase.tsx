@@ -50,7 +50,7 @@ function ChromeBar({ url }: { url: string }) {
         <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
         <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
       </div>
-      <div className="flex-1 rounded-md bg-white/80 px-3 py-0.5">
+      <div className="flex-1 rounded-md bg-[#F5EFE1]/80 px-3 py-0.5">
         <span className="text-xs text-gray-400 select-none">app.tarhunna.net/{url}</span>
       </div>
     </div>
@@ -65,18 +65,18 @@ function LeadsPanel() {
       <ChromeBar url="leads" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
+        <div className="border-b border-gray-200 bg-[#F5EFE1] px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Leads &amp; Contacts</p>
           <p className="text-xs text-gray-400">26 contacts</p>
         </div>
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-gray-100 bg-white px-5 py-2">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-gray-100 bg-[#F5EFE1] px-5 py-2">
           <span className="text-xs font-medium text-gray-400">Contact</span>
           <span className="text-xs font-medium text-gray-400">Stage</span>
           <span className="text-xs font-medium text-gray-400">Added</span>
         </div>
         {/* Rows */}
-        <div className="divide-y divide-gray-100 bg-white">
+        <div className="divide-y divide-gray-100 bg-[#F5EFE1]">
           {LEADS.map((lead) => (
             <div key={lead.name} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-5 py-2 sm:py-3">
               <div className="min-w-0">
@@ -106,14 +106,14 @@ function PipelinePanel() {
       <ChromeBar url="pipeline" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
+        <div className="border-b border-gray-200 bg-[#F5EFE1] px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Pipeline</p>
           <p className="text-xs text-gray-400">8 active contacts</p>
         </div>
         {/* Kanban */}
         <div className="flex gap-2 overflow-x-auto p-3">
           {PIPELINE.map((col) => (
-            <div key={col.name} className="w-36 flex-none rounded-xl border border-gray-200 bg-white">
+            <div key={col.name} className="w-36 flex-none rounded-xl border border-gray-200 bg-[#F5EFE1]">
               <div className="flex items-center gap-1.5 border-b border-gray-100 px-2.5 py-2">
                 <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
                 <span className="truncate text-xs font-medium text-gray-700">{col.name}</span>
@@ -145,7 +145,7 @@ function ConsultationsPanel() {
       <ChromeBar url="consultations" />
       <div className="flex flex-col overflow-hidden bg-gray-50">
         {/* Page header */}
-        <div className="border-b border-gray-200 bg-white px-5 py-2 sm:py-3">
+        <div className="border-b border-gray-200 bg-[#F5EFE1] px-5 py-2 sm:py-3">
           <p className="text-sm font-semibold text-gray-900">Consultations</p>
           <p className="text-xs text-gray-400">4 upcoming · 2 today</p>
         </div>
@@ -154,7 +154,7 @@ function ConsultationsPanel() {
           {CONSULTS.map((c) => (
             <div
               key={`${c.name}-${c.day}`}
-              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-2.5 sm:p-3"
+              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-[#F5EFE1] p-2.5 sm:p-3"
             >
               {/* Date block — matches real ConsultationList */}
               <div className="flex flex-col items-center rounded-lg bg-brand-50 px-2.5 py-1.5 text-center shrink-0 min-w-[46px]">
