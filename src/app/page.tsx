@@ -165,7 +165,7 @@ const FAQ_ITEMS = [
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-[#F5EFE1]">
 
       {/* Organization schema — helps Google's knowledge graph recognize the brand */}
       <script
@@ -283,7 +283,7 @@ export default function LandingPage() {
       <main className="flex-1">
 
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20 sm:py-28">
+        <section className="bg-[#F5EFE1] px-6 py-20 sm:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-3 flex flex-col items-center gap-2">
               <SignatureLogo size="xl" variant="light-bg" animated />
@@ -339,7 +339,7 @@ export default function LandingPage() {
         <HomeProductShowcase />
 
         {/* ── Problem ──────────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20">
+        <section className="bg-[#F5EFE1] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-10 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -399,7 +399,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Features ─────────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20">
+        <section className="bg-[#F5EFE1] px-6 py-20">
           <div className="mx-auto max-w-6xl">
             <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -448,7 +448,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Who it's for ─────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20">
+        <section className="bg-[#F5EFE1] px-6 py-20">
           <div className="mx-auto max-w-5xl">
             <AnimatedSection className="mb-12 text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -496,7 +496,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Med Spa callout ──────────────────────────────────── */}
-        <section className="bg-white px-6 pb-2">
+        <section className="bg-[#F5EFE1] px-6 pb-2">
           <AnimatedSection className="mx-auto max-w-5xl">
             <Link
               href="/med-spa-crm"
@@ -533,7 +533,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Founder-led ──────────────────────────────────────── */}
-        <section className="bg-white px-6 py-16">
+        <section className="bg-[#F5EFE1] px-6 py-16">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">
               Built by people who care about your clinic
@@ -590,7 +590,7 @@ export default function LandingPage() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-gray-200 bg-white px-6 py-8">
+      <footer className="border-t border-gray-200 bg-[#F5EFE1] px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
             <SignatureLogo size="sm" variant="light-bg" animated />
