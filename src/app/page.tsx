@@ -250,7 +250,7 @@ export default function LandingPage() {
       />
 
       {/* ── Nav ──────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-[#F5EFE1]/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-[#F5EFE1] pointer-fine:bg-[#F5EFE1]/90 pointer-fine:backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
             <SignatureLogo size="md" variant="light-bg" animated />

@@ -2,19 +2,30 @@
 
 import { useEffect } from 'react'
 import Lenis from 'lenis'
+import { MotionConfig } from 'framer-motion'
+import { useIsTouchDevice } from './use-is-touch-device'
 
 /**
- * SmoothScrollProvider — adds buttery momentum scrolling site-wide.
+ * SmoothScrollProvider — momentum scrolling for desktop wheel input.
  *
- * Inspired by the weighted, premium scroll feel of sites like igloo.inc,
- * tuned to be subtle and professional rather than dramatic.
+ * Touch devices skip Lenis entirely. iOS Safari and modern Android Chrome
+ * run scroll on the compositor thread with GPU-accelerated momentum physics
+ * that a JS RAF loop cannot match. Lenis on mobile fights the platform
+ * instead of helping it.
  *
- * Respects `prefers-reduced-motion`: users who opt out get native scroll,
- * so accessibility is never compromised.
+ * The wrapping <MotionConfig reducedMotion="user"> propagates
+ * prefers-reduced-motion to every Framer Motion component in the landing
+ * page, so reduce-motion users get static entrances without each component
+ * having to opt in.
  */
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
+  const isTouch = useIsTouchDevice()
+
   useEffect(() => {
-    // Honor reduced-motion — skip smooth scroll entirely for these users.
+    // Skip on touch devices — native scroll is smoother on phones/tablets.
+    if (isTouch) return
+
+    // Honor reduced-motion: skip smooth scroll entirely for these users.
     const prefersReduced = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
@@ -26,7 +37,6 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // expo-out
       smoothWheel: true,
       wheelMultiplier: 1,
-      touchMultiplier: 1.5,
     })
 
     let rafId: number
@@ -40,7 +50,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       cancelAnimationFrame(rafId)
       lenis.destroy()
     }
-  }, [])
+  }, [isTouch])
 
-  return <>{children}</>
+  return <MotionConfig reducedMotion="user">{children}</MotionConfig>
 }
