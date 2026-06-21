@@ -258,7 +258,7 @@ export default function LandingPage() {
               src="/tarhunna-mark.png"
               alt=""
               width={270}
-              height={360}
+              height={244}
               className="h-11 w-auto"
               priority
             />
