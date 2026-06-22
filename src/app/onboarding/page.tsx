@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProcedurePicker, ALL_PRESET_LABELS } from '@/components/settings/procedure-picker'
 import { Button } from '@/components/ui/button'
-import { Logo } from '@/components/ui/logo'
+import { LogoMark } from '@/components/ui/logo-mark'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -38,8 +38,8 @@ export default function OnboardingPage() {
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mb-4">
-            <Logo variant="mark" size="lg" />
+          <div className="mb-4 flex justify-center">
+            <LogoMark size="xl" standalone />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome to Tarhunna</h1>
           <p className="mt-2 text-gray-500 max-w-md mx-auto">
