@@ -145,8 +145,10 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={[
-        'flex w-72 flex-none flex-col rounded-2xl bg-gray-50/80 transition-colors duration-200',
-        isOver ? 'bg-brand-50 ring-2 ring-brand-500/40' : 'ring-1 ring-gray-200/70',
+        // Column bg picks up a soft mint tint so the kanban harmonizes with
+        // the cream body + forest sidebar instead of falling into cool-gray.
+        'flex w-72 flex-none flex-col rounded-2xl bg-[#02C39A]/[0.06] transition-colors duration-200',
+        isOver ? 'bg-[#02C39A]/15 ring-2 ring-[#02C39A]/40' : 'ring-1 ring-[#14241d]/10',
       ].join(' ')}
     >
       {/* Column header — pulled into the column bg, no divider line. The

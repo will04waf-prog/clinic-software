@@ -27,6 +27,12 @@ const NAV_ITEMS = [
   { href: '/settings',         label: 'Settings',         icon: Settings },
 ]
 
+/**
+ * Dashboard sidebar. Dark forest #14241d anchors the app — the same role
+ * the final-CTA panel plays on the landing page — so the brand has a
+ * persistent presence next to whatever content the user is viewing. Active
+ * nav items light up in mint #02C39A.
+ */
 export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -38,9 +44,9 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   }
 
   return (
-    <aside className="hidden md:flex h-full w-60 flex-col border-r border-gray-200 bg-white">
+    <aside className="hidden md:flex h-full w-60 flex-col bg-[#14241d] text-[#F5EFE1]">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b border-gray-200 px-5">
+      <div className="flex h-16 items-center border-b border-[#F5EFE1]/10 px-5">
         <LogoMark size="md" standalone />
       </div>
 
@@ -56,11 +62,11 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 active:scale-[0.98]',
                 active
-                  ? 'bg-brand-50 text-brand-700 active:bg-brand-100'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100'
+                  ? 'bg-[#02C39A]/15 text-[#02C39A]'
+                  : 'text-[#F5EFE1]/70 hover:bg-[#F5EFE1]/[0.06] hover:text-[#F5EFE1]'
               )}
             >
-              <Icon className={cn('h-4 w-4', active ? 'text-brand-600' : 'text-gray-400')} />
+              <Icon className={cn('h-4 w-4', active ? 'text-[#02C39A]' : 'text-[#F5EFE1]/50')} />
               {label}
             </Link>
           )
@@ -68,12 +74,12 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
       </nav>
 
       {/* Bottom actions */}
-      <div className="border-t border-gray-200 p-3 space-y-0.5">
+      <div className="border-t border-[#F5EFE1]/10 p-3 space-y-0.5">
         {isSuperAdmin && (
           <Link
             href="/admin"
             prefetch
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 active:bg-brand-100 transition-colors duration-100 active:scale-[0.98]"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#02C39A] hover:bg-[#02C39A]/10 transition-colors duration-100 active:scale-[0.98]"
           >
             <ShieldCheck className="h-4 w-4" />
             Super Admin
@@ -81,9 +87,9 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
         )}
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100 transition-colors duration-150 active:scale-[0.98]"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#F5EFE1]/70 hover:bg-[#F5EFE1]/[0.06] hover:text-[#F5EFE1] transition-colors duration-150 active:scale-[0.98]"
         >
-          <LogOut className="h-4 w-4 text-gray-400" />
+          <LogOut className="h-4 w-4 text-[#F5EFE1]/50" />
           Sign out
         </button>
       </div>
