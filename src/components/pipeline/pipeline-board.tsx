@@ -44,7 +44,7 @@ function ContactCardVisual({
 
   const body = (
     <>
-      <p className="font-semibold text-sm text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
+      <p className="font-semibold text-sm text-[#14241d] leading-tight group-hover:text-[#14241d]/80 transition-colors">
         {contact.first_name} {contact.last_name}
       </p>
       {(contact.email || contact.phone) && (

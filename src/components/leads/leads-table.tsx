@@ -109,7 +109,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
               <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <Link href={`/leads/${contact.id}`} className="block">
-                    <p className={`flex items-center gap-1.5 text-[#F5EFE1] hover:text-brand-600 ${contact.has_unread ? 'font-semibold' : 'font-medium'}`}>
+                    <p className={`flex items-center gap-1.5 text-[#14241d] hover:text-[#14241d]/80 transition-colors ${contact.has_unread ? 'font-semibold' : 'font-medium'}`}>
                       {contact.has_unread && (
                         <span
                           className="relative inline-flex h-4 w-4 items-center justify-center"

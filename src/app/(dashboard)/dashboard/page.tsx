@@ -191,7 +191,7 @@ export default async function DashboardPage() {
                   {recentLeads.map((lead: any) => (
                     <div key={lead.id} className="flex items-center justify-between py-3">
                       <div>
-                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-gray-900 hover:text-brand-600">
+                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-[#14241d] hover:text-[#14241d]/80 transition-colors">
                           {lead.first_name} {lead.last_name}
                         </Link>
                         <p className="text-xs text-gray-400">{lead.email ?? lead.phone ?? '—'}</p>
@@ -228,7 +228,7 @@ export default async function DashboardPage() {
                   {upcomingConsults.map((consult: any) => (
                     <div key={consult.id} className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-[#14241d]">
                           {consult.contact?.first_name} {consult.contact?.last_name}
                         </p>
                         <p className="text-xs text-gray-400">{formatDateTime(consult.scheduled_at)}</p>

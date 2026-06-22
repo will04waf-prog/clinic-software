@@ -101,7 +101,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/leads/${consult.contact_id}`}
-                    className="font-semibold text-gray-900 hover:text-brand-600"
+                    className="font-semibold text-[#14241d] hover:text-[#14241d]/80 transition-colors"
                   >
                     {consult.contact?.first_name} {consult.contact?.last_name}
                   </Link>
