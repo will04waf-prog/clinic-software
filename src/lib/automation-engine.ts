@@ -210,10 +210,18 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
     .eq('id', enrollment.organization_id)
     .single()
 
+  // Safe template defaults. If a contact has NULL first_name (auto-created
+  // inbound-SMS contacts seed as "Unknown (SMS)" but legacy/imported rows
+  // can still land NULL), renderTemplate's `?? '{{${key}}}'` fallback would
+  // emit the literal placeholder text — the customer reads "Hi {{first_name}}"
+  // in their inbox. Coercing here means the worst case is a slightly
+  // generic but human-sounding "Hi there".
+  const firstName = contact.first_name?.trim() || 'there'
+  const lastName  = contact.last_name?.trim() ?? ''
   const vars: Record<string, string> = {
-    first_name: contact.first_name,
-    last_name: contact.last_name ?? '',
-    full_name: `${contact.first_name} ${contact.last_name ?? ''}`.trim(),
+    first_name: firstName,
+    last_name: lastName,
+    full_name: `${firstName} ${lastName}`.trim(),
     clinic_name: org?.name ?? 'your clinic',
     clinic_phone: org?.phone ?? '',
     clinic_email: org?.email ?? '',
@@ -278,7 +286,17 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
     let errorMessage: string | undefined
 
     try {
-      if (step.channel === 'sms' && contact.phone && !contact.opted_out_sms) {
+      // TCPA: never auto-send SMS to a contact who hasn't explicitly given
+      // consent. Capture-form contacts have sms_consent=true if they checked
+      // the consent box, false otherwise. Manual-import and dashboard-added
+      // contacts land sms_consent=null until staff explicitly confirms it.
+      // Mirrors the gate on the manual send-sms route.
+      if (
+        step.channel === 'sms' &&
+        contact.phone &&
+        contact.sms_consent === true &&
+        !contact.opted_out_sms
+      ) {
         const body = renderSMS(step.body, vars)
         const smsResult = await sendSMS(contact.phone, body)
         if (smsResult === null) {
@@ -286,6 +304,15 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
         } else {
           messageResult = smsResult
         }
+      } else if (step.channel === 'sms') {
+        // Skipped because of consent / opt-out / missing phone — log it
+        // explicitly so this isn't silent. Customer never gets the message
+        // but enrollment still advances (next step may be email or may
+        // also skip).
+        messageStatus = 'skipped'
+        if (!contact.sms_consent) errorMessage = 'no_sms_consent'
+        else if (contact.opted_out_sms) errorMessage = 'opted_out_sms'
+        else if (!contact.phone) errorMessage = 'no_phone'
       }
     } catch (err: any) {
       messageStatus = 'failed'
