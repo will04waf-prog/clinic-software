@@ -15,14 +15,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PROCEDURES, type Procedure } from '@/types'
 import { formatProcedure } from '@/lib/utils'
 
-const schema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  source: z.enum(['website', 'referral', 'instagram', 'facebook', 'walkin', 'other']).optional(),
-  notes: z.string().optional(),
-})
+const schema = z
+  .object({
+    first_name: z.string().min(1, 'First name is required'),
+    last_name: z.string().optional(),
+    email: z.string().email('Invalid email').optional().or(z.literal('')),
+    phone: z.string().optional(),
+    source: z.enum(['website', 'referral', 'instagram', 'facebook', 'walkin', 'other']).optional(),
+    notes: z.string().optional(),
+  })
+  // Require at least one of email or phone — otherwise the contact lands
+  // in the system with no way to reach them, and the lead-detail Send
+  // SMS / Send Email buttons both stay disabled. Matches the public
+  // capture form's contact-info requirement.
+  .refine(
+    (v) => (v.email && v.email.length > 0) || (v.phone && v.phone.trim().length > 0),
+    { message: 'Email or phone is required', path: ['email'] }
+  )
 
 type FormValues = z.infer<typeof schema>
 
@@ -104,7 +113,13 @@ export function AddLeadDialog({ onSuccess }: AddLeadDialogProps) {
 
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" {...register('phone')} placeholder="(555) 000-0000" />
+            <Input
+              id="phone"
+              type="tel"
+              inputMode="tel"
+              {...register('phone')}
+              placeholder="(555) 000-0000"
+            />
           </div>
 
           <div className="space-y-1.5">
