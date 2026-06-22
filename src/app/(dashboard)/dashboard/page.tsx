@@ -153,7 +153,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col overflow-hidden h-full">
       <GreetingHeader
-        firstName={profile.full_name.split(' ')[0]}
+        firstName={(profile.full_name ?? 'there').split(' ')[0]}
         subtitle={org?.name}
       />
 

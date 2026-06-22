@@ -150,7 +150,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 <div className="pt-2 border-t border-gray-100">
                   <p className="text-xs text-gray-500 mb-1.5">Status</p>
                   <Badge variant={contact.status === 'patient' ? 'success' : contact.status === 'inactive' ? 'secondary' : 'default'}>
-                    {contact.status.charAt(0).toUpperCase() + contact.status.slice(1)}
+                    {(() => {
+                      const s = contact.status ?? 'lead'
+                      return s.charAt(0).toUpperCase() + s.slice(1)
+                    })()}
                   </Badge>
                 </div>
 
