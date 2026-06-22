@@ -49,9 +49,9 @@ export function LeadSummaryCard({ contactId, className }: LeadSummaryCardProps) 
                             'Summarize with AI'
 
   return (
-    <Card className={className}>
+    <Card className={`bg-white border border-gray-200 shadow-sm ${className ?? ''}`}>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Lead Summary</CardTitle>
+        <CardTitle className="text-gray-900">Lead Summary</CardTitle>
         <Button
           type="button"
           size="sm"

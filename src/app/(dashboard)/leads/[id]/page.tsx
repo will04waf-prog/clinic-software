@@ -218,23 +218,23 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
           {/* Right column: timeline */}
           <div className="space-y-4 lg:col-span-2">
-            {/* Consultations */}
-            <Card>
+            {/* Consultations — dense data, kept light for scannability */}
+            <Card className="bg-white border border-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Consultations ({consultations.length})</CardTitle>
+                <CardTitle className="text-gray-900">Consultations ({consultations.length})</CardTitle>
                 <BookConsultationDialog contactId={contact.id} />
               </CardHeader>
               <CardContent>
                 {consultations.length === 0 ? (
-                  <p className="text-sm text-[#F5EFE1]/45">No consultations scheduled yet.</p>
+                  <p className="text-sm text-gray-400">No consultations scheduled yet.</p>
                 ) : (
-                  <div className="divide-y divide-[#F5EFE1]/10">
+                  <div className="divide-y divide-gray-100">
                     {consultations.map((c: any) => (
                       <div key={c.id} className="py-3 flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-medium text-[#F5EFE1]">{formatDateTime(c.scheduled_at)}</p>
-                          <p className="text-xs text-[#F5EFE1]/45">{c.type} · {c.duration_min} min · {c.assignee?.full_name ?? 'Unassigned'}</p>
-                          {c.pre_consult_notes && <p className="text-xs text-[#F5EFE1]/60 mt-0.5 italic">"{c.pre_consult_notes}"</p>}
+                          <p className="text-sm font-medium text-gray-900">{formatDateTime(c.scheduled_at)}</p>
+                          <p className="text-xs text-gray-400">{c.type} · {c.duration_min} min · {c.assignee?.full_name ?? 'Unassigned'}</p>
+                          {c.pre_consult_notes && <p className="text-xs text-gray-500 mt-0.5 italic">"{c.pre_consult_notes}"</p>}
                         </div>
                         <Badge variant={c.status === 'completed' ? 'success' : c.status === 'no_show' ? 'destructive' : 'default'}>
                           {c.status.replace('_', ' ')}
@@ -246,12 +246,12 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </CardContent>
             </Card>
 
-            {/* Conversation */}
-            <Card>
-              <CardHeader><CardTitle>Conversation ({messages.length})</CardTitle></CardHeader>
+            {/* Conversation — dense data, kept light */}
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader><CardTitle className="text-gray-900">Conversation ({messages.length})</CardTitle></CardHeader>
               <CardContent>
                 {messages.length === 0 ? (
-                  <p className="text-sm text-[#F5EFE1]/45">No messages yet.</p>
+                  <p className="text-sm text-gray-400">No messages yet.</p>
                 ) : (
                   <div className="space-y-3">
                     {[...messages].reverse().map((m: any) => {
@@ -261,18 +261,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                         <div key={m.id} className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}>
                           <div className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
                             inbound
-                              ? 'bg-gray-100 text-[#F5EFE1]'
-                              : 'bg-brand-50 text-[#F5EFE1]'
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-brand-50 text-gray-800'
                           }`}>
                             <div className={`flex items-center gap-1.5 text-xs font-medium ${
-                              inbound ? 'text-[#F5EFE1]/60' : 'text-brand-600'
+                              inbound ? 'text-gray-500' : 'text-brand-700'
                             }`}>
                               {m.channel === 'sms' ? <MessageSquare className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
                               <span>{m.channel.toUpperCase()}</span>
-                              <span className="text-[#F5EFE1]/45">·</span>
-                              <span className="text-[#F5EFE1]/45">{formatRelative(m.created_at)}</span>
+                              <span className="text-gray-400">·</span>
+                              <span className="text-gray-400">{formatRelative(m.created_at)}</span>
                             </div>
-                            {m.subject && <p className="font-medium text-[#F5EFE1]/85 mt-1">{m.subject}</p>}
+                            {m.subject && <p className="font-medium text-gray-700 mt-1">{m.subject}</p>}
                             <p className="mt-1 whitespace-pre-line">{m.body}</p>
                             {failed && (
                               <p className="mt-1 text-xs font-medium text-red-600">Failed to send</p>
@@ -286,23 +286,23 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </CardContent>
             </Card>
 
-            {/* Activity log */}
-            <Card>
-              <CardHeader><CardTitle>Activity</CardTitle></CardHeader>
+            {/* Activity log — dense data, kept light */}
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardHeader><CardTitle className="text-gray-900">Activity</CardTitle></CardHeader>
               <CardContent>
                 {activity.length === 0 ? (
-                  <p className="text-sm text-[#F5EFE1]/45">No activity yet.</p>
+                  <p className="text-sm text-gray-400">No activity yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {activity.map((a: any) => (
                       <div key={a.id} className="flex items-start gap-2">
-                        <Activity className="h-3.5 w-3.5 text-[#F5EFE1]/30 mt-0.5 flex-shrink-0" />
+                        <Activity className="h-3.5 w-3.5 text-gray-300 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm text-[#F5EFE1]/85">
+                          <p className="text-sm text-gray-700">
                             <span className="font-medium">{a.action.replace(/_/g, ' ')}</span>
                             {a.user && ` by ${a.user.full_name}`}
                           </p>
-                          <p className="text-xs text-[#F5EFE1]/45">{formatRelative(a.created_at)}</p>
+                          <p className="text-xs text-gray-400">{formatRelative(a.created_at)}</p>
                         </div>
                       </div>
                     ))}

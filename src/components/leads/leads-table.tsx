@@ -26,7 +26,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 function StageChip({ stage }: { stage?: PipelineStage }) {
-  if (!stage) return <span className="text-xs text-[#F5EFE1]/45">—</span>
+  if (!stage) return <span className="text-xs text-gray-400">—</span>
   return (
     <span
       className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
@@ -75,7 +75,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
       )}
       {/* Search bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#F5EFE1]/45" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <Input
           className="pl-9"
           placeholder="Search by name, email, or phone..."
@@ -85,31 +85,31 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl bg-[#14241d]">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#F5EFE1]/10 bg-[#F5EFE1]/[0.04]">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE1]/60 uppercase tracking-wider">Contact</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE1]/60 uppercase tracking-wider">Stage</th>
-              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-[#F5EFE1]/60 uppercase tracking-wider">Procedures</th>
-              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-[#F5EFE1]/60 uppercase tracking-wider">Last Activity</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE1]/60 uppercase tracking-wider">Status</th>
+            <tr className="border-b border-gray-100 bg-gray-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Stage</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Procedures</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Activity</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
               <th className="w-10 px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F5EFE1]/10">
+          <tbody className="divide-y divide-gray-100">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-[#F5EFE1]/45">
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-gray-400">
                   No contacts found.
                 </td>
               </tr>
             )}
             {filtered.map((contact) => (
-              <tr key={contact.id} className="hover:bg-[#F5EFE1]/[0.04] transition-colors">
+              <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3">
                   <Link href={`/leads/${contact.id}`} className="block">
-                    <p className={`flex items-center gap-1.5 text-[#F5EFE1] hover:text-[#02C39A] ${contact.has_unread ? 'font-semibold' : 'font-medium'}`}>
+                    <p className={`flex items-center gap-1.5 text-[#F5EFE1] hover:text-brand-600 ${contact.has_unread ? 'font-semibold' : 'font-medium'}`}>
                       {contact.has_unread && (
                         <span
                           className="relative inline-flex h-4 w-4 items-center justify-center"
@@ -117,19 +117,19 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
                           title="New message"
                         >
                           <MessageCircle className="h-3.5 w-3.5 text-brand-600" />
-                          <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-brand-500 ring-2 ring-[#14241d]" />
+                          <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-brand-500 ring-2 ring-white" />
                         </span>
                       )}
                       {contact.first_name} {contact.last_name}
                     </p>
                     <div className="flex items-center gap-3 mt-0.5">
                       {contact.email && (
-                        <span className="flex items-center gap-1 text-xs text-[#F5EFE1]/45">
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
                           <Mail className="h-3 w-3" />{contact.email}
                         </span>
                       )}
                       {contact.phone && (
-                        <span className="flex items-center gap-1 text-xs text-[#F5EFE1]/45">
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
                           <Phone className="h-3 w-3" />{formatPhone(contact.phone)}
                         </span>
                       )}
@@ -149,7 +149,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
                     )}
                   </div>
                 </td>
-                <td className="hidden sm:table-cell px-4 py-3 text-xs text-[#F5EFE1]/45">
+                <td className="hidden sm:table-cell px-4 py-3 text-xs text-gray-400">
                   {contact.last_activity_at ? formatRelative(contact.last_activity_at) : '—'}
                 </td>
                 <td className="px-4 py-3">
@@ -184,7 +184,7 @@ export function LeadsTable({ contacts, onRefresh, search, onSearchChange, totalF
         </table>
       </div>
 
-      <p className="text-xs text-[#F5EFE1]/45">{filtered.length} of {totalForTab} contacts</p>
+      <p className="text-xs text-gray-400">{filtered.length} of {totalForTab} contacts</p>
     </div>
   )
 }
