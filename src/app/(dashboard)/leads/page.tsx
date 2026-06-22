@@ -6,7 +6,7 @@ import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
 import type { Contact } from '@/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-const POLL_INTERVAL_MS = 12_000
+const POLL_INTERVAL_MS = 6_000
 
 function contactsSignature(rows: Contact[]): string {
   return rows
@@ -54,7 +54,7 @@ export default function LeadsPage() {
     if (!silent) setLoading(true)
     if (!silent) setError(null)
     try {
-      const res = await fetch('/api/leads')
+      const res = await fetch('/api/leads', { cache: 'no-store' })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
@@ -101,12 +101,19 @@ export default function LeadsPage() {
       }
     }
 
+    // Refocusing the window also triggers an immediate refresh — covers
+    // the alt-tab-back-to-dashboard demo flow on machines where
+    // visibilitychange isn't fired (e.g. some browser/OS combos).
+    const onFocus = () => { load(true) }
+
     if (!document.hidden) start()
     document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onFocus)
 
     return () => {
       stop()
       document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onFocus)
     }
   }, [load])
 
