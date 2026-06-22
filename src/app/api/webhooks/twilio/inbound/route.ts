@@ -54,39 +54,60 @@ export async function POST(request: Request) {
     return emptyTwimlResponse()
   }
 
-  // ── Resolve which org owns the receiving Twilio number ─────
-  // Routing is by To, not by From. Each org owns exactly one Twilio number
-  // tracked via organizations.twilio_phone_number. No match → drop. We do
-  // not guess at org membership when the To isn't claimed by anyone.
+  // ── Normalize From and To ──────────────────────────────────
   const toE164 = normalizePhone(toRaw)
   if (!toE164) {
     console.warn(`[twilio-inbound] unparseable To="${toRaw}" — dropping`)
     return emptyTwimlResponse()
   }
-
-  const { data: org, error: orgError } = await supabaseAdmin
-    .from('organizations')
-    .select('id')
-    .eq('twilio_phone_number', toE164)
-    .maybeSingle()
-
-  if (orgError) {
-    console.error(`[twilio-inbound] org lookup error To=${toE164}:`, orgError.message)
-    return NextResponse.json({ error: orgError.message }, { status: 500 })
-  }
-  if (!org) {
-    console.warn(`[twilio-inbound] no org owns To=${toE164} from=${fromRaw} — dropping`)
-    return emptyTwimlResponse()
-  }
-  const orgId = org.id
-
-  // ── Normalize From ─────────────────────────────────────────
   const fromE164 = normalizePhone(fromRaw)
   if (!fromE164) {
     console.warn(`[twilio-inbound] unparseable From="${fromRaw}" — dropping`)
     return emptyTwimlResponse()
   }
   const last10 = fromE164.replace(/\D/g, '').slice(-10)
+
+  // ── Resolve org by conversation history, not by destination number ──
+  // All orgs share a single outbound TWILIO_PHONE_NUMBER, so routing by
+  // To (destination) would always resolve to whichever single org claimed
+  // that number — defeating multi-tenancy. Instead, find the most recent
+  // outbound message TO this From phone; the org that sent it is the
+  // org that should receive the reply. Falls back to the legacy
+  // organizations.twilio_phone_number lookup for forward compat when
+  // orgs eventually get their own per-tenant numbers.
+  let orgId: string | null = null
+
+  if (last10.length === 10) {
+    const { data: lastOutbound } = await supabaseAdmin
+      .from('messages')
+      .select('organization_id, to_address')
+      .eq('channel', 'sms')
+      .eq('direction', 'outbound')
+      .ilike('to_address', `%${last10}`)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    // Exact last-10 match in JS (ilike-suffix is permissive about formatting drift).
+    const match = (lastOutbound ?? []).find(
+      m => (m.to_address ?? '').replace(/\D/g, '').slice(-10) === last10
+    )
+    if (match) orgId = match.organization_id
+  }
+
+  // Legacy fallback: per-org Twilio number, if anyone happens to own it.
+  if (!orgId) {
+    const { data: legacyOrg } = await supabaseAdmin
+      .from('organizations')
+      .select('id')
+      .eq('twilio_phone_number', toE164)
+      .maybeSingle()
+    if (legacyOrg) orgId = legacyOrg.id
+  }
+
+  if (!orgId) {
+    console.warn(`[twilio-inbound] no org found for from=${fromE164} to=${toE164} — dropping`)
+    return emptyTwimlResponse()
+  }
 
   // ── STOP/START opt-out (existing behavior, no short-circuit) ──
   // RPC is unchanged — STOP still opts the patient out wherever their
