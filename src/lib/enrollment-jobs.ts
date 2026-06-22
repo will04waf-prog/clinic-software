@@ -17,14 +17,8 @@ const DEFAULT_BATCH_SIZE = 25
 
 export type EnrollmentJobsMode = 'shadow' | 'primary'
 
-// Default to 'primary' (queue-only). Shadow mode runs both the queue
-// AND the legacy in-process enrollContact() call, which races and can
-// produce duplicate SMS sends (the SMS branch has no idempotency
-// guard, unlike the email branch). Shadow is opt-in via
-// ENROLLMENT_JOBS_MODE=shadow only when explicitly diagnosing the
-// migration.
 export function enrollmentJobsMode(): EnrollmentJobsMode {
-  return process.env.ENROLLMENT_JOBS_MODE === 'shadow' ? 'shadow' : 'primary'
+  return process.env.ENROLLMENT_JOBS_MODE === 'primary' ? 'primary' : 'shadow'
 }
 
 interface EnqueueOpts {
