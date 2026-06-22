@@ -58,9 +58,9 @@ export function StatsCards({ stats }: StatsCardsProps) {
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-2xl font-bold text-[#F5EFE1]">{card.value}</p>
-                <p className="mt-1 text-xs font-medium text-[#F5EFE1]/70">{card.label}</p>
-                <p className="mt-0.5 text-xs text-[#F5EFE1]/45">{card.sub}</p>
+                <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                <p className="mt-1 text-xs font-medium text-gray-600">{card.label}</p>
+                <p className="mt-0.5 text-xs text-gray-400">{card.sub}</p>
               </div>
               <div className={`rounded-lg p-2 ${card.bg}`}>
                 <card.icon className={`h-4 w-4 ${card.color}`} />

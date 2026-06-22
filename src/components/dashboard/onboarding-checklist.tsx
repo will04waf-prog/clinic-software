@@ -60,7 +60,7 @@ export function OnboardingChecklist({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Get started with Tarhunna</CardTitle>
-          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-[#F5EFE1]/60">
+          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
             {doneCount} of 3 complete
           </span>
         </div>
@@ -91,23 +91,23 @@ export function OnboardingChecklist({
               className={`flex items-start gap-3 rounded-lg border p-3 ${
                 step.done
                   ? 'border-emerald-100 bg-emerald-50'
-                  : 'border-[#F5EFE1]/10 bg-white'
+                  : 'border-gray-100 bg-white'
               }`}
             >
               {step.done
                 ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-                : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-[#F5EFE1]/30" />}
+                : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-gray-300" />}
 
               <div className="min-w-0 flex-1">
                 <p className={`text-sm font-medium ${
                   step.done
                     ? 'text-emerald-700 line-through decoration-emerald-300'
-                    : 'text-[#F5EFE1]'
+                    : 'text-gray-900'
                 }`}>
                   {step.label}
                 </p>
                 {!step.done && (
-                  <p className="mt-0.5 text-xs text-[#F5EFE1]/60">{step.description}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">{step.description}</p>
                 )}
               </div>
 

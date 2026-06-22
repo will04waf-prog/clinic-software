@@ -51,10 +51,10 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
 
   if (consultations.length === 0) {
     return (
-      <div className="rounded-xl border border-[#F5EFE1]/15 bg-white p-12 text-center">
-        <CalendarCheck className="mx-auto h-8 w-8 text-[#F5EFE1]/30" />
-        <p className="mt-3 text-sm font-medium text-[#F5EFE1]/60">No consultations yet</p>
-        <p className="mt-1 text-xs text-[#F5EFE1]/45">
+      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
+        <CalendarCheck className="mx-auto h-8 w-8 text-gray-300" />
+        <p className="mt-3 text-sm font-medium text-gray-500">No consultations yet</p>
+        <p className="mt-1 text-xs text-gray-400">
           Open a lead and click &lsquo;Book Consultation&rsquo; to schedule one.
         </p>
         <Link
@@ -80,7 +80,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
         return (
           <div
             key={consult.id}
-            className="flex items-start justify-between rounded-xl border border-[#F5EFE1]/15 bg-white p-4 hover:shadow-sm transition-all"
+            className="flex items-start justify-between rounded-xl border border-gray-200 bg-white p-4 hover:shadow-sm transition-all"
           >
             <div className="flex items-start gap-4">
               {/* Time */}
@@ -101,7 +101,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/leads/${consult.contact_id}`}
-                    className="font-semibold text-[#F5EFE1] hover:text-brand-600"
+                    className="font-semibold text-gray-900 hover:text-brand-600"
                   >
                     {consult.contact?.first_name} {consult.contact?.last_name}
                   </Link>
@@ -110,12 +110,12 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
                 </div>
 
                 {(consult.procedure_discussed ?? []).length > 0 && (
-                  <p className="mt-1 text-sm text-[#F5EFE1]/60">
+                  <p className="mt-1 text-sm text-gray-500">
                     {consult.procedure_discussed!.map(formatProcedure).join(', ')}
                   </p>
                 )}
 
-                <div className="mt-1 flex items-center gap-3 text-xs text-[#F5EFE1]/45">
+                <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />{consult.duration_min} min
                   </span>
@@ -127,7 +127,7 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
                 </div>
 
                 {consult.pre_consult_notes && (
-                  <p className="mt-1 text-xs text-[#F5EFE1]/45 italic">"{consult.pre_consult_notes}"</p>
+                  <p className="mt-1 text-xs text-gray-400 italic">"{consult.pre_consult_notes}"</p>
                 )}
               </div>
             </div>

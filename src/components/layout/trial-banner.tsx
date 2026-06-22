@@ -24,7 +24,7 @@ export function TrialBanner({ planStatus, trialEndsAt }: TrialBannerProps) {
         </p>
         <Link
           href="/settings"
-          className="shrink-0 rounded-md bg-[#14241d] px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+          className="shrink-0 rounded-md bg-white px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
         >
           Subscribe now
         </Link>
@@ -43,7 +43,7 @@ export function TrialBanner({ planStatus, trialEndsAt }: TrialBannerProps) {
       </p>
       <Link
         href="/settings"
-        className="shrink-0 rounded-md bg-[#14241d] px-3 py-1 text-xs font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
+        className="shrink-0 rounded-md bg-white px-3 py-1 text-xs font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
       >
         Subscribe
       </Link>

@@ -44,20 +44,20 @@ function ContactCardVisual({
 
   const body = (
     <>
-      <p className="font-semibold text-sm text-[#F5EFE1] leading-tight group-hover:text-[#02C39A] transition-colors">
+      <p className="font-semibold text-sm text-gray-900 leading-tight group-hover:text-brand-700 transition-colors">
         {contact.first_name} {contact.last_name}
       </p>
       {(contact.email || contact.phone) && (
         <div className="mt-2 space-y-1">
           {contact.email && (
-            <p className="flex items-center gap-1.5 text-xs text-[#F5EFE1]/60 truncate">
-              <Mail className="h-3 w-3 shrink-0 text-[#F5EFE1]/35" />
+            <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
+              <Mail className="h-3 w-3 shrink-0 text-gray-300" />
               <span className="truncate">{contact.email}</span>
             </p>
           )}
           {contact.phone && (
-            <p className="flex items-center gap-1.5 text-xs text-[#F5EFE1]/60">
-              <Phone className="h-3 w-3 shrink-0 text-[#F5EFE1]/35" />
+            <p className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Phone className="h-3 w-3 shrink-0 text-gray-300" />
               {contact.phone}
             </p>
           )}
@@ -74,14 +74,14 @@ function ContactCardVisual({
             </span>
           ))}
           {procedures.length > 2 && (
-            <span className="rounded-full bg-[#F5EFE1]/[0.08] px-1.5 py-0 text-[10px] font-medium text-[#F5EFE1]/70">
+            <span className="rounded-full bg-gray-100 px-1.5 py-0 text-[10px] font-medium text-gray-600">
               +{procedures.length - 2}
             </span>
           )}
         </div>
       )}
       {contact.last_activity_at && (
-        <p className="mt-2.5 text-[10px] text-[#F5EFE1]/45 uppercase tracking-wide">
+        <p className="mt-2.5 text-[10px] text-gray-400 uppercase tracking-wide">
           {formatRelative(contact.last_activity_at)}
         </p>
       )}
@@ -93,7 +93,7 @@ function ContactCardVisual({
   // separation; during drag we add a mint ring + rotation so the floating
   // overlay reads as a distinct visual layer.
   const wrapperClass = [
-    'group block rounded-lg bg-[#14241d] p-3 transition-all duration-150',
+    'group block rounded-lg bg-white p-3 transition-all duration-150',
     elevated
       ? 'shadow-[0_10px_24px_-12px_rgba(20,36,29,0.5)] ring-1 ring-[#02C39A]/40 -rotate-1'
       : 'shadow-[0_1px_2px_rgba(20,36,29,0.12),0_1px_3px_rgba(20,36,29,0.08)] hover:shadow-[0_2px_8px_rgba(20,36,29,0.16),0_4px_16px_rgba(20,36,29,0.10)] hover:-translate-y-0.5',

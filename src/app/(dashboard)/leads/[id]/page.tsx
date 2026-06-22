@@ -111,15 +111,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <CardContent className="space-y-3">
                 {contact.email && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
-                    <span className="text-[#F5EFE1]/85">{contact.email}</span>
+                    <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-700">{contact.email}</span>
                   </div>
                 )}
                 {contact.phone && (
                   <>
                     <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
-                      <span className="text-[#F5EFE1]/85">{formatPhone(contact.phone)}</span>
+                      <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-700">{formatPhone(contact.phone)}</span>
                     </div>
                     <div className="flex items-center pl-6">
                       <SmsConsentToggle
@@ -132,21 +132,21 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 )}
                 {contact.source && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Tag className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
-                    <span className="text-[#F5EFE1]/85">Source: {formatLeadSource(contact.source)}</span>
+                    <Tag className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-700">Source: {formatLeadSource(contact.source)}</span>
                   </div>
                 )}
                 {contact.date_of_birth && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
-                    <span className="text-[#F5EFE1]/85">DOB: {formatDate(contact.date_of_birth)}</span>
+                    <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-700">DOB: {formatDate(contact.date_of_birth)}</span>
                   </div>
                 )}
 
                 {/* Stage */}
                 {contact.stage && (
-                  <div className="pt-2 border-t border-[#F5EFE1]/10">
-                    <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Pipeline Stage</p>
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1.5">Pipeline Stage</p>
                     <span
                       className="rounded-full px-3 py-1 text-xs font-medium"
                       style={{ backgroundColor: `${contact.stage.color}20`, color: contact.stage.color }}
@@ -157,8 +157,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 )}
 
                 {/* Status */}
-                <div className="pt-2 border-t border-[#F5EFE1]/10">
-                  <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Status</p>
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1.5">Status</p>
                   <Badge variant={contact.status === 'patient' ? 'success' : contact.status === 'inactive' ? 'secondary' : 'default'}>
                     {(() => {
                       const s = contact.status ?? 'lead'
@@ -169,8 +169,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
                 {/* Procedures */}
                 {(contact.procedure_interest ?? []).length > 0 && (
-                  <div className="pt-2 border-t border-[#F5EFE1]/10">
-                    <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Procedure Interest</p>
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1.5">Procedure Interest</p>
                     <div className="flex flex-wrap gap-1">
                       {contact.procedure_interest!.map((p: string) => (
                         <Badge key={p} variant="secondary">{formatProcedure(p)}</Badge>
@@ -181,8 +181,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
                 {/* Tags */}
                 {tags.length > 0 && (
-                  <div className="pt-2 border-t border-[#F5EFE1]/10">
-                    <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Tags</p>
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1.5">Tags</p>
                     <div className="flex flex-wrap gap-1">
                       {tags.map((tag: any) => (
                         <Badge key={tag.id} variant="outline" style={{ borderColor: tag.color, color: tag.color }}>
@@ -200,7 +200,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <Card>
                 <CardHeader><CardTitle>Notes</CardTitle></CardHeader>
                 <CardContent>
-                  <p className="text-sm text-[#F5EFE1]/70 whitespace-pre-line">{contact.notes}</p>
+                  <p className="text-sm text-gray-600 whitespace-pre-line">{contact.notes}</p>
                 </CardContent>
               </Card>
             )}
@@ -208,9 +208,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {/* Meta */}
             <Card>
               <CardContent className="pt-4 space-y-1">
-                <p className="text-xs text-[#F5EFE1]/45">Created: {formatDateTime(contact.created_at)}</p>
+                <p className="text-xs text-gray-400">Created: {formatDateTime(contact.created_at)}</p>
                 {contact.last_contacted_at && (
-                  <p className="text-xs text-[#F5EFE1]/45">Last contacted: {formatRelative(contact.last_contacted_at)}</p>
+                  <p className="text-xs text-gray-400">Last contacted: {formatRelative(contact.last_contacted_at)}</p>
                 )}
               </CardContent>
             </Card>

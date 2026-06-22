@@ -40,16 +40,16 @@ export default async function SettingsPage() {
           <CardHeader><CardTitle>Clinic</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-[#F5EFE1]/60">Name</span>
-              <span className="font-medium text-[#F5EFE1]">{org?.name ?? '—'}</span>
+              <span className="text-gray-500">Name</span>
+              <span className="font-medium text-gray-900">{org?.name ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#F5EFE1]/60">Plan</span>
-              <span className="font-medium text-[#F5EFE1] capitalize">{org?.plan ?? '—'}</span>
+              <span className="text-gray-500">Plan</span>
+              <span className="font-medium text-gray-900 capitalize">{org?.plan ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#F5EFE1]/60">Timezone</span>
-              <span className="font-medium text-[#F5EFE1]">{org?.timezone ?? '—'}</span>
+              <span className="text-gray-500">Timezone</span>
+              <span className="font-medium text-gray-900">{org?.timezone ?? '—'}</span>
             </div>
           </CardContent>
         </Card>
@@ -80,20 +80,20 @@ export default async function SettingsPage() {
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-[#F5EFE1]/60">Name</span>
-              <span className="font-medium text-[#F5EFE1]">{profile?.full_name ?? '—'}</span>
+              <span className="text-gray-500">Name</span>
+              <span className="font-medium text-gray-900">{profile?.full_name ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#F5EFE1]/60">Email</span>
-              <span className="font-medium text-[#F5EFE1]">{profile?.email ?? '—'}</span>
+              <span className="text-gray-500">Email</span>
+              <span className="font-medium text-gray-900">{profile?.email ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#F5EFE1]/60">Role</span>
-              <span className="font-medium text-[#F5EFE1] capitalize">{profile?.role ?? '—'}</span>
+              <span className="text-gray-500">Role</span>
+              <span className="font-medium text-gray-900 capitalize">{profile?.role ?? '—'}</span>
             </div>
             {profile?.email && <ChangePasswordCard userEmail={profile.email} />}
 
-            <div className="pt-3 border-t border-[#F5EFE1]/10">
+            <div className="pt-3 border-t border-gray-100">
               <SignOutButton />
             </div>
           </CardContent>
