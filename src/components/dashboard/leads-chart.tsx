@@ -41,9 +41,9 @@ function CustomTooltip({
   if (!active || !payload?.length) return null
   const point = payload[0].payload
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-md">
-      <p className="font-medium text-gray-900">{formatLongDate(point.date)}</p>
-      <p className="text-gray-500">
+    <div className="rounded-lg border border-[#F5EFE1]/15 bg-white px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-[#F5EFE1]">{formatLongDate(point.date)}</p>
+      <p className="text-[#F5EFE1]/60">
         {point.count} new lead{point.count === 1 ? '' : 's'}
       </p>
     </div>
@@ -61,7 +61,7 @@ export function LeadsChart({ data }: LeadsChartProps) {
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>New Leads</CardTitle>
-          <p className="mt-1 text-sm text-gray-500">Trend over time</p>
+          <p className="mt-1 text-sm text-[#F5EFE1]/60">Trend over time</p>
         </div>
         <div className="inline-flex rounded-full bg-gray-100 p-0.5 text-xs font-medium">
           {(['7', '30', '90'] as const).map((r) => (
@@ -72,8 +72,8 @@ export function LeadsChart({ data }: LeadsChartProps) {
               className={
                 'rounded-full px-3 py-1 transition-colors ' +
                 (range === r
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-900')
+                  ? 'bg-white text-[#F5EFE1] shadow-sm'
+                  : 'text-[#F5EFE1]/60 hover:text-[#F5EFE1]')
               }
             >
               {r}d
@@ -84,7 +84,7 @@ export function LeadsChart({ data }: LeadsChartProps) {
       <CardContent className="pt-2">
         {total === 0 ? (
           <div className="flex h-[240px] items-center justify-center">
-            <p className="text-sm text-gray-400">Not enough data yet</p>
+            <p className="text-sm text-[#F5EFE1]/45">Not enough data yet</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={240}>

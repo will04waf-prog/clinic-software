@@ -10,7 +10,7 @@ function ConsultationsSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-4">
+        <div key={i} className="flex items-start gap-4 rounded-xl border border-[#F5EFE1]/15 bg-white p-4">
           <div className="h-16 w-[60px] shrink-0 rounded-lg bg-gray-200" />
           <div className="flex-1 space-y-2 pt-1">
             <div className="h-4 w-40 rounded bg-gray-200" />

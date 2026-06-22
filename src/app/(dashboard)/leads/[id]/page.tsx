@@ -111,15 +111,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <CardContent className="space-y-3">
                 {contact.email && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700">{contact.email}</span>
+                    <Mail className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
+                    <span className="text-[#F5EFE1]/85">{contact.email}</span>
                   </div>
                 )}
                 {contact.phone && (
                   <>
                     <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-700">{formatPhone(contact.phone)}</span>
+                      <Phone className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
+                      <span className="text-[#F5EFE1]/85">{formatPhone(contact.phone)}</span>
                     </div>
                     <div className="flex items-center pl-6">
                       <SmsConsentToggle
@@ -132,21 +132,21 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 )}
                 {contact.source && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Tag className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700">Source: {formatLeadSource(contact.source)}</span>
+                    <Tag className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
+                    <span className="text-[#F5EFE1]/85">Source: {formatLeadSource(contact.source)}</span>
                   </div>
                 )}
                 {contact.date_of_birth && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700">DOB: {formatDate(contact.date_of_birth)}</span>
+                    <Calendar className="h-4 w-4 text-[#F5EFE1]/45 flex-shrink-0" />
+                    <span className="text-[#F5EFE1]/85">DOB: {formatDate(contact.date_of_birth)}</span>
                   </div>
                 )}
 
                 {/* Stage */}
                 {contact.stage && (
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-1.5">Pipeline Stage</p>
+                  <div className="pt-2 border-t border-[#F5EFE1]/10">
+                    <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Pipeline Stage</p>
                     <span
                       className="rounded-full px-3 py-1 text-xs font-medium"
                       style={{ backgroundColor: `${contact.stage.color}20`, color: contact.stage.color }}
@@ -157,8 +157,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 )}
 
                 {/* Status */}
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 mb-1.5">Status</p>
+                <div className="pt-2 border-t border-[#F5EFE1]/10">
+                  <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Status</p>
                   <Badge variant={contact.status === 'patient' ? 'success' : contact.status === 'inactive' ? 'secondary' : 'default'}>
                     {(() => {
                       const s = contact.status ?? 'lead'
@@ -169,8 +169,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
                 {/* Procedures */}
                 {(contact.procedure_interest ?? []).length > 0 && (
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-1.5">Procedure Interest</p>
+                  <div className="pt-2 border-t border-[#F5EFE1]/10">
+                    <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Procedure Interest</p>
                     <div className="flex flex-wrap gap-1">
                       {contact.procedure_interest!.map((p: string) => (
                         <Badge key={p} variant="secondary">{formatProcedure(p)}</Badge>
@@ -181,8 +181,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
                 {/* Tags */}
                 {tags.length > 0 && (
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-1.5">Tags</p>
+                  <div className="pt-2 border-t border-[#F5EFE1]/10">
+                    <p className="text-xs text-[#F5EFE1]/60 mb-1.5">Tags</p>
                     <div className="flex flex-wrap gap-1">
                       {tags.map((tag: any) => (
                         <Badge key={tag.id} variant="outline" style={{ borderColor: tag.color, color: tag.color }}>
@@ -200,7 +200,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <Card>
                 <CardHeader><CardTitle>Notes</CardTitle></CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 whitespace-pre-line">{contact.notes}</p>
+                  <p className="text-sm text-[#F5EFE1]/70 whitespace-pre-line">{contact.notes}</p>
                 </CardContent>
               </Card>
             )}
@@ -208,9 +208,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {/* Meta */}
             <Card>
               <CardContent className="pt-4 space-y-1">
-                <p className="text-xs text-gray-400">Created: {formatDateTime(contact.created_at)}</p>
+                <p className="text-xs text-[#F5EFE1]/45">Created: {formatDateTime(contact.created_at)}</p>
                 {contact.last_contacted_at && (
-                  <p className="text-xs text-gray-400">Last contacted: {formatRelative(contact.last_contacted_at)}</p>
+                  <p className="text-xs text-[#F5EFE1]/45">Last contacted: {formatRelative(contact.last_contacted_at)}</p>
                 )}
               </CardContent>
             </Card>
@@ -226,15 +226,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </CardHeader>
               <CardContent>
                 {consultations.length === 0 ? (
-                  <p className="text-sm text-gray-400">No consultations scheduled yet.</p>
+                  <p className="text-sm text-[#F5EFE1]/45">No consultations scheduled yet.</p>
                 ) : (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-[#F5EFE1]/10">
                     {consultations.map((c: any) => (
                       <div key={c.id} className="py-3 flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{formatDateTime(c.scheduled_at)}</p>
-                          <p className="text-xs text-gray-400">{c.type} · {c.duration_min} min · {c.assignee?.full_name ?? 'Unassigned'}</p>
-                          {c.pre_consult_notes && <p className="text-xs text-gray-500 mt-0.5 italic">"{c.pre_consult_notes}"</p>}
+                          <p className="text-sm font-medium text-[#F5EFE1]">{formatDateTime(c.scheduled_at)}</p>
+                          <p className="text-xs text-[#F5EFE1]/45">{c.type} · {c.duration_min} min · {c.assignee?.full_name ?? 'Unassigned'}</p>
+                          {c.pre_consult_notes && <p className="text-xs text-[#F5EFE1]/60 mt-0.5 italic">"{c.pre_consult_notes}"</p>}
                         </div>
                         <Badge variant={c.status === 'completed' ? 'success' : c.status === 'no_show' ? 'destructive' : 'default'}>
                           {c.status.replace('_', ' ')}
@@ -251,7 +251,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <CardHeader><CardTitle>Conversation ({messages.length})</CardTitle></CardHeader>
               <CardContent>
                 {messages.length === 0 ? (
-                  <p className="text-sm text-gray-400">No messages yet.</p>
+                  <p className="text-sm text-[#F5EFE1]/45">No messages yet.</p>
                 ) : (
                   <div className="space-y-3">
                     {[...messages].reverse().map((m: any) => {
@@ -261,18 +261,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                         <div key={m.id} className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}>
                           <div className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
                             inbound
-                              ? 'bg-gray-100 text-gray-800'
-                              : 'bg-brand-50 text-gray-800'
+                              ? 'bg-gray-100 text-[#F5EFE1]'
+                              : 'bg-brand-50 text-[#F5EFE1]'
                           }`}>
                             <div className={`flex items-center gap-1.5 text-xs font-medium ${
-                              inbound ? 'text-gray-500' : 'text-brand-600'
+                              inbound ? 'text-[#F5EFE1]/60' : 'text-brand-600'
                             }`}>
                               {m.channel === 'sms' ? <MessageSquare className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
                               <span>{m.channel.toUpperCase()}</span>
-                              <span className="text-gray-400">·</span>
-                              <span className="text-gray-400">{formatRelative(m.created_at)}</span>
+                              <span className="text-[#F5EFE1]/45">·</span>
+                              <span className="text-[#F5EFE1]/45">{formatRelative(m.created_at)}</span>
                             </div>
-                            {m.subject && <p className="font-medium text-gray-700 mt-1">{m.subject}</p>}
+                            {m.subject && <p className="font-medium text-[#F5EFE1]/85 mt-1">{m.subject}</p>}
                             <p className="mt-1 whitespace-pre-line">{m.body}</p>
                             {failed && (
                               <p className="mt-1 text-xs font-medium text-red-600">Failed to send</p>
@@ -291,18 +291,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <CardHeader><CardTitle>Activity</CardTitle></CardHeader>
               <CardContent>
                 {activity.length === 0 ? (
-                  <p className="text-sm text-gray-400">No activity yet.</p>
+                  <p className="text-sm text-[#F5EFE1]/45">No activity yet.</p>
                 ) : (
                   <div className="space-y-2">
                     {activity.map((a: any) => (
                       <div key={a.id} className="flex items-start gap-2">
-                        <Activity className="h-3.5 w-3.5 text-gray-300 mt-0.5 flex-shrink-0" />
+                        <Activity className="h-3.5 w-3.5 text-[#F5EFE1]/30 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm text-gray-700">
+                          <p className="text-sm text-[#F5EFE1]/85">
                             <span className="font-medium">{a.action.replace(/_/g, ' ')}</span>
                             {a.user && ` by ${a.user.full_name}`}
                           </p>
-                          <p className="text-xs text-gray-400">{formatRelative(a.created_at)}</p>
+                          <p className="text-xs text-[#F5EFE1]/45">{formatRelative(a.created_at)}</p>
                         </div>
                       </div>
                     ))}

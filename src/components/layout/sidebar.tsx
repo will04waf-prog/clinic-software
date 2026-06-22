@@ -49,20 +49,13 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   }
 
   return (
-    <aside
-      style={{
-        backgroundImage:
-          'linear-gradient(180deg, #F5EFE1 0%, #F5EFE1 55%, #14241d 100%)',
-      }}
-      className="hidden md:flex h-full w-60 flex-col"
-    >
-      {/* Logo — sits on cream */}
+    <aside className="hidden md:flex h-full w-60 flex-col bg-[#F5EFE1]">
+      {/* Logo */}
       <div className="flex h-16 items-center border-b border-[#14241d]/10 px-5">
         <LogoMark size="md" standalone />
       </div>
 
-      {/* Nav — every item is within the solid-cream 55%, so forest text
-          stays legible. */}
+      {/* Nav — forest text on cream throughout */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
@@ -85,9 +78,8 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
         })}
       </nav>
 
-      {/* Bottom actions — sit on the forest end of the gradient, so
-          flip text back to cream. Hover uses a low-opacity cream tint. */}
-      <div className="border-t border-[#F5EFE1]/10 p-3 space-y-0.5">
+      {/* Bottom actions — same cream bg, forest text */}
+      <div className="border-t border-[#14241d]/10 p-3 space-y-0.5">
         {isSuperAdmin && (
           <Link
             href="/admin"
@@ -100,9 +92,9 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
         )}
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#F5EFE1]/75 hover:bg-[#F5EFE1]/[0.06] hover:text-[#F5EFE1] transition-colors duration-150 active:scale-[0.98]"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#14241d]/75 hover:bg-[#14241d]/[0.06] hover:text-[#14241d] transition-colors duration-150 active:scale-[0.98]"
         >
-          <LogOut className="h-4 w-4 text-[#F5EFE1]/55" />
+          <LogOut className="h-4 w-4 text-[#14241d]/55" />
           Sign out
         </button>
       </div>

@@ -185,16 +185,16 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               {recentLeads.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">No leads yet</p>
+                <p className="text-sm text-[#F5EFE1]/45 py-4 text-center">No leads yet</p>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-[#F5EFE1]/10">
                   {recentLeads.map((lead: any) => (
                     <div key={lead.id} className="flex items-center justify-between py-3">
                       <div>
-                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-gray-900 hover:text-brand-600">
+                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-[#F5EFE1] hover:text-brand-600">
                           {lead.first_name} {lead.last_name}
                         </Link>
-                        <p className="text-xs text-gray-400">{lead.email ?? lead.phone ?? '—'}</p>
+                        <p className="text-xs text-[#F5EFE1]/45">{lead.email ?? lead.phone ?? '—'}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {lead.stage && (
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                             {lead.stage.name}
                           </span>
                         )}
-                        <span className="text-xs text-gray-400">{formatRelative(lead.created_at)}</span>
+                        <span className="text-xs text-[#F5EFE1]/45">{formatRelative(lead.created_at)}</span>
                       </div>
                     </div>
                   ))}
@@ -222,16 +222,16 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               {upcomingConsults.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">No upcoming consultations</p>
+                <p className="text-sm text-[#F5EFE1]/45 py-4 text-center">No upcoming consultations</p>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-[#F5EFE1]/10">
                   {upcomingConsults.map((consult: any) => (
                     <div key={consult.id} className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-[#F5EFE1]">
                           {consult.contact?.first_name} {consult.contact?.last_name}
                         </p>
-                        <p className="text-xs text-gray-400">{formatDateTime(consult.scheduled_at)}</p>
+                        <p className="text-xs text-[#F5EFE1]/45">{formatDateTime(consult.scheduled_at)}</p>
                       </div>
                       <Badge variant={consult.status === 'confirmed' ? 'success' : 'default'}>
                         {consult.type === 'virtual' ? 'Virtual' : 'In-Person'}

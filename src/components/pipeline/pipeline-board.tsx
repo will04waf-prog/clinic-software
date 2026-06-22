@@ -44,20 +44,20 @@ function ContactCardVisual({
 
   const body = (
     <>
-      <p className="font-semibold text-sm text-gray-900 leading-tight group-hover:text-brand-700">
+      <p className="font-semibold text-sm text-[#F5EFE1] leading-tight group-hover:text-[#02C39A] transition-colors">
         {contact.first_name} {contact.last_name}
       </p>
       {(contact.email || contact.phone) && (
         <div className="mt-2 space-y-1">
           {contact.email && (
-            <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
-              <Mail className="h-3 w-3 shrink-0 text-gray-300" />
+            <p className="flex items-center gap-1.5 text-xs text-[#F5EFE1]/60 truncate">
+              <Mail className="h-3 w-3 shrink-0 text-[#F5EFE1]/35" />
               <span className="truncate">{contact.email}</span>
             </p>
           )}
           {contact.phone && (
-            <p className="flex items-center gap-1.5 text-xs text-gray-500">
-              <Phone className="h-3 w-3 shrink-0 text-gray-300" />
+            <p className="flex items-center gap-1.5 text-xs text-[#F5EFE1]/60">
+              <Phone className="h-3 w-3 shrink-0 text-[#F5EFE1]/35" />
               {contact.phone}
             </p>
           )}
@@ -66,34 +66,37 @@ function ContactCardVisual({
       {procedures.length > 0 && (
         <div className="mt-2.5 flex flex-wrap gap-1">
           {procedures.slice(0, 2).map((p) => (
-            <Badge key={p} variant="secondary" className="text-[10px] font-medium px-1.5 py-0">
+            <span
+              key={p}
+              className="rounded-full bg-[#02C39A]/15 px-1.5 py-0 text-[10px] font-medium text-[#02C39A]"
+            >
               {formatProcedure(p)}
-            </Badge>
+            </span>
           ))}
           {procedures.length > 2 && (
-            <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0">
+            <span className="rounded-full bg-[#F5EFE1]/[0.08] px-1.5 py-0 text-[10px] font-medium text-[#F5EFE1]/70">
               +{procedures.length - 2}
-            </Badge>
+            </span>
           )}
         </div>
       )}
       {contact.last_activity_at && (
-        <p className="mt-2.5 text-[10px] text-gray-400 uppercase tracking-wide">
+        <p className="mt-2.5 text-[10px] text-[#F5EFE1]/45 uppercase tracking-wide">
           {formatRelative(contact.last_activity_at)}
         </p>
       )}
     </>
   )
 
-  // Borderless cards on the column-tinted background — the shadow alone
-  // provides separation, which reads as "elevated paper" instead of
-  // "outlined box." During drag we elevate harder + add a brand ring so
-  // the floating overlay reads as a distinct visual layer.
+  // Forest cards on mint-tinted columns — same role as the landing page's
+  // dark anchor panels inside lighter sections. The shadow alone provides
+  // separation; during drag we add a mint ring + rotation so the floating
+  // overlay reads as a distinct visual layer.
   const wrapperClass = [
-    'group block rounded-lg bg-white p-3 transition-all duration-150',
+    'group block rounded-lg bg-[#14241d] p-3 transition-all duration-150',
     elevated
-      ? 'shadow-[0_10px_24px_-12px_rgba(2,128,144,0.35)] ring-1 ring-brand-500/30 -rotate-1'
-      : 'shadow-[0_1px_2px_rgba(20,36,29,0.06),0_1px_3px_rgba(20,36,29,0.04)] hover:shadow-[0_2px_6px_rgba(20,36,29,0.08),0_4px_12px_rgba(20,36,29,0.06)] hover:-translate-y-0.5',
+      ? 'shadow-[0_10px_24px_-12px_rgba(20,36,29,0.5)] ring-1 ring-[#02C39A]/40 -rotate-1'
+      : 'shadow-[0_1px_2px_rgba(20,36,29,0.12),0_1px_3px_rgba(20,36,29,0.08)] hover:shadow-[0_2px_8px_rgba(20,36,29,0.16),0_4px_16px_rgba(20,36,29,0.10)] hover:-translate-y-0.5',
     dimmed ? 'opacity-30' : '',
   ].filter(Boolean).join(' ')
 
@@ -159,10 +162,10 @@ function DroppableColumn({
             className="h-2 w-2 rounded-full shrink-0"
             style={{ backgroundColor: column.stage.color }}
           />
-          <h3 className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider truncate">
+          <h3 className="text-[11px] font-semibold text-[#14241d]/75 uppercase tracking-wider truncate">
             {column.stage.name}
           </h3>
-          <span className="text-[11px] font-semibold text-gray-400 tabular-nums">
+          <span className="text-[11px] font-semibold text-[#14241d]/55 tabular-nums">
             {column.count}
           </span>
         </div>
@@ -214,8 +217,8 @@ export function PipelineBoard({ columns, onStageChange }: PipelineBoardProps) {
         {columns.map((column) => (
           <DroppableColumn key={column.stage.id} column={column}>
             {column.contacts.length === 0 && (
-              <div className="flex items-center justify-center rounded-lg border border-dashed border-gray-200 py-8 mx-1 mt-1">
-                <p className="text-[11px] text-gray-400 italic">Drop here</p>
+              <div className="flex items-center justify-center rounded-lg border border-dashed border-[#14241d]/15 py-8 mx-1 mt-1">
+                <p className="text-[11px] text-[#14241d]/45 italic">Drop here</p>
               </div>
             )}
             {column.contacts.map((contact) => (

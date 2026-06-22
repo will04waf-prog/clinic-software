@@ -6,7 +6,7 @@ function AutomationsSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
+        <div key={i} className="flex items-center justify-between rounded-xl border border-[#F5EFE1]/15 bg-white px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="h-2.5 w-2.5 rounded-full bg-gray-200" />
             <div className="space-y-1.5">
@@ -161,8 +161,8 @@ export default function AutomationsPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50">
               <Zap className="h-6 w-6 text-brand-600" />
             </div>
-            <h2 className="text-base font-semibold text-gray-900">No sequences yet</h2>
-            <p className="text-sm text-gray-500 max-w-sm">
+            <h2 className="text-base font-semibold text-[#F5EFE1]">No sequences yet</h2>
+            <p className="text-sm text-[#F5EFE1]/60 max-w-sm">
               Create your first automation to automatically follow up with leads.
             </p>
             <Button size="sm" onClick={openNew}>
@@ -175,17 +175,17 @@ export default function AutomationsPage() {
             {sequences.map((seq) => (
               <div
                 key={seq.id}
-                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 hover:shadow-sm transition-all"
+                className="flex items-center justify-between rounded-xl border border-[#F5EFE1]/15 bg-white px-4 py-3 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center gap-3">
                   <div className={`h-2.5 w-2.5 rounded-full ${seq.is_active ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{seq.name}</p>
+                    <p className="text-sm font-semibold text-[#F5EFE1]">{seq.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="secondary" className="text-xs">
                         {TRIGGER_LABELS[seq.trigger_type] ?? seq.trigger_type}
                       </Badge>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-[#F5EFE1]/45">
                         {(seq.steps ?? []).length} step{(seq.steps ?? []).length !== 1 ? 's' : ''}
                       </span>
                     </div>
@@ -196,7 +196,7 @@ export default function AutomationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-gray-700"
+                    className="h-8 w-8 text-[#F5EFE1]/45 hover:text-[#F5EFE1]/85"
                     title={seq.is_active ? 'Deactivate' : 'Activate'}
                     onClick={() => toggleActive(seq)}
                   >
@@ -208,7 +208,7 @@ export default function AutomationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-gray-700"
+                    className="h-8 w-8 text-[#F5EFE1]/45 hover:text-[#F5EFE1]/85"
                     onClick={() => openEdit(seq)}
                   >
                     <Pencil className="h-4 w-4" />
@@ -216,7 +216,7 @@ export default function AutomationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-red-500"
+                    className="h-8 w-8 text-[#F5EFE1]/45 hover:text-red-500"
                     onClick={() => deleteSequence(seq.id)}
                   >
                     <Trash2 className="h-4 w-4" />
