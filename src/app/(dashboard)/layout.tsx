@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const org = profile?.organization as any
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-[#F5EFE1]">
       <Sidebar isSuperAdmin={profile?.is_super_admin === true} />
       <main className="flex flex-1 flex-col overflow-hidden pb-16 md:pb-0">
         {org && !profile?.is_super_admin && (

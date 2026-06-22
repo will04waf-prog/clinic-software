@@ -89,7 +89,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#F5EFE1]">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
       </div>
     )
@@ -97,7 +97,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
 
   if (notFound) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5EFE1] p-6 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Form not found</h1>
         <p className="mt-2 text-gray-500">This consultation request form is not available.</p>
       </div>
@@ -106,7 +106,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5EFE1] p-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
           <CheckCircle className="h-8 w-8 text-emerald-600" />
         </div>
@@ -119,7 +119,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-[#F5EFE1] py-12 px-4">
       <div className="mx-auto max-w-lg">
         {/* Header */}
         <div className="mb-8 text-center">

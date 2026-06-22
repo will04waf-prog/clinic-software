@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!profile?.is_super_admin) redirect('/dashboard')
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-[#F5EFE1]">
       <aside className="w-56 shrink-0 flex flex-col border-r border-gray-200 bg-white">
         <div className="px-4 py-5 border-b border-gray-100">
           <p className="text-xs font-semibold text-brand-600 uppercase tracking-wider">Tarhunna</p>

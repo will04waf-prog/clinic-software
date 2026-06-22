@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function BookDemoPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#F5EFE1] flex flex-col">
       {/* Nav */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

@@ -14,7 +14,7 @@ const CONTACT_EMAIL  = 'hello@tarhunna.net'
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#F5EFE1] flex flex-col">
 
       {/* Nav */}
       <header className="border-b border-gray-100">

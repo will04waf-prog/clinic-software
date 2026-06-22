@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-full flex-col items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="flex min-h-full flex-col items-center justify-center bg-[#F5EFE1] px-4 py-12">
       <div className="mb-8 flex flex-col items-center gap-2">
         <LogoMark size="xl" standalone />
         <p className="text-[11px] font-semibold uppercase tracking-widest text-[#028090]">
