@@ -37,41 +37,63 @@ function ContactCardVisual({
   dimmed?: boolean
   elevated?: boolean
 }) {
+  // Dedupe procedure_interest (data sometimes lands with the same procedure
+  // twice — e.g. Marcus Johnson with two Body Contouring chips) so the
+  // visible card never shows a duplicate badge.
+  const procedures = Array.from(new Set(contact.procedure_interest ?? []))
+
   const body = (
     <>
-      <p className="font-medium text-sm text-gray-900 group-hover:text-brand-600">
+      <p className="font-semibold text-sm text-gray-900 leading-tight group-hover:text-brand-700">
         {contact.first_name} {contact.last_name}
       </p>
-      <div className="mt-1.5 space-y-0.5">
-        {contact.email && (
-          <p className="flex items-center gap-1.5 text-xs text-gray-400">
-            <Mail className="h-3 w-3" />{contact.email}
-          </p>
-        )}
-        {contact.phone && (
-          <p className="flex items-center gap-1.5 text-xs text-gray-400">
-            <Phone className="h-3 w-3" />{contact.phone}
-          </p>
-        )}
-      </div>
-      {(contact.procedure_interest ?? []).length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {(contact.procedure_interest ?? []).slice(0, 2).map((p) => (
-            <Badge key={p} variant="secondary" className="text-xs">{formatProcedure(p)}</Badge>
-          ))}
+      {(contact.email || contact.phone) && (
+        <div className="mt-2 space-y-1">
+          {contact.email && (
+            <p className="flex items-center gap-1.5 text-xs text-gray-500 truncate">
+              <Mail className="h-3 w-3 shrink-0 text-gray-300" />
+              <span className="truncate">{contact.email}</span>
+            </p>
+          )}
+          {contact.phone && (
+            <p className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Phone className="h-3 w-3 shrink-0 text-gray-300" />
+              {contact.phone}
+            </p>
+          )}
         </div>
       )}
-      <div className="mt-2 flex items-center justify-between">
-        <p className="text-xs text-gray-400">
-          {contact.last_activity_at ? formatRelative(contact.last_activity_at) : '—'}
+      {procedures.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1">
+          {procedures.slice(0, 2).map((p) => (
+            <Badge key={p} variant="secondary" className="text-[10px] font-medium px-1.5 py-0">
+              {formatProcedure(p)}
+            </Badge>
+          ))}
+          {procedures.length > 2 && (
+            <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0">
+              +{procedures.length - 2}
+            </Badge>
+          )}
+        </div>
+      )}
+      {contact.last_activity_at && (
+        <p className="mt-2.5 text-[10px] text-gray-400 uppercase tracking-wide">
+          {formatRelative(contact.last_activity_at)}
         </p>
-      </div>
+      )}
     </>
   )
 
+  // Borderless cards on the column-tinted background — the shadow alone
+  // provides separation, which reads as "elevated paper" instead of
+  // "outlined box." During drag we elevate harder + add a brand ring so
+  // the floating overlay reads as a distinct visual layer.
   const wrapperClass = [
-    'group rounded-lg border border-gray-200 bg-white p-3 transition-shadow',
-    elevated ? 'shadow-lg ring-1 ring-brand-500/20' : 'shadow-sm hover:shadow-md',
+    'group block rounded-lg bg-white p-3 transition-all duration-150',
+    elevated
+      ? 'shadow-[0_10px_24px_-12px_rgba(2,128,144,0.35)] ring-1 ring-brand-500/30 -rotate-1'
+      : 'shadow-[0_1px_2px_rgba(20,36,29,0.06),0_1px_3px_rgba(20,36,29,0.04)] hover:shadow-[0_2px_6px_rgba(20,36,29,0.08),0_4px_12px_rgba(20,36,29,0.06)] hover:-translate-y-0.5',
     dimmed ? 'opacity-30' : '',
   ].filter(Boolean).join(' ')
 
@@ -96,7 +118,12 @@ function DraggableCard({ contact }: { contact: PipelineContact }) {
     data: { contact },
   })
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners} className="touch-none">
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="touch-none cursor-grab active:cursor-grabbing"
+    >
       <ContactCardVisual contact={contact} dimmed={isDragging} />
     </div>
   )
@@ -118,21 +145,29 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={[
-        'flex w-64 flex-none flex-col rounded-xl border bg-gray-50 transition-colors',
-        isOver ? 'border-brand-500 bg-brand-50/60' : 'border-gray-200',
+        'flex w-72 flex-none flex-col rounded-2xl bg-gray-50/80 transition-colors duration-200',
+        isOver ? 'bg-brand-50 ring-2 ring-brand-500/40' : 'ring-1 ring-gray-200/70',
       ].join(' ')}
     >
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200">
-        <div className="flex items-center gap-2">
+      {/* Column header — pulled into the column bg, no divider line. The
+          stage-color dot reads as the accent; rest stays neutral. */}
+      <div className="flex items-center justify-between px-3.5 pt-3 pb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
           <span
-            className="h-2.5 w-2.5 rounded-full"
+            className="h-2 w-2 rounded-full shrink-0"
             style={{ backgroundColor: column.stage.color }}
           />
-          <h3 className="text-sm font-semibold text-gray-700">{column.stage.name}</h3>
+          <h3 className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider truncate">
+            {column.stage.name}
+          </h3>
+          <span className="text-[11px] font-semibold text-gray-400 tabular-nums">
+            {column.count}
+          </span>
         </div>
-        <span className="text-xs text-gray-400 font-medium">{column.count}</span>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[6rem]">
+      {/* Card list — uniform vertical rhythm, padded so cards don't hug
+          the column edges. min-h keeps an empty column dropping-friendly. */}
+      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2 min-h-[8rem]">
         {children}
       </div>
     </div>
@@ -177,7 +212,9 @@ export function PipelineBoard({ columns, onStageChange }: PipelineBoardProps) {
         {columns.map((column) => (
           <DroppableColumn key={column.stage.id} column={column}>
             {column.contacts.length === 0 && (
-              <p className="py-6 text-center text-xs text-gray-400">Drop here</p>
+              <div className="flex items-center justify-center rounded-lg border border-dashed border-gray-200 py-8 mx-1 mt-1">
+                <p className="text-[11px] text-gray-400 italic">Drop here</p>
+              </div>
             )}
             {column.contacts.map((contact) => (
               <DraggableCard key={contact.id} contact={contact} />
