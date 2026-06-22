@@ -66,6 +66,33 @@ export default function PipelinePage() {
 
   async function handleStageChange(contactId: string, stageId: string) {
     setMoveError(null)
+    const previousColumns = columns
+
+    // Optimistic update: move the card visually before the API call. Without
+    // this, the card sits in its old column for the duration of the round-
+    // trip + reload, which feels broken during a demo. On failure we restore
+    // previousColumns and show the error.
+    setColumns((cols) => {
+      let moved: typeof cols[number]['contacts'][number] | null = null
+      const next = cols.map((col) => {
+        if (col.contacts.some((c) => c.id === contactId)) {
+          moved = col.contacts.find((c) => c.id === contactId) ?? null
+          return {
+            ...col,
+            contacts: col.contacts.filter((c) => c.id !== contactId),
+            count: col.count - 1,
+          }
+        }
+        return col
+      })
+      if (!moved) return cols
+      return next.map((col) =>
+        col.stage.id === stageId
+          ? { ...col, contacts: [{ ...(moved as any), stage_id: stageId }, ...col.contacts], count: col.count + 1 }
+          : col
+      )
+    })
+
     try {
       const res = await fetch(`/api/contacts/${contactId}`, {
         method: 'PATCH',
@@ -76,8 +103,11 @@ export default function PipelinePage() {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
       }
-      load()
+      // Server accepted — keep the optimistic state. We do NOT call load()
+      // here because it'd cause a visible flash; the next focus/visibility
+      // change or manual refresh will pick up any server-side drift.
     } catch (err: any) {
+      setColumns(previousColumns)
       setMoveError(err.message ?? 'Failed to move contact')
     }
   }
