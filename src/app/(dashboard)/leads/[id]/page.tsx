@@ -9,6 +9,7 @@ import { Header } from '@/components/layout/header'
 import { BookConsultationDialog } from '@/components/consultations/book-consultation-dialog'
 import { SendEmailDialog } from '@/components/leads/send-email-dialog'
 import { SendSmsDialog } from '@/components/leads/send-sms-dialog'
+import { SmsConsentToggle } from '@/components/leads/sms-consent-toggle'
 import { LeadSummaryCard } from '@/components/leads/lead-summary-card'
 import { formatDate, formatDateTime, formatRelative, formatPhone, formatProcedure, formatLeadSource } from '@/lib/utils'
 import type { Contact, Message, ActivityLog, Consultation } from '@/types'
@@ -115,10 +116,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 )}
                 {contact.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700">{formatPhone(contact.phone)}</span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-700">{formatPhone(contact.phone)}</span>
+                    </div>
+                    <div className="flex items-center pl-6">
+                      <SmsConsentToggle
+                        contactId={contact.id}
+                        smsConsent={contact.sms_consent === true}
+                        optedOutSms={contact.opted_out_sms === true}
+                      />
+                    </div>
+                  </>
                 )}
                 {contact.source && (
                   <div className="flex items-center gap-2 text-sm">

@@ -15,6 +15,8 @@ const patchSchema = z.object({
   notes:               z.string().max(2000).optional(),
   opted_out_sms:       z.boolean().optional(),
   opted_out_email:     z.boolean().optional(),
+  // Allow staff to record SMS consent persistently — sequences gate on this.
+  sms_consent:         z.boolean().optional(),
 }).strict() // reject any unknown keys
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -163,6 +165,9 @@ function resolveActivityAction(
   if (updates.is_archived === true) return 'contact_archived'
   if (updates.stage_id !== undefined && updates.stage_id !== existing.stage_id) return 'stage_changed'
   if (updates.status) return 'status_changed'
+  if (updates.sms_consent === true) return 'sms_consent_granted'
+  if (updates.sms_consent === false) return 'sms_consent_revoked'
+  if (updates.opted_out_sms === true) return 'opted_out_sms'
   if (updates.notes !== undefined) return 'note_added'
   return null
 }
