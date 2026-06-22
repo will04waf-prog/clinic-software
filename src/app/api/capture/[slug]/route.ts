@@ -57,7 +57,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { email, sms_consent, ...rest } = parsed.data
+  const { email, phone, sms_consent, ...rest } = parsed.data
 
   // Get default stage for org
   const { data: defaultStage } = await supabaseAdmin
@@ -67,12 +67,71 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     .eq('is_default', true)
     .maybeSingle()
 
+  // ── Dedup against existing contacts in this org ──────────────
+  // Without this, a patient submitting the form twice (or filling it
+  // once, navigating away, coming back, and filling it again) creates
+  // two contact rows AND enrolls in `new_lead` sequences twice =
+  // duplicate SMS sent to the same person. Match by email (preferred,
+  // exact lowercase) or by last-10 digits of phone.
+  const last10 = (phone ?? '').replace(/\D/g, '').slice(-10)
+  let existingContact: { id: string } | null = null
+
+  if (email) {
+    const { data } = await supabaseAdmin
+      .from('contacts')
+      .select('id')
+      .eq('organization_id', org.id)
+      .eq('is_archived', false)
+      .ilike('email', email)
+      .maybeSingle()
+    if (data) existingContact = data
+  }
+  if (!existingContact && last10.length === 10) {
+    const { data: candidates } = await supabaseAdmin
+      .from('contacts')
+      .select('id, phone')
+      .eq('organization_id', org.id)
+      .eq('is_archived', false)
+      .ilike('phone', `%${last10}`)
+      .limit(5)
+    const exact = (candidates ?? []).find(
+      c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10
+    )
+    if (exact) existingContact = { id: exact.id }
+  }
+
+  let contactId: string
+  if (existingContact) {
+    // Bump last_activity_at + refresh consent if the visitor (re)opted in,
+    // but do NOT re-enroll in new_lead sequences. Return the same id.
+    const refresh: Record<string, unknown> = {
+      last_activity_at: new Date().toISOString(),
+    }
+    if (sms_consent === true) refresh.sms_consent = true
+    await supabaseAdmin
+      .from('contacts')
+      .update(refresh)
+      .eq('id', existingContact.id)
+    contactId = existingContact.id
+
+    await supabaseAdmin.from('activity_log').insert({
+      organization_id: org.id,
+      contact_id:      contactId,
+      action:          'lead_resubmitted',
+      metadata:        { source: 'web_form', slug },
+    })
+
+    return NextResponse.json({ ok: true, deduped: true }, { status: 200 })
+  }
+
+  // New contact: insert + enqueue automations.
   const { data: contact, error } = await supabaseAdmin
     .from('contacts')
     .insert({
       organization_id:    org.id,
       stage_id:           defaultStage?.id ?? null,
       email:              email || null,
+      phone:              phone || null,
       source:             'website',
       sms_consent:        sms_consent ?? false,
       ...rest,
@@ -83,10 +142,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Log activity
+  contactId = contact.id
+
   await supabaseAdmin.from('activity_log').insert({
     organization_id: org.id,
-    contact_id:      contact.id,
+    contact_id:      contactId,
     action:          'lead_captured',
     metadata:        { source: 'web_form', slug },
   })
@@ -95,7 +155,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   // legacy fire-and-forget alongside the enqueue until ENROLLMENT_JOBS_MODE=primary.
   try {
     await enqueueEnrollment({
-      contactId:      contact.id,
+      contactId,
       organizationId: org.id,
       triggerType:    'new_lead',
     })
@@ -104,7 +164,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   }
   if (enrollmentJobsMode() === 'shadow') {
     enrollContact({
-      contactId:      contact.id,
+      contactId,
       triggerType:    'new_lead',
       organizationId: org.id,
     }).catch(console.error)
