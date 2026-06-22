@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { enqueueEnrollment } from '@/lib/enrollment-jobs'
 import { z } from 'zod'
 
 const VALID_SOURCES = ['website', 'referral', 'instagram', 'facebook', 'walkin', 'other'] as const
@@ -128,6 +129,28 @@ export async function PATCH(
       action: activityAction,
       metadata: updates.stage_id ? { stage_id: updates.stage_id } : null,
     })
+  }
+
+  // Fire the `stage_changed` automation trigger when stage_id actually
+  // changed. Without this, the entire stage_changed trigger type is dead
+  // code — users who built sequences keyed to stage transitions never see
+  // them run. Best-effort: a failure here shouldn't block the PATCH from
+  // returning success.
+  if (
+    updates.stage_id !== undefined &&
+    updates.stage_id !== null &&
+    updates.stage_id !== existing.stage_id
+  ) {
+    try {
+      await enqueueEnrollment({
+        organizationId: orgId,
+        contactId: id,
+        triggerType: 'stage_changed',
+        stageId: updates.stage_id,
+      })
+    } catch (err) {
+      console.error('[contacts/[id]] enqueue stage_changed failed:', err)
+    }
   }
 
   return NextResponse.json({ ok: true })
