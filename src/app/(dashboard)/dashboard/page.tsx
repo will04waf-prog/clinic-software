@@ -1,250 +1,223 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { GreetingHeader } from '@/components/dashboard/greeting-header'
-import { StatsCards } from '@/components/dashboard/stats-cards'
-import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist'
-import { LeadsChart, type LeadsTimeseriesPoint } from '@/components/dashboard/leads-chart'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { formatRelative, formatDateTime } from '@/lib/utils'
-import type { DashboardStats } from '@/types'
+'use client'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Plus, Sun } from 'lucide-react'
+import { BriefHero } from '@/components/dashboard/morning/brief-hero'
+import { WaitingHero } from '@/components/dashboard/morning/waiting-hero'
+import { ActionStack } from '@/components/dashboard/morning/action-stack'
+import { UpNextCard } from '@/components/dashboard/morning/up-next-card'
+import { NudgeCard } from '@/components/dashboard/morning/nudge-card'
+import { ScheduleRail } from '@/components/dashboard/morning/schedule-rail'
+import { WeekStrip } from '@/components/dashboard/morning/week-strip'
+import { AnalyticsSections } from '@/components/dashboard/analytics/analytics-sections'
+import type { MorningResponse } from '@/components/dashboard/morning/types'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
+const POLL_INTERVAL_MS = 60_000
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>
-
-const EMPTY_STATS: DashboardStats = {
-  new_leads_today: 0,
-  new_leads_week: 0,
-  consultations_today: 0,
-  consultations_week: 0,
-  no_shows_week: 0,
-  conversion_rate: 0,
-  total_active_leads: 0,
-  total_contacts: 0,
-}
-
-// "YYYY-MM-DD" key in local time. Matches how the rest of the dashboard
-// reasons about day boundaries (startOfToday is local-midnight, not UTC).
-function toDateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function bucketLeadsTimeseries(
-  rows:    Array<{ created_at: string }>,
-  startMs: number,
-  days:    number,
-): LeadsTimeseriesPoint[] {
-  const counts = new Map<string, number>()
-  for (let i = 0; i < days; i++) {
-    counts.set(toDateKey(new Date(startMs + i * 86_400_000)), 0)
-  }
-  for (const row of rows) {
-    const key = toDateKey(new Date(row.created_at))
-    if (counts.has(key)) counts.set(key, (counts.get(key) ?? 0) + 1)
-  }
-  return Array.from(counts, ([date, count]) => ({ date, count }))
-}
-
-async function getDashboardData(supabase: SupabaseClient, orgId: string) {
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-  const startOfWeek  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const endOfToday   = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
-
-  // 90-day window for the leads chart, anchored at local midnight so day
-  // buckets align with how the user perceives "today".
-  const startOfRange = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 89)
-
-  const [
-    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12,
-  ] = await Promise.all([
-    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfToday),
-    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', startOfWeek),
-    supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('scheduled_at', startOfToday).lt('scheduled_at', endOfToday),
-    supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('scheduled_at', startOfWeek),
-    supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'no_show').gte('scheduled_at', startOfWeek),
-    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'lead').eq('is_archived', false),
-    supabase.from('contacts_active').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_archived', false),
-    supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'completed'),
-    supabase.from('contacts_active').select('*, stage:pipeline_stages(*)').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(5),
-    supabase.from('consultations').select('*, contact:contacts(first_name, last_name)').eq('organization_id', orgId).gte('scheduled_at', now.toISOString()).order('scheduled_at', { ascending: true }).limit(5),
-    // Onboarding: total consultations (any status)
-    supabase.from('consultations').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
-    // Onboarding: active automations with at least one step
-    supabase.from('automation_sequences').select('id, sequence_steps!inner(id)', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
-    // 90-day leads timeseries — raw created_at, bucketed in JS below.
-    supabase.from('contacts_active').select('created_at').eq('organization_id', orgId).gte('created_at', startOfRange.toISOString()).order('created_at', { ascending: true }),
-  ])
-
-  const totalContacts = r6.count ?? 0
-  const totalDone     = r7.count ?? 0
-
-  const stats: DashboardStats = {
-    new_leads_today:      r0.count ?? 0,
-    new_leads_week:       r1.count ?? 0,
-    consultations_today:  r2.count ?? 0,
-    consultations_week:   r3.count ?? 0,
-    no_shows_week:        r4.count ?? 0,
-    total_active_leads:   r5.count ?? 0,
-    total_contacts:       totalContacts,
-    conversion_rate:      totalContacts > 0 ? (totalDone / totalContacts) * 100 : 0,
-  }
-
-  const leadsTimeseries = bucketLeadsTimeseries(
-    (r12.data ?? []) as Array<{ created_at: string }>,
-    startOfRange.getTime(),
-    90,
-  )
-
-  return {
-    stats,
-    recentLeads:      r8.data ?? [],
-    upcomingConsults: r9.data ?? [],
-    leadsTimeseries,
-    hasLeads:         (r6.count ?? 0) > 0,
-    hasConsultations: (r10.count ?? 0) > 0,
-    hasAutomations:   (r11.count ?? 0) > 0,
-  }
-}
-
-export default async function DashboardPage() {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, full_name, organization:organizations(id, name, slug)')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) redirect('/login')
-
-  // Fetch dashboard data — never crash the page on a query error
-  let stats = EMPTY_STATS
-  let recentLeads:      any[] = []
-  let upcomingConsults: any[] = []
-  let leadsTimeseries:  LeadsTimeseriesPoint[] = []
-  let hasLeads         = false
-  let hasConsultations = false
-  let hasAutomations   = false
-  let dataError: string | null = null
-
-  try {
-    const result = await getDashboardData(supabase, profile.organization_id)
-    stats            = result.stats
-    recentLeads      = result.recentLeads
-    upcomingConsults = result.upcomingConsults
-    leadsTimeseries  = result.leadsTimeseries
-    hasLeads         = result.hasLeads
-    hasConsultations = result.hasConsultations
-    hasAutomations   = result.hasAutomations
-  } catch (err: any) {
-    console.error('[dashboard] data fetch error:', err.message)
-    dataError = err.message
-  }
-
-  const org = (profile as any).organization
-  const captureUrl = `${APP_URL}/capture/${org?.slug ?? ''}`
-
+function DashboardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden h-full">
-      <GreetingHeader
-        firstName={(profile.full_name ?? 'there').split(' ')[0]}
-        subtitle={org?.name}
-      />
-
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {dataError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-            <p className="text-sm font-medium text-red-700">Could not load dashboard data</p>
-            <p className="text-xs text-red-500 mt-0.5">{dataError}</p>
-          </div>
-        )}
-
-        <OnboardingChecklist
-          hasLeads={hasLeads}
-          hasConsultations={hasConsultations}
-          hasAutomations={hasAutomations}
-          captureUrl={captureUrl}
-        />
-
-        <StatsCards stats={stats} />
-
-        <LeadsChart data={leadsTimeseries} />
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Recent Leads */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle>Recent Leads</CardTitle>
-              <Link href="/leads" className="text-xs text-brand-600 hover:underline">View all</Link>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {recentLeads.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">No leads yet</p>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {recentLeads.map((lead: any) => (
-                    <div key={lead.id} className="flex items-center justify-between py-3">
-                      <div>
-                        <Link href={`/leads/${lead.id}`} className="text-sm font-medium text-[#14241d] hover:text-[#14241d]/80 transition-colors">
-                          {lead.first_name} {lead.last_name}
-                        </Link>
-                        <p className="text-xs text-gray-400">{lead.email ?? lead.phone ?? '—'}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {lead.stage && (
-                          <span
-                            className="rounded-full px-2 py-0.5 text-xs font-medium"
-                            style={{ backgroundColor: `${lead.stage.color}20`, color: lead.stage.color }}
-                          >
-                            {lead.stage.name}
-                          </span>
-                        )}
-                        <span className="text-xs text-gray-400">{formatRelative(lead.created_at)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Consultations */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle>Upcoming Consultations</CardTitle>
-              <Link href="/consultations" className="text-xs text-brand-600 hover:underline">View all</Link>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {upcomingConsults.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">No upcoming consultations</p>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {upcomingConsults.map((consult: any) => (
-                    <div key={consult.id} className="flex items-center justify-between py-3">
-                      <div>
-                        <p className="text-sm font-medium text-[#14241d]">
-                          {consult.contact?.first_name} {consult.contact?.last_name}
-                        </p>
-                        <p className="text-xs text-gray-400">{formatDateTime(consult.scheduled_at)}</p>
-                      </div>
-                      <Badge variant={consult.status === 'confirmed' ? 'success' : 'default'}>
-                        {consult.type === 'virtual' ? 'Virtual' : 'In-Person'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+    <div className="space-y-6 animate-pulse">
+      <div className="h-10 w-80 rounded bg-[#0B2027]/5" />
+      <div className="h-32 rounded-2xl bg-[#0B2027]/5" />
+      <div className="grid gap-6 lg:grid-cols-[1.72fr_1fr]">
+        <div className="space-y-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-[14px] bg-[#0B2027]/5" />
+          ))}
+        </div>
+        <div className="space-y-4">
+          <div className="h-56 rounded-2xl bg-[#0B2027]/5" />
+          <div className="h-32 rounded-2xl bg-[#02C39A]/5" />
         </div>
       </div>
     </div>
   )
 }
 
+/**
+ * Dashboard "Morning Briefing" — the new home screen.
+ *
+ * Six panels, all reading from a single /api/dashboard/morning fetch:
+ *   1. Hero — AI brief sentence (default) or big "waiting count"
+ *      (?hero=waiting). Visual placeholders for now; same shape as
+ *      the eventual LLM response.
+ *   2. Action stack — ranked triage queue (now/today/cool/auto). The
+ *      centerpiece — every row is a single thing the clinic should
+ *      do right now.
+ *   3. Up-Next card — soonest consult today as a forest anchor.
+ *   4. AI nudge — one insight, rule-based. Dismissible per-session.
+ *   5. Schedule rail — today's consults with open-slot tiles between.
+ *   6. Week strip — compressed KPI pulse (3 cells; revenue deferred).
+ *
+ * Polls once a minute so the action stack feels alive without slamming
+ * the server. The inbox at /leads is the higher-frequency surface.
+ */
+export default function DashboardPage() {
+  const searchParams = useSearchParams()
+  const heroVariant = searchParams.get('hero') === 'waiting' ? 'waiting' : 'brief'
+
+  const [data, setData] = useState<MorningResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    if (!silent) setError(null)
+    try {
+      const res = await fetch('/api/dashboard/morning', { cache: 'no-store' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      const json = (await res.json()) as MorningResponse
+      setData(json)
+    } catch (err: any) {
+      console.error('[dashboard/morning] load error:', err)
+      if (!silent) setError(err.message ?? 'Failed to load dashboard')
+    } finally {
+      if (!silent) setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null
+    const start = () => {
+      if (intervalId !== null) return
+      intervalId = setInterval(() => load(true), POLL_INTERVAL_MS)
+    }
+    const stop = () => {
+      if (intervalId === null) return
+      clearInterval(intervalId)
+      intervalId = null
+    }
+    const onVis = () => { if (document.hidden) stop(); else { load(true); start() } }
+    const onFocus = () => load(true)
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVis)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', onVis)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [load])
+
+  const dateLabel = useMemo(() => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    })
+  }, [])
+  const clockLabel = useMemo(() => {
+    return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  }, [data?.generatedAt])
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Page-local top bar. The mockup's "Today / Tuesday, June 23 / 9:20
+          AM" with a sun-horizon icon and right-side actions. We don't
+          touch the shared <Header> (used by every other page) — this is
+          a dashboard-only widget that takes its place. */}
+      <header className="flex min-h-[76px] items-center justify-between gap-3 border-b border-[#0B2027]/8 bg-white px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-[#02C39A]/15">
+            <Sun className="h-5 w-5 text-[#028090]" fill="currentColor" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[12px] font-medium text-[#4A5A60]">Today</p>
+            <p className="whitespace-nowrap">
+              <span
+                className="text-[#14241D]"
+                style={{
+                  fontFamily: 'var(--font-newsreader), Newsreader, Georgia, serif',
+                  fontSize: '22px',
+                  fontWeight: 600,
+                  lineHeight: 1,
+                }}
+              >
+                {dateLabel}
+              </span>
+              <span className="ml-2 text-[15px] text-[#A4AFB2]">{clockLabel}</span>
+            </p>
+          </div>
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* Search + bell intentionally omitted — they were stubs.
+              When real search and notifications ship, restore them here. */}
+          <Link
+            href="/leads"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#028090] px-4 py-2 text-[13px] font-semibold text-white shadow-[0_2px_6px_-2px_rgba(2,128,144,0.5)] hover:bg-[#026B78] transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.6} />
+            Add lead
+          </Link>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10 sm:py-7" style={{ scrollBehavior: 'smooth' }}>
+        <div className="mx-auto flex max-w-[1240px] flex-col gap-7">
+          {loading && !data ? (
+            <DashboardSkeleton />
+          ) : error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-sm font-medium text-red-700">Failed to load dashboard</p>
+              <p className="text-xs text-red-500 mt-0.5">{error}</p>
+            </div>
+          ) : data ? (
+            <>
+              {/* ① Hero */}
+              {heroVariant === 'waiting' ? (
+                <WaitingHero waiting={data.waiting} generatedAt={data.generatedAt} />
+              ) : (
+                <BriefHero brief={data.brief} generatedAt={data.generatedAt} />
+              )}
+
+              {/* ② Two-column grid: action stack | up-next + nudge */}
+              <div className="grid gap-6 lg:grid-cols-[1.72fr_1fr]">
+                <ActionStack actions={data.actions} />
+                <div className="flex flex-col gap-4">
+                  <UpNextCard upNext={data.upNext} />
+                  <NudgeCard nudge={data.nudge} />
+                </div>
+              </div>
+
+              {/* ③ Schedule rail */}
+              <ScheduleRail schedule={data.schedule} dateLabel={dateLabel} />
+
+              {/* ④ Week strip */}
+              <WeekStrip week={data.week} />
+
+              {/* ⑤ Performance divider + analytics sections.
+                  /analytics no longer exists as a separate route — the
+                  trend chart, funnel, and source breakdown live here
+                  inline. The "See analytics" link in the week strip
+                  scrolls to #performance below. */}
+              <div id="performance" className="mt-2 flex items-center gap-4 pt-4 border-t border-[#0B2027]/8 scroll-mt-24">
+                <h2
+                  className="text-[#14241D]"
+                  style={{
+                    fontFamily: 'var(--font-newsreader), Newsreader, Georgia, serif',
+                    fontSize: '26px',
+                    fontWeight: 600,
+                    lineHeight: 1,
+                  }}
+                >
+                  Performance
+                </h2>
+                <span className="text-[12.5px] text-[#7E8C90]">
+                  How leads flow through your funnel
+                </span>
+              </div>
+
+              <AnalyticsSections />
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}

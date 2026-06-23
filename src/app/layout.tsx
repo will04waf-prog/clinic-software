@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Great_Vibes } from 'next/font/google'
+import { Inter, Great_Vibes, Newsreader } from 'next/font/google'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -7,6 +7,15 @@ const greatVibes = Great_Vibes({
   subsets: ['latin'],
   weight: '400',
   variable: '--font-great-vibes',
+  display: 'swap',
+})
+// Used by the morning-briefing dashboard for the pull-quote hero and the
+// large numeric values (Up-Next time, week-strip values, big count).
+// Optical-size variable font; weights 400-600.
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-newsreader',
   display: 'swap',
 })
 
@@ -73,7 +82,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${greatVibes.variable} h-full`}>
+    <html lang="en" className={`${greatVibes.variable} ${newsreader.variable} h-full`}>
       <body className={`${inter.className} h-full antialiased bg-[#F5EFE1]`}>
         {children}
       </body>
