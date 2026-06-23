@@ -1,10 +1,13 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Header } from '@/components/layout/header'
-import { LeadsTable } from '@/components/leads/leads-table'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
+import { TimeToFirstContactCard } from '@/components/leads/time-to-first-contact-card'
+import { InboxFilterChips, type InboxFilter } from '@/components/leads/inbox-filter-chips'
+import { InboxList } from '@/components/leads/inbox-list'
+import { ConversationPane } from '@/components/leads/conversation-pane'
 import type { Contact } from '@/types'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const POLL_INTERVAL_MS = 6_000
 
@@ -14,42 +17,60 @@ function contactsSignature(rows: Contact[]): string {
     .join('|')
 }
 
-function LeadsSkeleton() {
+function InboxSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white animate-pulse">
-      <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
-        <div className="h-3 w-48 rounded bg-gray-200" />
-      </div>
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="flex items-center gap-4 border-b border-gray-100 px-4 py-3 last:border-0">
-          <div className="flex-1 space-y-1.5">
-            <div className="h-3.5 w-36 rounded bg-gray-200" />
-            <div className="h-3 w-48 rounded bg-gray-100" />
-          </div>
-          <div className="h-5 w-16 rounded-full bg-gray-200" />
-          <div className="h-5 w-14 rounded-full bg-gray-200" />
-          <div className="h-7 w-7 rounded bg-gray-100" />
+    <div className="grid h-full grid-cols-[360px_1fr] overflow-hidden border-t border-[#0B2027]/8 bg-white">
+      <div className="animate-pulse border-r border-[#0B2027]/8 p-4 space-y-3">
+        <div className="h-4 w-24 rounded bg-[#0B2027]/10" />
+        <div className="h-9 rounded-lg bg-[#0B2027]/5" />
+        <div className="space-y-2 pt-2">
+          {[0,1,2,3,4].map(i => (
+            <div key={i} className="flex items-start gap-3 py-2">
+              <div className="h-10 w-10 rounded-full bg-[#0B2027]/10" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 w-32 rounded bg-[#0B2027]/10" />
+                <div className="h-3 w-44 rounded bg-[#0B2027]/5" />
+                <div className="h-3 w-40 rounded bg-[#0B2027]/5" />
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
+      <div className="animate-pulse bg-[#FAF6EC]/45" />
     </div>
   )
 }
 
-type Tab = 'all' | 'leads' | 'patients' | 'inactive'
+/**
+ * Inbox-style leads page. Two-column layout: a conversation list on the
+ * left, the open conversation on the right.
+ *
+ * Selection is URL-driven (`?c=<contactId>`) so conversations are
+ * bookmarkable/shareable. On first load with no `?c`, auto-selects the
+ * most recent unread (falling back to the most recent contact overall).
+ *
+ * The list-fetch + polling pattern is preserved from the previous
+ * iteration. Conversation messages are fetched separately by the
+ * ConversationPane component via the new
+ * `/api/contacts/[id]/messages` endpoint.
+ *
+ * The original /leads/[id] deep profile page is unchanged — kebab →
+ * "View profile" deep-links there for the full record view.
+ */
+export default function LeadsInboxPage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const selectedId = searchParams.get('c')
 
-export default function LeadsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('all')
-
-  // Holds the signature of the last applied contacts array, so a
-  // background poll that returns identical data can skip setContacts
-  // and avoid an unnecessary re-render.
+  const [filter, setFilter] = useState<InboxFilter>('all')
+  const [search, setSearch] = useState('')
   const signatureRef = useRef<string>('')
+  const autoSelectedRef = useRef(false)
 
-  // `silent: true` means a background poll: don't toggle loading and
-  // skip the setState if nothing the UI cares about changed.
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     if (!silent) setError(null)
@@ -74,14 +95,9 @@ export default function LeadsPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Poll every 12s for new inbound messages so the unread indicator
-  // updates without a manual refresh. Pause while the tab is hidden
-  // (no point polling when the user isn't looking) and fire an
-  // immediate refresh on re-show so the list is fresh when they
-  // come back.
+  // Poll the list. Same visibility/focus pattern as before.
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | null = null
-
     const start = () => {
       if (intervalId !== null) return
       intervalId = setInterval(() => load(true), POLL_INTERVAL_MS)
@@ -91,111 +107,125 @@ export default function LeadsPage() {
       clearInterval(intervalId)
       intervalId = null
     }
-
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        stop()
-      } else {
-        load(true)
-        start()
-      }
-    }
-
-    // Refocusing the window also triggers an immediate refresh — covers
-    // the alt-tab-back-to-dashboard demo flow on machines where
-    // visibilitychange isn't fired (e.g. some browser/OS combos).
-    const onFocus = () => { load(true) }
-
+    const onVis = () => { if (document.hidden) stop(); else { load(true); start() } }
+    const onFocus = () => load(true)
     if (!document.hidden) start()
-    document.addEventListener('visibilitychange', onVisibilityChange)
+    document.addEventListener('visibilitychange', onVis)
     window.addEventListener('focus', onFocus)
-
     return () => {
       stop()
-      document.removeEventListener('visibilitychange', onVisibilityChange)
+      document.removeEventListener('visibilitychange', onVis)
       window.removeEventListener('focus', onFocus)
     }
   }, [load])
 
-  const [search, setSearch] = useState('')
-
-  // Map plural tab keys to singular status values
-  const TAB_STATUS: Record<Tab, string | null> = {
-    all:      null,
-    leads:    'lead',
-    patients: 'patient',
-    inactive: 'inactive',
-  }
-
-  const tabFiltered = TAB_STATUS[tab] === null
-    ? contacts
-    : contacts.filter((c) => c.status === TAB_STATUS[tab])
-
-  const q = search.toLowerCase().trim()
-  const filtered = q === ''
-    ? tabFiltered
-    : tabFiltered.filter((c) => {
-        const first    = (c.first_name  ?? '').toLowerCase()
-        const last     = (c.last_name   ?? '').toLowerCase()
-        const email    = (c.email       ?? '').toLowerCase()
-        const phone    = (c.phone       ?? '').replace(/\D/g, '')
-        const fullName = `${first} ${last}`.trim()
-        const qPhone   = q.replace(/\D/g, '')
+  // Filter + search the in-memory list (server returns all contacts,
+  // same as before).
+  const filteredContacts = useMemo(() => {
+    let rows = contacts
+    if (filter === 'unread') rows = rows.filter(c => c.has_unread)
+    if (filter === 'booked') rows = rows.filter(c => c.status === 'patient')
+    const q = search.toLowerCase().trim()
+    if (q) {
+      const qDigits = q.replace(/\D/g, '')
+      rows = rows.filter(c => {
+        const first = (c.first_name ?? '').toLowerCase()
+        const last  = (c.last_name ?? '').toLowerCase()
+        const email = (c.email ?? '').toLowerCase()
+        const phone = (c.phone ?? '').replace(/\D/g, '')
+        const proc  = (c.procedure_interest ?? []).join(' ').toLowerCase()
         return (
-          fullName.includes(q) ||
+          `${first} ${last}`.includes(q) ||
           first.includes(q) ||
           last.includes(q) ||
           email.includes(q) ||
-          (qPhone.length > 0 && phone.includes(qPhone))
+          proc.includes(q) ||
+          (qDigits.length > 0 && phone.includes(qDigits))
         )
       })
+    }
+    return rows
+  }, [contacts, filter, search])
 
-  const counts = {
-    all:      contacts.length,
-    leads:    contacts.filter(c => c.status === 'lead').length,
-    patients: contacts.filter(c => c.status === 'patient').length,
-    inactive: contacts.filter(c => c.status === 'inactive').length,
+  // First-load auto-select: most recent unread, fall back to most
+  // recent. Runs once after the initial list loads. If the user has
+  // ?c=<id> in the URL we leave it alone.
+  useEffect(() => {
+    if (autoSelectedRef.current) return
+    if (loading) return
+    if (selectedId) { autoSelectedRef.current = true; return }
+    if (contacts.length === 0) return
+    const target = contacts.find(c => c.has_unread) ?? contacts[0]
+    if (target) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('c', target.id)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
+    autoSelectedRef.current = true
+  }, [loading, contacts, selectedId, router, pathname, searchParams])
+
+  const selectedContact = useMemo(
+    () => contacts.find(c => c.id === selectedId) ?? null,
+    [contacts, selectedId],
+  )
+
+  function selectContact(id: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('c', id)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
+  const unreadTotal = useMemo(() => contacts.filter(c => c.has_unread).length, [contacts])
+  const bookedTotal = useMemo(() => contacts.filter(c => c.status === 'patient').length, [contacts])
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       <Header
-        title="Leads & Contacts"
+        title="Inbox"
         subtitle={`${contacts.length} total contacts`}
         actions={<AddLeadDialog onSuccess={() => load()} />}
       />
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {/* Tab bar — controls filter only, no TabsContent wrapping */}
-        <div className="overflow-x-auto">
-          <Tabs value={tab} onValueChange={(v) => { setTab(v as Tab); setSearch('') }}>
-            <TabsList>
-              <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-              <TabsTrigger value="leads">Leads ({counts.leads})</TabsTrigger>
-              <TabsTrigger value="patients">Patients ({counts.patients})</TabsTrigger>
-              <TabsTrigger value="inactive">Inactive ({counts.inactive})</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+      <div className="flex-1 overflow-hidden flex flex-col p-6 pt-4 gap-4">
+        {/* Stat strip — visual placeholder, no real calc yet. */}
+        <TimeToFirstContactCard />
 
-        {/* Content rendered directly — avoids Radix TabsContent hidden-state bug */}
-        {loading && <LeadsSkeleton />}
-
-        {!loading && error && (
+        {/* Two-pane inbox. Min-h-0 + h-full so each pane scrolls
+            internally instead of pushing the page. */}
+        {loading && contacts.length === 0 ? (
+          <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-[#0B2027]/8">
+            <InboxSkeleton />
+          </div>
+        ) : error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
             <p className="text-sm font-medium text-red-700">Failed to load contacts</p>
             <p className="text-xs text-red-500 mt-0.5">{error}</p>
           </div>
-        )}
-
-        {!loading && !error && (
-          <LeadsTable
-            contacts={filtered}
-            onRefresh={() => load()}
-            search={search}
-            onSearchChange={setSearch}
-            totalForTab={tabFiltered.length}
-          />
+        ) : (
+          <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-[#0B2027]/8 bg-white shadow-[0_1px_2px_rgba(11,32,39,0.04)]">
+            <div className="grid h-full grid-cols-[360px_1fr] overflow-hidden">
+              <InboxList
+                contacts={filteredContacts}
+                selectedId={selectedId}
+                onSelect={selectContact}
+                search={search}
+                onSearchChange={setSearch}
+                onArchived={() => load()}
+                filterChips={
+                  <InboxFilterChips
+                    value={filter}
+                    onChange={setFilter}
+                    unreadCount={unreadTotal}
+                    bookedCount={bookedTotal}
+                  />
+                }
+              />
+              <ConversationPane
+                contact={selectedContact}
+                onArchived={() => load()}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
