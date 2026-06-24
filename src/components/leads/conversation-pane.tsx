@@ -35,6 +35,13 @@ interface ConversationPaneProps {
 // so live conversation feel is preserved with less background load.
 const POLL_INTERVAL_MS = 15_000
 
+// AI Twin: within this window after a fresh inbound, poll the
+// pending-draft endpoint aggressively so the indicator → real
+// draft hand-off feels instant. The window is bounded so we never
+// pile up timers on quiet threads.
+const DRAFT_WAIT_WINDOW_MS = 30_000
+const DRAFT_WAIT_POLL_MS   = 2_000
+
 /**
  * Right-pane conversation view for the inbox. Loads messages for the
  * selected contact and polls for new ones. Visual treatment matches
@@ -154,6 +161,73 @@ export function ConversationPane({ contact, onArchived }: ConversationPaneProps)
       window.removeEventListener('focus', onFocus)
     }
   }, [contactId, load])
+
+  // ── AI drafting indicator ────────────────────────────────
+  // After a fresh inbound lands we expect the auto-draft hook to
+  // fire server-side within a couple of seconds. Compute the
+  // last-inbound timestamp once and let a small ticker drive the
+  // boundary re-render at the 30s edge.
+  const lastInbound = messages.length
+    ? [...messages].reverse().find(m => m.direction === 'inbound') ?? null
+    : null
+  const lastInboundAt = lastInbound
+    ? new Date(lastInbound.sent_at ?? lastInbound.created_at).getTime()
+    : 0
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  const isDrafting =
+    !!lastInbound &&
+    !pendingDraft &&
+    nowTick - lastInboundAt < DRAFT_WAIT_WINDOW_MS
+
+  // Aggressive 2s poll for the pending-draft only during the
+  // window. Uses its own refs so the standard 15s loop above is
+  // untouched. Auto-tears-down at the window edge so the inbox
+  // doesn't quietly hammer the API forever.
+  useEffect(() => {
+    if (!contactId)    return
+    if (!lastInbound)  return
+    if (pendingDraft)  return
+    const elapsed = Date.now() - lastInboundAt
+    if (elapsed >= DRAFT_WAIT_WINDOW_MS) return
+
+    let intervalId: ReturnType<typeof setInterval> | null = null
+    const tick = () => {
+      load(true)
+      setNowTick(Date.now())
+    }
+    const start = () => {
+      if (intervalId !== null) return
+      intervalId = setInterval(tick, DRAFT_WAIT_POLL_MS)
+    }
+    const stop = () => {
+      if (intervalId === null) return
+      clearInterval(intervalId)
+      intervalId = null
+    }
+
+    // Mirror the 15s base poll's visibility behavior: pause the
+    // aggressive 2s poll while the tab is hidden, resume + tick once
+    // on return. Without this we'd hammer the API every 2s for the
+    // whole 30s window while the user is in another tab.
+    const onVis = () => { if (document.hidden) stop(); else { tick(); start() } }
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVis)
+
+    const remaining = DRAFT_WAIT_WINDOW_MS - elapsed
+    const timeoutId = setTimeout(() => {
+      stop()
+      // One last tick so isDrafting re-evaluates to false cleanly.
+      setNowTick(Date.now())
+    }, remaining)
+
+    return () => {
+      stop()
+      clearTimeout(timeoutId)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+    // We key on the inbound id (not the timestamp) so a re-render
+    // from the tick itself doesn't restart the interval.
+  }, [contactId, lastInbound?.id, !!pendingDraft, lastInboundAt, load])
 
   // Auto-scroll to bottom when messages change.
   useEffect(() => {
@@ -342,6 +416,24 @@ export function ConversationPane({ contact, onArchived }: ConversationPaneProps)
                 </div>
               )
             })}
+
+            {/* AI drafting indicator — shown only while we're inside
+                the post-inbound window AND there's no pending draft
+                visible yet. The 2s aggressive poll above will swap
+                this for the real composer pre-fill the moment the
+                draft is persisted. */}
+            {isDrafting && (
+              <div
+                className="flex items-center gap-2 pl-12 text-[12px] text-[#0B2027]/55"
+                aria-live="polite"
+              >
+                <span
+                  className="inline-flex h-1.5 w-1.5 rounded-full bg-[#02C39A] [animation:twin-pulse_1.4s_ease-in-out_infinite]"
+                  aria-hidden="true"
+                />
+                AI drafting…
+              </div>
+            )}
           </div>
         )}
       </div>

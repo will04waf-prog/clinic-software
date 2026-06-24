@@ -304,3 +304,24 @@ html.lenis body {
     }
   }
 }
+
+/* ─── AI Twin: "draft ready" pulse ─────────────────────────────
+   Used by inbox Sparkles + the conversation-pane drafting dot.
+   Declared at the top level (outside @layer) because Tailwind v4
+   emits arbitrary `[animation:twin-pulse_*]` utilities that
+   reference the keyframe globally — a layered definition can get
+   scoped away in some build configurations. */
+@keyframes twin-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* Attribute selectors cover both Tailwind arbitrary utilities
+   (`[animation:twin-pulse_2.4s_...]`) and any inline styles using
+   the same keyframe name. */
+@media (prefers-reduced-motion: reduce) {
+  [class*="twin-pulse"],
+  [style*="twin-pulse"] {
+    animation: none !important;
+  }
+}
