@@ -10,6 +10,7 @@ import { UpNextCard } from '@/components/dashboard/morning/up-next-card'
 import { NudgeCard } from '@/components/dashboard/morning/nudge-card'
 import { ScheduleRail } from '@/components/dashboard/morning/schedule-rail'
 import { WeekStrip } from '@/components/dashboard/morning/week-strip'
+import { AiTwinTile } from '@/components/dashboard/morning/ai-twin-tile'
 import { AnalyticsSections } from '@/components/dashboard/analytics/analytics-sections'
 import type { MorningResponse } from '@/components/dashboard/morning/types'
 
@@ -184,6 +185,10 @@ export default function DashboardPage() {
                   <NudgeCard nudge={data.nudge} />
                 </div>
               </div>
+
+              {/* ②a AI Twin metrics — lazy-loaded; only fetches once
+                  the tile nears the viewport. */}
+              <AiTwinTile />
 
               {/* ③ Schedule rail */}
               <ScheduleRail schedule={data.schedule} dateLabel={dateLabel} />
