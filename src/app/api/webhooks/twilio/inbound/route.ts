@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import twilio from 'twilio'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/validators'
+import { autoDraftForInbound } from '@/lib/ai-twin'
 
 // Standard SMS keyword classes per Twilio guidance + common carrier conventions.
 // Matching is exact-match against the lowercased, trimmed body.
@@ -222,7 +223,7 @@ export async function POST(request: Request) {
   // ── Persist the inbound message ────────────────────────────
   const nowIso = new Date().toISOString()
 
-  const { error: msgError } = await supabaseAdmin
+  const { data: insertedMessage, error: msgError } = await supabaseAdmin
     .from('messages')
     .insert({
       organization_id: orgId,
@@ -236,6 +237,8 @@ export async function POST(request: Request) {
       provider_id:     messageId || null,
       sent_at:         nowIso,
     })
+    .select('id')
+    .single()
 
   if (msgError) {
     // 23505 = unique-violation on provider_id. A parallel retry beat us;
@@ -272,5 +275,19 @@ export async function POST(request: Request) {
   })
 
   console.info(`[twilio-inbound] stored inbound msg org=${orgId} contact=${contactId} from=${fromE164}`)
+
+  // AI Front-Desk Twin: fire-and-forget auto-draft for this inbound.
+  // We never block the Twilio webhook on AI generation. The draft
+  // lands in ai_drafts (state='pending') and the conversation pane
+  // picks it up via the messages-polling tick. If anything goes
+  // wrong inside autoDraftForInbound it's swallowed there.
+  if (insertedMessage?.id) {
+    void autoDraftForInbound({
+      organizationId:    orgId,
+      contactId:         contactId!,
+      triggerMessageId:  insertedMessage.id,
+    })
+  }
+
   return emptyTwimlResponse()
 }
