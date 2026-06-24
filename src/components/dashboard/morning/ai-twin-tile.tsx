@@ -35,6 +35,24 @@ interface Metrics extends PeriodCounts {
   previous: PeriodCounts
 }
 
+/**
+ * Subset of /api/dashboard/ai-twin-briefing we render in the "Last 24h"
+ * sub-row. Full shape lives in src/lib/ai-twin-briefing.ts; we only
+ * pluck the action counts we need so the tile doesn't pull the entire
+ * payload into its render tree.
+ */
+interface BriefingSummary {
+  action_counts: {
+    auto_sent: number
+    sent_unchanged: number
+    edited: number
+    rejected: number
+    guardrail_failed: number
+    safety_held: number
+    pending_open: number
+  }
+}
+
 function Skeleton() {
   return (
     <section className="rounded-2xl bg-[#FAF6EC] border border-[#02C39A]/15 p-5 animate-pulse">
@@ -59,6 +77,9 @@ export function AiTwinTile() {
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // W10 — briefing sub-row state. Independent failure path; if this
+  // fetch errors the weekly metrics above still render.
+  const [briefing, setBriefing] = useState<BriefingSummary | null>(null)
   // Lazy-load gate. Identical pattern to analytics-sections.tsx.
   const [visible, setVisible] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
@@ -87,13 +108,29 @@ export function AiTwinTile() {
     if (!silent) setLoading(true)
     if (!silent) setError(null)
     try {
-      const res = await fetch('/api/dashboard/ai-twin-metrics', { cache: 'no-store' })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? `HTTP ${res.status}`)
+      // Dual fetch — weekly metrics drive the headline + grid, the
+      // briefing call powers the "Last 24h" sub-row. Both are cached
+      // server-side (30s / 60s), so the double round-trip is cheap.
+      const [metricsRes, briefingRes] = await Promise.all([
+        fetch('/api/dashboard/ai-twin-metrics', { cache: 'no-store' }),
+        fetch('/api/dashboard/ai-twin-briefing', { cache: 'no-store' }),
+      ])
+
+      if (!metricsRes.ok) {
+        const body = await metricsRes.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${metricsRes.status}`)
       }
-      const json = (await res.json()) as Metrics
+      const json = (await metricsRes.json()) as Metrics
       setMetrics(json)
+
+      // Briefing failure is non-fatal — collapse the sub-row instead of
+      // killing the whole tile.
+      if (briefingRes.ok) {
+        const bjson = (await briefingRes.json()) as BriefingSummary
+        setBriefing(bjson)
+      } else {
+        setBriefing(null)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load AI Twin metrics'
       console.error('[ai-twin-tile] load error:', err)
@@ -210,7 +247,64 @@ export function AiTwinTile() {
           </span>
         </div>
       </div>
+
+      <BriefingSubRow briefing={briefing} />
     </section>
+  )
+}
+
+// ── W10: "Last 24h" sub-row + link to /ai-twin/briefing ────────────
+function BriefingSubRow({ briefing }: { briefing: BriefingSummary | null }) {
+  const ac = briefing?.action_counts
+  const totalActivity = ac
+    ? ac.auto_sent + ac.sent_unchanged + ac.edited + ac.rejected + ac.guardrail_failed + ac.pending_open + ac.safety_held
+    : 0
+
+  // No briefing data OR all-zero → collapse to a single muted line.
+  if (!ac || totalActivity === 0) {
+    return (
+      <div className="mt-4 border-t border-[#0B2027]/8 pt-3">
+        <Link
+          href="/ai-twin/briefing"
+          className="inline-flex items-center gap-1 text-[11.5px] text-[#7E8C90] hover:text-[#028090]"
+        >
+          No twin activity in the last 24h. See full briefing
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+    )
+  }
+
+  const reviewed = ac.sent_unchanged + ac.edited
+  return (
+    <div className="mt-4 border-t border-[#0B2027]/8 pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-[11.5px]">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[#14241D]/75">
+          <p className="font-semibold uppercase tracking-wide text-[#14241D]/55 text-[10px]">
+            Last 24h
+          </p>
+          <SubStat label="Auto-sent"      value={ac.auto_sent}        />
+          <SubStat label="Reviewed"       value={reviewed}            />
+          <SubStat label="Held for safety" value={ac.safety_held}     />
+          <SubStat label="Pending"        value={ac.pending_open}     />
+        </div>
+        <Link
+          href="/ai-twin/briefing"
+          className="inline-flex items-center gap-1 font-semibold text-[#028090] hover:text-[#026976]"
+        >
+          See full briefing
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function SubStat({ label, value }: { label: string; value: number }) {
+  return (
+    <span>
+      {label}: <span className="font-semibold text-[#14241D]">{value}</span>
+    </span>
   )
 }
 

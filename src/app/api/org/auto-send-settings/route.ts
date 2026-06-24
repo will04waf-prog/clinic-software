@@ -43,6 +43,10 @@ type InboundEligibleClass = typeof INBOUND_ELIGIBLE_CLASSES[number]
 const PatchSchema = z.object({
   enabled: z.boolean().optional(),
   classes: z.array(z.enum(INBOUND_ELIGIBLE_CLASSES)).optional(),
+  rollout_pct: z.number().int().min(0).max(100)
+    .refine(n => n % 10 === 0, 'rollout_pct must be a multiple of 10')
+    .optional(),
+  shadow_mode: z.boolean().optional(),
 })
 
 const ADMIN_ROLES = new Set(['owner', 'admin'])
@@ -73,6 +77,12 @@ interface AutoSendSettingsResponse {
   recent_auto_sends: RecentAutoSend[]
   recent_banned_phrase_hits: number
   recent_banned_phrase_lookback_days: number
+  /** W12: 0..100 in 10-step increments. Default 100 = W9 behavior. */
+  rollout_pct: number
+  /** W12: when true, eligibility runs but Twilio never fires. */
+  shadow_mode: boolean
+  /** W12: count of activity_log shadow rows in the last 24h. */
+  shadow_simulations_24h: number
 }
 
 export async function GET(_req: NextRequest) {
@@ -92,10 +102,12 @@ export async function GET(_req: NextRequest) {
   const windowStart = new Date(Date.now() - HEALTH_WINDOW_DAYS * 24 * 60 * 60 * 1000)
   const bannedLookback = new Date(Date.now() - AUTO_SEND_BANNED_PHRASE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-  const [orgRes, draftsRes, examplesRes, recentAutoSentsRes, bannedHitsRes] = await Promise.all([
+  const shadow24hStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  const [orgRes, draftsRes, examplesRes, recentAutoSentsRes, bannedHitsRes, shadow24hRes] = await Promise.all([
     supabase
       .from('organizations')
-      .select('ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_voice_profile')
+      .select('ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_voice_profile, ai_twin_auto_send_rollout_pct, ai_twin_auto_send_shadow_mode')
       .eq('id', orgId)
       .single(),
     supabase
@@ -122,11 +134,25 @@ export async function GET(_req: NextRequest) {
       .eq('organization_id', orgId)
       .eq('guardrail_violation', 'banned_phrase')
       .gte('generated_at', bannedLookback),
+    supabase
+      .from('activity_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('action', 'ai_twin_auto_send_shadow_simulated')
+      .gte('created_at', shadow24hStart),
   ])
 
   const enabled = orgRes.data?.ai_twin_auto_send_enabled === true
   const allowlist = ((orgRes.data?.ai_twin_auto_send_classes as string[] | null) ?? [])
     .filter((c): c is VoiceExampleClass => (VOICE_EXAMPLE_CLASSES as readonly string[]).includes(c))
+  // W12 — defaults preserve W9 behavior when the migration hasn't
+  // run yet (?? 100, ?? false) so the deploy is order-tolerant.
+  const rolloutPct =
+    typeof (orgRes.data as { ai_twin_auto_send_rollout_pct?: number | null } | null)?.ai_twin_auto_send_rollout_pct === 'number'
+      ? ((orgRes.data as { ai_twin_auto_send_rollout_pct: number }).ai_twin_auto_send_rollout_pct)
+      : 100
+  const shadowMode =
+    (orgRes.data as { ai_twin_auto_send_shadow_mode?: boolean | null } | null)?.ai_twin_auto_send_shadow_mode === true
 
   // ── Build per-class metrics for the eligibility check. ──
   const rows: HealthDraftRow[] = ((draftsRes.data ?? []) as Array<{
@@ -195,6 +221,12 @@ export async function GET(_req: NextRequest) {
       contactOptedOut: false,
       classMetrics: cm,
       recentBannedPhraseHits: recentBannedHits,
+      // PROBE check — feed favorable rollout/shadow inputs because
+      // the per-contact bucket only makes sense at send time and
+      // shadow mode is a runtime decision, not an "in principle"
+      // eligibility blocker.
+      rolloutPct: 100,
+      shadowMode: false,
     })
     return {
       class: cls,
@@ -235,6 +267,9 @@ export async function GET(_req: NextRequest) {
     recent_auto_sends,
     recent_banned_phrase_hits: recentBannedHits,
     recent_banned_phrase_lookback_days: AUTO_SEND_BANNED_PHRASE_LOOKBACK_DAYS,
+    rollout_pct: rolloutPct,
+    shadow_mode: shadowMode,
+    shadow_simulations_24h: shadow24hRes.count ?? 0,
   }
   return NextResponse.json(payload)
 }
@@ -272,6 +307,12 @@ export async function PATCH(request: NextRequest) {
   }
   if (Array.isArray(parsed.data.classes)) {
     update.ai_twin_auto_send_classes = Array.from(new Set(parsed.data.classes))
+  }
+  if (typeof parsed.data.rollout_pct === 'number') {
+    update.ai_twin_auto_send_rollout_pct = parsed.data.rollout_pct
+  }
+  if (typeof parsed.data.shadow_mode === 'boolean') {
+    update.ai_twin_auto_send_shadow_mode = parsed.data.shadow_mode
   }
 
   if (Object.keys(update).length === 0) {

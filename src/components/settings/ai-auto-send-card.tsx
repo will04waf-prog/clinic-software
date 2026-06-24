@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
-import { AlertTriangle, Bot, CheckCircle2, History, Loader2, Lock } from 'lucide-react'
+import { AlertTriangle, Bot, CheckCircle2, Eye, History, Loader2, Lock, SlidersHorizontal } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { VOICE_CLASS_LABEL, type VoiceExampleClass } from '@/lib/voice-profile'
 
@@ -51,6 +51,16 @@ interface AutoSendSettings {
   recent_auto_sends: RecentAutoSend[]
   recent_banned_phrase_hits: number
   recent_banned_phrase_lookback_days: number
+  rollout_pct: number
+  shadow_mode: boolean
+  shadow_simulations_24h: number
+}
+
+interface PatchPayload {
+  enabled?: boolean
+  classes?: VoiceExampleClass[]
+  rollout_pct?: number
+  shadow_mode?: boolean
 }
 
 export function AiAutoSendCard() {
@@ -75,7 +85,7 @@ export function AiAutoSendCard() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  async function patchSettings(update: { enabled?: boolean; classes?: VoiceExampleClass[] }) {
+  async function patchSettings(update: PatchPayload) {
     if (!data) return
     setSaving(true)
     setError('')
@@ -84,6 +94,8 @@ export function AiAutoSendCard() {
       ...data,
       enabled: update.enabled ?? data.enabled,
       classes: update.classes ?? data.classes,
+      rollout_pct: update.rollout_pct ?? data.rollout_pct,
+      shadow_mode: update.shadow_mode ?? data.shadow_mode,
       per_class: data.per_class.map(p => ({
         ...p,
         enabled_by_owner: update.classes ? update.classes.includes(p.class) : p.enabled_by_owner,
@@ -120,6 +132,20 @@ export function AiAutoSendCard() {
       ? data.classes.filter(c => c !== cls)
       : [...data.classes, cls]
     patchSettings({ classes: next })
+  }
+
+  function toggleShadow() {
+    if (!data) return
+    patchSettings({ shadow_mode: !data.shadow_mode })
+  }
+
+  function commitRollout(raw: number) {
+    if (!data) return
+    // Snap to the 10-step grid — defends against odd values from
+    // non-stepped inputs (browser quirks, programmatic sets, etc.).
+    const snapped = Math.max(0, Math.min(100, Math.round(raw / 10) * 10))
+    if (snapped === data.rollout_pct) return
+    patchSettings({ rollout_pct: snapped })
   }
 
   if (loading) {
@@ -178,14 +204,40 @@ export function AiAutoSendCard() {
             </div>
           </div>
         )}
-        {data.enabled && data.classes.length > 0 && (
+        {data.enabled && data.classes.length > 0 && data.shadow_mode && (
+          <div className="flex items-start gap-2 rounded-lg bg-[#028090]/10 border border-[#028090]/30 px-3 py-2 text-[12px] text-[#02616E]">
+            <Eye className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Shadow mode — no real sends will go out</p>
+              <p className="mt-0.5 opacity-90">
+                The AI is evaluating every inbound and logging what it WOULD
+                have sent, but Twilio is not being invoked. Flip shadow off
+                to send for real.
+              </p>
+            </div>
+          </div>
+        )}
+        {data.enabled && data.classes.length > 0 && !data.shadow_mode && data.rollout_pct === 0 && (
+          <div className="flex items-start gap-2 rounded-lg bg-gray-100 border border-gray-200 px-3 py-2 text-[12px] text-gray-700">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Rollout dial is at 0% — nothing will auto-send</p>
+              <p className="mt-0.5 opacity-90">
+                Autonomous mode is on and classes are checked, but the trust
+                dial below is paused. Move it above 0% to start auto-sending.
+              </p>
+            </div>
+          </div>
+        )}
+        {data.enabled && data.classes.length > 0 && !data.shadow_mode && data.rollout_pct > 0 && (
           <div className="flex items-start gap-2 rounded-lg bg-[#B5710F]/10 border border-[#B5710F]/30 px-3 py-2 text-[12px] text-[#B5710F]">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <div>
               <p className="font-semibold">Autonomous sends are live</p>
               <p className="mt-0.5 opacity-90">
                 The AI will reply on its own for {data.classes.length} message
-                type{data.classes.length === 1 ? '' : 's'} — only when the
+                type{data.classes.length === 1 ? '' : 's'}, rolled out to
+                {' '}{data.rollout_pct}% of eligible contacts — only when the
                 class has cleared all trust thresholds. The safety blocklist
                 (medical, pregnancy, minors, self-harm, cancel, complaint,
                 legal, urgency, privacy) ALWAYS holds for human review.
@@ -194,6 +246,113 @@ export function AiAutoSendCard() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── Shadow mode toggle ───────────────────────────────────── */}
+      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 text-[13px] flex items-center gap-1.5">
+              <Eye className="h-3.5 w-3.5 text-[#028090]" />
+              Shadow mode
+            </p>
+            <p className="text-[12px] text-gray-500 mt-0.5">
+              Simulate auto-sends without firing them.
+            </p>
+            {data.shadow_mode && data.enabled && (
+              <p className="text-[11.5px] text-gray-500 mt-1">
+                The AI will log every reply it WOULD send (ignoring the
+                rollout dial), but never actually sends. Use this to preview
+                behavior before enabling.
+              </p>
+            )}
+            {data.shadow_mode && !data.enabled && (
+              <p className="text-[11.5px] text-gray-500 mt-1 italic">
+                Master toggle is off — shadow has no effect right now. Turn
+                autonomous mode on (above) to start logging would-have-sent
+                events.
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={toggleShadow}
+            disabled={saving}
+            aria-pressed={data.shadow_mode}
+            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+              data.shadow_mode ? 'bg-[#028090]' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform ${
+                data.shadow_mode ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+        {data.shadow_mode && data.shadow_simulations_24h > 0 && (
+          <div className="flex items-start gap-2 rounded-lg bg-[#B5710F]/10 border border-[#B5710F]/30 px-3 py-2 text-[12px] text-[#B5710F]">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">
+                Shadow mode active — AI would have auto-sent
+                {' '}{data.shadow_simulations_24h} repl
+                {data.shadow_simulations_24h === 1 ? 'y' : 'ies'} in the last 24h.
+              </p>
+              <p className="mt-0.5 opacity-90">
+                Flip shadow off to send for real. Shadow shows ALL eligible
+                inbounds — your rollout dial ({data.rollout_pct}%) will filter
+                the real sends when you switch over.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Rollout cohort (gradual trust dial) ──────────────────── */}
+      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+        <div className="flex items-start gap-2">
+          <SlidersHorizontal className="h-3.5 w-3.5 mt-0.5 text-[#028090]" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 text-[13px]">
+              Trust dial — gradually expand who the AI replies to autonomously
+            </p>
+            <p className="text-[12px] text-gray-500 mt-0.5">
+              Auto-send to <span className="font-semibold text-gray-800">{data.rollout_pct}%</span> of contacts whose inbounds are eligible.
+              {' '}The same contact stays in (or out of) the cohort across messages — no flapping.
+            </p>
+          </div>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={10}
+          value={data.rollout_pct}
+          disabled={saving}
+          onChange={(e) => {
+            // Optimistic update for the slider thumb only — actual
+            // PATCH fires on commit (onMouseUp / onTouchEnd / change).
+            if (!data) return
+            const next = Math.max(0, Math.min(100, Math.round(Number(e.target.value) / 10) * 10))
+            setData({ ...data, rollout_pct: next })
+          }}
+          onMouseUp={(e) => commitRollout(Number((e.target as HTMLInputElement).value))}
+          onTouchEnd={(e) => commitRollout(Number((e.target as HTMLInputElement).value))}
+          onKeyUp={(e) => commitRollout(Number((e.target as HTMLInputElement).value))}
+          className="w-full accent-[#02C39A] disabled:opacity-50"
+        />
+        <div className="flex justify-between text-[10.5px] text-gray-400 font-medium">
+          <span>0%</span>
+          <span>50%</span>
+          <span>100%</span>
+        </div>
+        <p className="text-[11.5px] text-gray-500">
+          0% means nothing auto-sends. 100% means every eligible inbound
+          auto-sends. The cohort is sticky per contact, so the same person
+          never flaps between AI-reply and held-for-review.
+        </p>
       </div>
 
       {/* ── Per-class allowlist ──────────────────────────────────── */}

@@ -128,7 +128,7 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
     // catch it here before Twilio.
     supabaseAdmin
       .from('organizations')
-      .select('ai_twin_voice_profile, ai_twin_auto_send_enabled, ai_twin_auto_send_classes')
+      .select('ai_twin_voice_profile, ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_auto_send_rollout_pct, ai_twin_auto_send_shadow_mode')
       .eq('id', args.organizationId)
       .single(),
   ])
@@ -189,6 +189,13 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
   const classMetrics = health.per_class.find(c => c.class === args.messageClass) ?? null
 
   // ── Eligibility check. ──
+  const rolloutPct =
+    typeof (orgRes.data as { ai_twin_auto_send_rollout_pct?: number | null } | null)?.ai_twin_auto_send_rollout_pct === 'number'
+      ? ((orgRes.data as { ai_twin_auto_send_rollout_pct: number }).ai_twin_auto_send_rollout_pct)
+      : 100
+  const shadowMode =
+    (orgRes.data as { ai_twin_auto_send_shadow_mode?: boolean | null } | null)?.ai_twin_auto_send_shadow_mode === true
+
   const eligibility = checkAutoSendEligibility({
     orgMasterEnabled: true,
     orgAllowlist: freshAllowlist,
@@ -198,8 +205,101 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
     hasSmsConsent: args.contactSmsConsent,
     contactOptedOut: args.contactOptedOut,
     classMetrics,
-    recentBannedPhraseHits: bannedHitsRes.count ?? 0,
+    // Banned-phrase gate is a safety check — fail SAFE on query error
+    // (count===null + error set) rather than silently treating an
+    // outage as "no violations found." Refusing to auto-send when we
+    // can't verify is the only correct posture.
+    recentBannedPhraseHits: bannedHitsRes.error
+      ? Number.MAX_SAFE_INTEGER
+      : (bannedHitsRes.count ?? 0),
+    rolloutPct,
+    contactId: args.contactId,
+    shadowMode,
   })
+
+  // ── W12 shadow simulation: every real gate passed but shadow_mode
+  // is on. Persist a "would-have-sent" marker into context_snapshot,
+  // emit an activity_log row, and return without firing Twilio. The
+  // pending row stays as 'pending' so the human flow remains intact.
+  if (!eligibility.eligible && eligibility.reason_code === 'shadow_mode') {
+    const nowIso = new Date().toISOString()
+
+    // Merge shadow markers into context_snapshot (read-modify-write —
+    // the W9 pending-pre-claim invariant guarantees we're the only
+    // writer for this draft row, so no concurrent clobber).
+    const existing = await supabaseAdmin
+      .from('ai_drafts')
+      .select('context_snapshot')
+      .eq('id', args.draftRowId)
+      .single()
+    const baseSnap =
+      existing.data?.context_snapshot &&
+      typeof existing.data.context_snapshot === 'object' &&
+      !Array.isArray(existing.data.context_snapshot)
+        ? (existing.data.context_snapshot as Record<string, unknown>)
+        : {}
+    const mergedSnap: Record<string, unknown> = {
+      ...baseSnap,
+      shadow_simulated:        true,
+      shadow_would_have_sent:  true,
+      shadow_reason:           eligibility.reason,
+      shadow_classified_class: args.messageClass,
+      shadow_at:               nowIso,
+    }
+    await supabaseAdmin
+      .from('ai_drafts')
+      .update({ context_snapshot: mergedSnap })
+      .eq('id', args.draftRowId)
+
+    await supabaseAdmin.from('activity_log').insert({
+      organization_id: args.organizationId,
+      contact_id:      args.contactId,
+      action:          'ai_twin_auto_send_shadow_simulated',
+      metadata: {
+        // draft_id lets the audit page join through to the pending
+        // row and show what the AI would have said.
+        draft_id: args.draftRowId,
+        shadow_mode: true,
+        channel: 'sms',
+        model: args.model,
+        trigger: 'inbound_auto',
+        trigger_message_id: args.triggerMessageId,
+        message_class: args.messageClass,
+        eligibility_reason: eligibility.reason,
+        eligibility_reason_code: eligibility.reason_code,
+        rollout_pct: rolloutPct,
+        // Honest: shadow_mode passed every trust gate BUT bypassed
+        // the rollout dial (per design — "show me everything I would
+        // do"). The would-have-sent claim is contingent on rollout.
+        rollout_bypassed_for_shadow: true,
+        class_avg_edit_ratio: classMetrics?.avg_edit_ratio ?? null,
+        class_ratio_sample_size: classMetrics?.ratio_sample_size ?? 0,
+      },
+    })
+
+    return { ok: false, reason_code: 'shadow_mode', reason: eligibility.reason }
+  }
+
+  // ── W12 rollout throttle: cheap audit row so owners can see how
+  // often the dial filters — return without further action and leave
+  // the pending row for human review like any other refusal.
+  if (!eligibility.eligible && eligibility.reason_code === 'rollout_throttled') {
+    await supabaseAdmin.from('activity_log').insert({
+      organization_id: args.organizationId,
+      contact_id:      args.contactId,
+      action:          'ai_twin_auto_send_rollout_throttled',
+      metadata: {
+        draft_id: args.draftRowId,
+        channel: 'sms',
+        trigger: 'inbound_auto',
+        trigger_message_id: args.triggerMessageId,
+        message_class: args.messageClass,
+        eligibility_reason: eligibility.reason,
+        rollout_pct: rolloutPct,
+      },
+    })
+    return { ok: false, reason_code: 'rollout_throttled', reason: eligibility.reason }
+  }
 
   if (!eligibility.eligible) {
     return { ok: false, reason_code: eligibility.reason_code, reason: eligibility.reason }

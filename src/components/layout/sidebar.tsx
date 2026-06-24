@@ -12,6 +12,7 @@ import {
   LogOut,
   ShieldCheck,
   BarChart3,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/ui/logo-mark'
@@ -29,6 +30,10 @@ const NAV_ITEMS = [
   // smoothly. Never lights up the active state (handled below).
   { href: '/dashboard#performance', label: 'Analytics',       icon: BarChart3 },
   { href: '/automations',          label: 'Automations',      icon: Zap },
+  // AI Twin operational surfaces (W10 briefing + W11 audit are both
+  // reached via /ai-twin/* — surface audit in nav, briefing is
+  // reached from the morning tile and the audit page).
+  { href: '/ai-twin/audit',        label: 'AI Twin audit',    icon: ClipboardList },
   { href: '/settings',             label: 'Settings',         icon: Settings },
 ]
 

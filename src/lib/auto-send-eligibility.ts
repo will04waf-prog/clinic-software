@@ -18,6 +18,7 @@ import {
 import {
   type ClassMetrics,
 } from '@/lib/voice-health'
+import { bucketForContactClass } from '@/lib/auto-send-bucket'
 
 // ─── Trust criteria ────────────────────────────────────────────────
 //
@@ -50,12 +51,21 @@ export type EligibilityReasonCode =
   | 'class_examples_too_few'
   | 'recent_banned_phrase_hit'
   | 'voice_health_unavailable'
+  | 'rollout_throttled'
+  | 'shadow_mode'
 
 export interface EligibilityResult {
   eligible: boolean
   reason_code: EligibilityReasonCode
   /** Human-readable reason for UI display + audit log. */
   reason: string
+  /**
+   * W12: true when every real gate (including the rollout dial when
+   * applicable) would have allowed an auto-send, but shadow mode is
+   * on so we did not actually fire. Lets the caller distinguish a
+   * genuine refusal from a "would-have-sent" simulation.
+   */
+  shadow_mode_active?: boolean
 }
 
 export interface EligibilityInput {
@@ -84,6 +94,25 @@ export interface EligibilityInput {
    * Caller computes this from a small query.
    */
   recentBannedPhraseHits: number
+  /**
+   * W12: org-level rollout dial. 0..100 in 10-step increments.
+   * Default 100 (preserves W9 behavior). Bucketed per contact-class
+   * via FNV-1a hash so a given contact is sticky in/out of the cohort.
+   */
+  rolloutPct?: number
+  /**
+   * W12: contact id used to seed the rollout bucket hash. Optional
+   * for backward compat with callers that don't need rollout (e.g.
+   * the Settings UI probe). When omitted, the rollout gate is
+   * skipped — caller is responsible for knowing this is a probe.
+   */
+  contactId?: string
+  /**
+   * W12: when true, all real gates are still evaluated but a passing
+   * result becomes 'shadow_mode' (not eligible) so the caller can
+   * persist a would-have-sent marker without invoking Twilio.
+   */
+  shadowMode?: boolean
 }
 
 // ─── Eligibility check ─────────────────────────────────────────────
@@ -167,6 +196,35 @@ export function checkAutoSendEligibility(input: EligibilityInput): EligibilityRe
   if (cm.examples_saved < AUTO_SEND_MIN_EXAMPLES_SAVED) {
     return { eligible: false, reason_code: 'class_examples_too_few',
              reason: `Class needs at least ${AUTO_SEND_MIN_EXAMPLES_SAVED} saved voice examples before auto-send (currently ${cm.examples_saved}).` }
+  }
+
+  // 9. W12 — shadow mode short-circuits BEFORE the rollout dial so
+  // owners see the full set of would-be sends (not just the ones
+  // inside the current rollout cohort). This matches the
+  // "show me everything I would do" intent.
+  if (input.shadowMode === true) {
+    return {
+      eligible: false,
+      reason_code: 'shadow_mode',
+      shadow_mode_active: true,
+      reason: 'Shadow mode — would have auto-sent, did not.',
+    }
+  }
+
+  // 10. W12 — rollout dial. Stable per-contact bucket via FNV-1a so
+  // the same patient never flaps between auto-sent and human review
+  // on identical inbound types. Skipped when no contactId is given
+  // (probe path in Settings UI uses this — "in principle eligibility").
+  const rolloutPct = typeof input.rolloutPct === 'number' ? input.rolloutPct : 100
+  if (rolloutPct < 100 && input.contactId) {
+    const bucket = bucketForContactClass(input.contactId, input.messageClass)
+    if (bucket >= rolloutPct) {
+      return {
+        eligible: false,
+        reason_code: 'rollout_throttled',
+        reason: `Rolled out to ${rolloutPct}% — this contact (bucket ${bucket}) is not in the rollout cohort yet.`,
+      }
+    }
   }
 
   // All gates passed.

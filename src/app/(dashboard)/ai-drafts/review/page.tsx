@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Sparkles, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { ContactAvatar } from '@/components/leads/contact-avatar'
+import { FlagDraftButton } from '@/components/ai-twin/flag-draft-button'
 import { cn } from '@/lib/utils'
 
 /**
@@ -301,6 +302,9 @@ function DraftCard({ row }: { row: DraftRow }) {
               <span className="inline-flex items-center rounded-full bg-[#028090]/15 px-2 py-0.5 text-[10.5px] font-semibold text-[#028090]">
                 {row.edit_distance} char{row.edit_distance === 1 ? '' : 's'} edited
               </span>
+            )}
+            {row.state === 'auto_sent' && (
+              <FlagDraftButton draftId={row.id} alreadyFlagged={false} size="sm" />
             )}
             <span className="ml-auto text-[11.5px] text-[#7E8C90]">
               {relativeTime(row.generated_at)}
