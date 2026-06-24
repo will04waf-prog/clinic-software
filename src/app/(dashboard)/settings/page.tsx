@@ -7,6 +7,7 @@ import { ServicesCard } from '@/components/settings/services-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
+import { AiVoiceTrainingCard } from '@/components/settings/ai-voice-training-card'
 import { ChangePasswordCard } from '@/components/settings/change-password-card'
 import { SignOutButton } from '@/components/ui/sign-out-button'
 
@@ -84,6 +85,10 @@ export default async function SettingsPage() {
           ai_twin_quiet_hours_start:  org?.ai_twin_quiet_hours_start  ?? null,
           ai_twin_quiet_hours_end:    org?.ai_twin_quiet_hours_end    ?? null,
         }} />
+
+        {/* Voice training (Phase 2 W6). Loads via /api/org/voice-profile
+            + /api/org/voice-examples, so no server prefetch needed. */}
+        <AiVoiceTrainingCard />
 
         <Card>
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>
