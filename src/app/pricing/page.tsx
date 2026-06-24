@@ -52,7 +52,6 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Autonomous send — AI replies 24/7 within your guardrails',
     'Rollout dial + shadow mode',
     'Provider briefing every 24 hours',
-    'Advanced automation workflows',
     '5,000 SMS messages/month',
     'Direct founder support',
     'Dedicated onboarding session',
