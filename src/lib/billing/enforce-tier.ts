@@ -26,7 +26,6 @@ import { getPlanByOrgId } from '@/lib/org-helpers'
 export type GatedFeature =
   | 'automation'
   | 'bulk_import'
-  | 'multi_location'
   | 'automated_reminders'
 
 // Allowlist of known plan values. Must stay in sync with the
@@ -96,7 +95,6 @@ function isFeatureAllowed(tier: TierId, feature: GatedFeature): boolean {
   switch (feature) {
     case 'automation':          return limits.allowsAutomationSequences
     case 'bulk_import':         return limits.allowsBulkImport
-    case 'multi_location':      return limits.allowsMultiLocation
     case 'automated_reminders': return limits.allowsAutomatedReminders
   }
 }

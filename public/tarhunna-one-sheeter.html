@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Tarhunna — One Sheeter</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ─── Print setup ─────────────────────────────────────────── */
+  @page { size: Letter; margin: 0; }
+  @media print {
+    html, body { margin: 0; padding: 0; background: #fff; }
+    .sheet { box-shadow: none; margin: 0; }
+    .print-hint { display: none; }
+  }
+
+  :root {
+    --cream:    #F5EFE1;
+    --forest:   #14241d;
+    --mint:     #02C39A;
+    --mint-soft:#02C39A;
+    --ink:      #14241d;
+    --muted:    rgba(20, 36, 29, 0.72);
+    --faint:    rgba(20, 36, 29, 0.50);
+    --rule:     rgba(20, 36, 29, 0.14);
+    --mint-row: rgba(2, 195, 154, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #ddd;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .sheet {
+    width: 8.5in;
+    height: 11in;
+    margin: 24px auto;
+    background: var(--cream);
+    padding: 0.55in 0.75in 0.5in;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 0.22in;
+  }
+
+  /* ─── Top: logo, brand, eyebrow, subtitle ──────────────── */
+  .top { text-align: center; }
+  .top .mark {
+    width: 64px;
+    height: auto;
+    margin: 0 auto 16px;
+    display: block;
+  }
+  /* Cursive signature wordmark — matches the website's SignatureLogo.
+     Forest → mint → bright-mint sweep so both brand colors are clearly
+     visible across the word instead of mint only kissing the right edge. */
+  .brand-name {
+    font-family: 'Great Vibes', 'Brush Script MT', 'Snell Roundhand', cursive;
+    font-weight: 400;
+    font-size: 72px;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0 0 8px;
+    color: var(--mint);
+    background-image: linear-gradient(
+      90deg,
+      #0B2027   0%,
+      #14241d  25%,
+      #02C39A  60%,
+      #5CEAB8 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--mint);
+    letter-spacing: 0.32em;
+    margin: 0;
+  }
+  .subtitle {
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  /* ─── Dark forest claim banner ─────────────────────────── */
+  .banner-forest {
+    background: var(--forest);
+    color: var(--cream);
+    padding: 14px 18px;
+    border-radius: 2px;
+  }
+  .banner-forest .lead {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    line-height: 1.35;
+  }
+  .banner-forest .body {
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.5;
+    color: rgba(245, 239, 225, 0.85);
+  }
+
+  /* ─── Section heading ──────────────────────────────────── */
+  .section-h {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--forest);
+    margin: 0 0 10px;
+    letter-spacing: -0.005em;
+  }
+
+  /* ─── Bullet lists ─────────────────────────────────────── */
+  .bullet-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .bullet-list li {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    padding-left: 22px;
+    position: relative;
+  }
+  .bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mint);
+  }
+  .bullet-list b {
+    font-weight: 700;
+    color: var(--forest);
+  }
+
+  /* Why list — checkmarks */
+  .check-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .check-list li {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    padding-left: 22px;
+    position: relative;
+  }
+  .check-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-weight: 700;
+    color: var(--mint);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .check-list b {
+    font-weight: 700;
+    color: var(--forest);
+  }
+
+  /* ─── Pricing table ────────────────────────────────────── */
+  .pricing {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .pricing > div {
+    padding: 0;
+    border-right: 1px solid var(--rule);
+  }
+  .pricing > div:last-child { border-right: 0; }
+  .pricing .tier-header {
+    background: var(--mint-row);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--forest);
+    border-bottom: 1px solid var(--rule);
+  }
+  .pricing .tier-body {
+    padding: 10px 12px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* ─── Mint banner ──────────────────────────────────────── */
+  .banner-mint {
+    background: var(--mint);
+    color: var(--forest);
+    padding: 10px 18px;
+    border-radius: 2px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.45;
+  }
+
+  /* ─── Founders ─────────────────────────────────────────── */
+  .lets-talk {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--forest);
+    margin: 6px 0 6px;
+  }
+  .founders {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    text-align: center;
+  }
+  .founder .name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--forest);
+    margin: 0;
+  }
+  .founder .role {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--mint);
+    margin: 6px 0 10px;
+    letter-spacing: 0.02em;
+  }
+  .founder .contact {
+    font-size: 12.5px;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ─── Footer ───────────────────────────────────────────── */
+  .foot {
+    margin-top: auto;
+    padding-top: 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .foot img {
+    width: 28px;
+    height: auto;
+    display: block;
+  }
+  .foot .place {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ─── On-screen print hint ─────────────────────────────── */
+  .print-hint {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--forest);
+    color: var(--cream);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+  <div class="print-hint">Press ⌘ + P to save as PDF — enable "Background graphics"</div>
+
+  <div class="sheet">
+    <!-- ── Top: logo + brand + eyebrow + subtitle ────────── -->
+    <div class="top">
+      <img class="mark" src="/tarhunna-mark.png" alt="" />
+      <h1 class="brand-name">Tarhunna</h1>
+      <p class="eyebrow">EVERY LEAD. EVERY TIME.</p>
+      <p class="subtitle">Lead capture &amp; follow-up built only for med spas and aesthetic clinics</p>
+    </div>
+
+    <!-- ── Forest claim banner ──────────────────────────── -->
+    <div class="banner-forest">
+      <p class="lead">Most med spas lose 40–60% of their leads — not to price, but to slow follow-up.</p>
+      <p class="body">Someone DMs at 9pm, fills out a form, or calls about Botox — the front desk is slammed, and the lead quietly disappears. Tarhunna makes sure that never happens.</p>
+    </div>
+
+    <!-- ── What Tarhunna does ───────────────────────────── -->
+    <div>
+      <h2 class="section-h">What Tarhunna does</h2>
+      <ul class="bullet-list">
+        <li><b>Capture every lead —</b> A branded form for your site funnels every inquiry into one place — instead of texts, DMs, and emails scattered across phones.</li>
+        <li><b>Two-way texting —</b> When a patient texts your number, it lands in your dashboard as a conversation — nothing buried in a personal phone.</li>
+        <li><b>AI follow-up —</b> Personalized drafts in one click. Send manually on every plan; turn on autonomous send on Scale within guardrails you set.</li>
+        <li><b>Consult reminders that cut no-shows —</b> Automatic 24-hour and 2-hour reminders before every consultation.</li>
+        <li><b>Consent-safe &amp; compliant —</b> Built-in TCPA consent capture and STOP handling — follow up without the legal worry.</li>
+      </ul>
+    </div>
+
+    <!-- ── Why clinics choose us ────────────────────────── -->
+    <div>
+      <h2 class="section-h">Why clinics choose us</h2>
+      <ul class="check-list">
+        <li><b>Transparent pricing —</b> Right on our site. No 'call to find out.'</li>
+        <li><b>No contracts —</b> Month-to-month. Cancel anytime. We earn it every month.</li>
+        <li><b>Founder-led &amp; local —</b> Built by two founders in Frederick, MD. You reach us directly — not a call center.</li>
+        <li><b>One job, done well —</b> We focus on lead capture and follow-up. Keep your booking and EMR.</li>
+      </ul>
+    </div>
+
+    <!-- ── Pricing ──────────────────────────────────────── -->
+    <div>
+      <h2 class="section-h">Simple, honest pricing</h2>
+      <div class="pricing">
+        <div>
+          <div class="tier-header">Starter — $147/mo</div>
+          <div class="tier-body">500 contacts · lead forms · pipeline · manual AI drafts</div>
+        </div>
+        <div>
+          <div class="tier-header">Professional — $297/mo</div>
+          <div class="tier-body">2,500 contacts · voice training · automated email &amp; reminders · bulk import</div>
+        </div>
+        <div>
+          <div class="tier-header">Scale — $497/mo</div>
+          <div class="tier-body">Unlimited contacts · autonomous AI send · 24h provider briefing · direct founder support</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Mint banner ──────────────────────────────────── -->
+    <div class="banner-mint">
+      See it live — a 10-minute demo, including a lead coming in and the AI drafting a follow-up on the spot.
+    </div>
+
+    <!-- ── Founders ─────────────────────────────────────── -->
+    <div>
+      <p class="lets-talk">Let's talk</p>
+      <div class="founders">
+        <div class="founder">
+          <p class="name">William Gonzalez</p>
+          <p class="role">Co-Founder</p>
+          <p class="contact">william@tarhunna.net</p>
+          <p class="contact">(301) 673-6362</p>
+        </div>
+        <div class="founder">
+          <p class="name">Cesar Molina</p>
+          <p class="role">Co-Founder</p>
+          <p class="contact">cesar@tarhunna.net</p>
+          <p class="contact">(240) 633-0438</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Footer ───────────────────────────────────────── -->
+    <div class="foot">
+      <img src="/tarhunna-mark.png" alt="" />
+      <span class="place">Frederick, Maryland</span>
+    </div>
+  </div>
+</body>
+</html>

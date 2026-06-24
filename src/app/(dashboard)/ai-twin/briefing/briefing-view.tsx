@@ -123,7 +123,7 @@ export function BriefingView() {
           bullets={[
             'See exactly what your AI Twin handled in the last 24 hours',
             'Safety triggers, voice-health delta, auto-send by class',
-            'A morning narrative that explains every action taken without you',
+            'A 24-hour summary of every action your twin took',
           ]}
         />
       </div>

@@ -12,7 +12,7 @@ const StepSchema = z.object({
 
 const UpdateSchema = z.object({
   name:         z.string().min(1).optional(),
-  trigger_type: z.enum(['new_lead','stage_changed','no_show','old_lead_reactivation','consultation_booked','consultation_completed']).optional(),
+  trigger_type: z.enum(['new_lead','stage_changed','no_show','consultation_booked','consultation_completed']).optional(),
   is_active:    z.boolean().optional(),
   steps:        z.array(StepSchema).min(1).optional(),
 })

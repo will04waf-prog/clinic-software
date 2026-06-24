@@ -227,9 +227,12 @@ async function buildMorningPayload(
   const waitingCount = waitingContacts.length
   const oldestWaitingMin = waitingCount > 0 ? ageMinutes(waitingContacts[0].inboundAt) : 0
 
-  // Average first-reply time for outbound replies sent this week. Placeholder
-  // mirrors the existing TimeToFirstContactCard — wiring the real calc
-  // requires activity_log joins; deferred to a follow-up.
+  // Average first-reply time is not computed yet — the activity_log
+  // join needed to derive it is deferred. The number below is ONLY
+  // used by the week-strip stat (which renders a "Demo" badge via
+  // placeholder:true so the user sees it isn't real data). All other
+  // consumers (waiting hero subline, "spotted a pattern" nudge) have
+  // been removed to keep the surface honest.
   const avgFirstReplySeconds = 47
 
   // ── Action stack ────────────────────────────────────────
@@ -391,7 +394,7 @@ async function buildMorningPayload(
       type: 'slot',
       range: `${fmt(fromMs)} – ${fmt(toMs)}`,
       label: `${formatDuration(gapMin)} open`,
-      note: 'Share booking link',
+      note: 'Share intake link',
     })
   }
 
@@ -553,14 +556,7 @@ async function buildMorningPayload(
   // wire a real "send follow-ups in bulk" action we can promote the
   // label.
   let nudge: { title: string; text: string; primary: { label: string; icon: string }; secondary: { label: string } } | null = null
-  if (avgFirstReplySeconds < 60 && newBookings >= 2) {
-    nudge = {
-      title: 'AI insight',
-      text: `Your average first-reply time is ${avgFirstReplySeconds}s — that's the speed that's converting leads into bookings this week.`,
-      primary: { label: 'Open automations', icon: 'sparkles' },
-      secondary: { label: 'Not now' },
-    }
-  } else if (waitingCount >= 3) {
+  if (waitingCount >= 3) {
     nudge = {
       title: 'AI insight',
       text: `${waitingCount} leads are waiting on a reply. Patients who wait more than an hour are 3× less likely to book.`,

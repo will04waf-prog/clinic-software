@@ -16,7 +16,6 @@ export type TriggerType =
   | 'new_lead'
   | 'stage_changed'
   | 'no_show'
-  | 'old_lead_reactivation'
   | 'consultation_booked'
   | 'consultation_completed'
 export type NotificationType =

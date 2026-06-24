@@ -30,8 +30,6 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Pipeline & consultation tracking',
     'Manual AI draft button (review every reply)',
     'Persistent drafts in inbox',
-    'Quiet hours',
-    '500 SMS messages/month',
     'Email support',
   ],
   professional: [
@@ -43,7 +41,6 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Automated email sequences',
     'Automated 24h/2h consultation reminders',
     'Bulk contact import',
-    '2,000 SMS messages/month',
     'Priority email support',
   ],
   scale: [
@@ -52,7 +49,7 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Autonomous send — AI replies 24/7 within your guardrails',
     'Rollout dial + shadow mode',
     'Provider briefing every 24 hours',
-    '5,000 SMS messages/month',
+    'Quiet hours (gates autonomous send)',
     'Direct founder support',
     'Dedicated onboarding session',
   ],
@@ -65,7 +62,7 @@ const TIER_FEATURES: Record<TierId, string[]> = {
 const FEATURE_MATRIX: { feature: string; starter: boolean; professional: boolean; scale: boolean }[] = [
   { feature: 'Manual AI Draft button',                          starter: true,  professional: true,  scale: true  },
   { feature: 'Persistent drafts in inbox',                      starter: true,  professional: true,  scale: true  },
-  { feature: 'Quiet hours',                                     starter: true,  professional: true,  scale: true  },
+  { feature: 'Quiet hours (gates autonomous send)',             starter: false, professional: false, scale: true  },
   { feature: 'Voice training (capture your reply style)',       starter: false, professional: true,  scale: true  },
   { feature: 'Voice health metrics',                            starter: false, professional: true,  scale: true  },
   { feature: 'AI Twin audit + flag',                            starter: false, professional: true,  scale: true  },

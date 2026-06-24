@@ -9,8 +9,6 @@ export interface TierLimits {
   allowsAutomationSequences: boolean   // sequence engine for follow-up campaigns
   allowsAutomatedReminders:  boolean   // cron-driven 24h/2h consultation reminders
   allowsBulkImport:          boolean
-  allowsMultiLocation:       boolean
-  smsCreditsPerMonth:        number
   // Phase 2 AI Twin capability flags ─────────────────────────────────
   /** Gates voice-profile read/write, voice examples CRUD, voice-health,
    * AI Twin audit + flag endpoints. Starter:false, Pro:true, Scale:true. */
@@ -37,8 +35,6 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsAutomationSequences: false,
     allowsAutomatedReminders:  false,
     allowsBulkImport:          false,
-    allowsMultiLocation:       false,
-    smsCreditsPerMonth:        500,
     allowsVoiceTraining:       false,
     allowsAutonomousSend:      false,
   },
@@ -47,8 +43,6 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsAutomationSequences: true,
     allowsAutomatedReminders:  true,
     allowsBulkImport:          true,
-    allowsMultiLocation:       false,
-    smsCreditsPerMonth:        2000,
     allowsVoiceTraining:       true,
     allowsAutonomousSend:      false,
   },
@@ -57,8 +51,6 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsAutomationSequences: true,
     allowsAutomatedReminders:  true,
     allowsBulkImport:          true,
-    allowsMultiLocation:       true,
-    smsCreditsPerMonth:        5000,
     allowsVoiceTraining:       true,
     allowsAutonomousSend:      true,
   },

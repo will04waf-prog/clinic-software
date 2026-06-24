@@ -16,6 +16,12 @@ const SendSchema = z.object({
   // mandatory disclosure footer to the outbound. Without a draft_id
   // the route behaves exactly like the legacy manual-send path.
   draft_id:                 z.string().uuid().optional(),
+  // The manual AI Draft button in the composer doesn't persist an
+  // ai_drafts row — so there's no draft_id to bind. This flag tells
+  // the send route the body was AI-authored so the disclosure footer
+  // still gets appended. Composer sets this true after a successful
+  // /draft-message call. Honest TCPA labeling on every AI send.
+  is_ai_drafted:            z.boolean().optional(),
 })
 
 export async function POST(
@@ -69,7 +75,7 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { body: messageBody, manual_consent_confirmed, draft_id } = parsed.data
+  const { body: messageBody, manual_consent_confirmed, draft_id, is_ai_drafted } = parsed.data
 
   // ── AI draft resolution (Phase 1 W2) ─────────────────────
   // If the caller is sending an AI-drafted message, fetch the draft
@@ -125,12 +131,14 @@ export async function POST(
     procedure_name: procedureName,
   })
 
-  // Append the mandatory AI-disclosure footer ONLY when this send is
-  // resolving an AI draft. The footer is intentionally added at the
-  // route layer, not in the composer, so a non-AI manual send is
-  // never labeled as AI-assisted, and so the user editing the
-  // composer never sees (or can delete) the disclosure text.
-  const finalOutboundBody = draft
+  // Append the mandatory AI-disclosure footer when this send is
+  // either resolving a persisted AI draft (draft_id) OR was authored
+  // via the manual AI Draft button (is_ai_drafted flag from composer).
+  // The footer is added at the route layer, not in the composer, so
+  // a non-AI manual send is never labeled and the user can't delete
+  // the disclosure text from the composer.
+  const isAiAuthored = draft != null || is_ai_drafted === true
+  const finalOutboundBody = isAiAuthored
     ? renderedBody + disclosureFooter(org?.name ?? 'our clinic')
     : renderedBody
 

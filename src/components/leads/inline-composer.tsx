@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Paperclip, Smile, Sparkles, Send, X } from 'lucide-react'
+import { Sparkles, Send, X } from 'lucide-react'
 
 /**
  * Inline SMS composer for the inbox conversation pane. Sends directly
@@ -77,6 +77,11 @@ export function InlineComposer({
   // owns the body until they Send, Discard, or switch contacts.
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
   const [discarding, setDiscarding] = useState(false)
+  // True when the current body text was produced by the manual AI
+  // Draft button (no persisted ai_drafts row → no draft_id). Tells
+  // the send route to append the AI disclosure footer. Cleared when
+  // the user clears the field or sends a non-AI message.
+  const [aiAuthored, setAiAuthored] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   const hasPhone = !!contactPhone
@@ -142,6 +147,9 @@ export function InlineComposer({
           // draft + appends the disclosure footer. Server tolerates a
           // stale draft id (already resolved → ignored).
           draft_id: activeDraftId ?? undefined,
+          // Tell the server to append the AI disclosure footer for
+          // manual-AI-drafted sends (no draft_id but still AI-authored).
+          is_ai_drafted: aiAuthored || undefined,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -152,6 +160,7 @@ export function InlineComposer({
       setConsentChecked(false)
       setStatus('idle')
       setActiveDraftId(null)
+      setAiAuthored(false)
       onSent()
     } catch (err: any) {
       setStatus('error')
@@ -206,13 +215,12 @@ export function InlineComposer({
       if (typeof json.draft !== 'string' || !json.draft) {
         throw new Error("Couldn't generate a draft — try again.")
       }
-      // Manual-draft button doesn't get a draft_id (the legacy endpoint
-      // doesn't persist). Manual sends go through the non-disclosure
-      // path. If we later want manual drafts persisted, the legacy
-      // endpoint can start writing ai_drafts rows the same way the
-      // inbound hook does.
+      // Manual-draft button doesn't persist an ai_drafts row, so
+      // there's no draft_id to bind. We still flag the body as
+      // AI-authored so the send route appends the disclosure footer.
       setBody(json.draft)
       setActiveDraftId(null)
+      setAiAuthored(true)
       textareaRef.current?.focus()
     } catch (err: any) {
       setDraftError(err.message ?? 'Failed to draft')
@@ -299,34 +307,23 @@ export function InlineComposer({
 
         {/* Composer pill */}
         <div className="flex items-end gap-2 rounded-2xl border border-[#0B2027]/10 bg-[#FAF6EC]/55 px-3 py-2 focus-within:border-[#02C39A]/40 focus-within:bg-white transition-colors">
-          <button
-            type="button"
-            aria-label="Attach file"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#0B2027]/45 hover:bg-[#0B2027]/5 hover:text-[#0B2027]/70 transition-colors"
-            disabled
-            title="Coming soon"
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
           <textarea
             ref={textareaRef}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => {
+              setBody(e.target.value)
+              // If the user clears the field, the next message is no
+              // longer AI-authored. Editing the AI's draft text still
+              // counts as AI-authored (matches the W7 edit-distance
+              // semantics — small edits stay attributed to the AI).
+              if (e.target.value.length === 0) setAiAuthored(false)
+            }}
             onKeyDown={handleKeyDown}
             placeholder={showingDraft ? 'AI draft above — edit or send as-is' : 'Write a message…'}
             disabled={status === 'sending'}
             rows={1}
             className="flex-1 resize-none bg-transparent text-sm text-[#0B2027] placeholder:text-[#0B2027]/45 focus:outline-none disabled:opacity-60 py-1.5 leading-[22px]"
           />
-          <button
-            type="button"
-            aria-label="Insert emoji"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#0B2027]/45 hover:bg-[#0B2027]/5 hover:text-[#0B2027]/70 transition-colors"
-            disabled
-            title="Coming soon"
-          >
-            <Smile className="h-4 w-4" />
-          </button>
           {/* The manual AI Draft button stays available even when a
               pending draft is loaded, so the user can re-roll if the
               suggestion is off. Calling it clears the draft binding so

@@ -13,7 +13,6 @@ const TRIGGER_LABELS: Record<string, string> = {
   new_lead: 'New Lead Created',
   stage_changed: 'Stage Changed',
   no_show: 'Consultation No-Show',
-  old_lead_reactivation: 'Old Lead (30+ days inactive)',
   consultation_booked: 'Consultation Booked',
   consultation_completed: 'Consultation Completed',
 }

@@ -1,15 +1,15 @@
-import { Sparkles, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import type { MorningResponse } from './types'
 
 /**
- * Variant A hero: AI morning brief sentence styled as a magazine
+ * Variant A hero: morning brief sentence styled as a magazine
  * pull-quote. Spans with k:'hl' are italic teal (highlighted lead /
  * consult references); spans with k:'num' are mint-underlined
  * (key figures).
  *
- * Sentence is templated server-side from real numbers — visually
- * indistinguishable from an LLM call. Swapping the templater for a
- * real Anthropic call is a follow-up commit.
+ * Sentence is templated server-side from real numbers — the badge
+ * does NOT claim AI authorship until/unless we wire a real
+ * Anthropic call into the brief generator. Honest labeling.
  */
 
 interface Props {
@@ -37,8 +37,7 @@ export function BriefHero({ brief, generatedAt }: Props) {
       <div className="relative flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#02C39A]/15 px-2.5 py-1 text-[11.5px] font-bold text-[#04B08C]">
-            <Sparkles className="h-3 w-3" fill="currentColor" />
-            AI morning brief
+            Morning brief
           </span>
           <span className="inline-flex items-center gap-1.5 text-[12.5px] text-[#7E8C90]">
             <Clock className="h-3.5 w-3.5" />

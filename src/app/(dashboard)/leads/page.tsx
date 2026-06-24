@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { AddLeadDialog } from '@/components/leads/add-lead-dialog'
-import { TimeToFirstContactCard } from '@/components/leads/time-to-first-contact-card'
 import { InboxFilterChips, type InboxFilter } from '@/components/leads/inbox-filter-chips'
 import { InboxList } from '@/components/leads/inbox-list'
 import { ConversationPane } from '@/components/leads/conversation-pane'
@@ -211,9 +210,6 @@ export default function LeadsInboxPage() {
       />
 
       <div className="flex-1 overflow-hidden flex flex-col p-6 pt-4 gap-4">
-        {/* Stat strip — visual placeholder, no real calc yet. */}
-        <TimeToFirstContactCard />
-
         {/* Two-pane inbox. Min-h-0 + h-full so each pane scrolls
             internally instead of pushing the page. */}
         {loading && contacts.length === 0 ? (

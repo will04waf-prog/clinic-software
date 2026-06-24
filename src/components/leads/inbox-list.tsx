@@ -44,7 +44,7 @@ export function InboxList({
   const [archivingId, setArchivingId] = useState<string | null>(null)
 
   async function archiveContact(id: string) {
-    if (!window.confirm('Archive this contact? You can restore them from settings.')) return
+    if (!window.confirm('Archive this contact? This hides them from your inbox.')) return
     setArchivingId(id)
     try {
       const res = await fetch(`/api/contacts/${id}`, {

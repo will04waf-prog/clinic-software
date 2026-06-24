@@ -149,7 +149,7 @@ function EmptySchedule() {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-semibold text-[#14241D]">Nothing booked today</p>
-        <p className="text-[12.5px] text-[#7E8C90]">Want to share your booking link?</p>
+        <p className="text-[12.5px] text-[#7E8C90]">Want to share your intake form?</p>
       </div>
       <Link
         href="/settings"

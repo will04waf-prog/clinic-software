@@ -81,7 +81,7 @@ export function WaitingHero({ waiting, generatedAt }: Props) {
               {waiting.count === 1 ? 'lead is waiting on you' : 'leads are waiting on you'}
             </p>
             <p className="max-w-[360px] text-[13.5px] text-[#4A5A60]">
-              Oldest has been waiting {waiting.oldestLabel}. Average first reply this week: {waiting.avgFirstReplySeconds}s.
+              Oldest has been waiting {waiting.oldestLabel}.
             </p>
             {waiting.avatars.length > 0 && (
               <div className="mt-1 flex">

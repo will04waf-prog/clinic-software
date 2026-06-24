@@ -88,7 +88,7 @@ const STEPS = [
   {
     number: '02',
     title: 'Organize the lead',
-    body: 'Tag their procedure interest, move them into your pipeline, and assign to a team member.',
+    body: 'Tag their procedure interest and move them through your pipeline.',
   },
   {
     number: '03',
