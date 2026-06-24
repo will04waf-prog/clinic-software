@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { requireCapability } from '@/lib/billing/require-tier'
 import { FLAG_REASON_CODES } from '@/lib/ai-twin-audit'
 
 /**
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   const orgId = profile.organization_id as string
+
+  const gate = await requireCapability(supabase, orgId, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
 
   let parsed: z.infer<typeof PostBody>
   try {
@@ -147,6 +151,9 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
   const orgId = profile.organization_id as string
+
+  const gate = await requireCapability(supabase, orgId, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
 
   let parsed: z.infer<typeof DeleteBody>
   try {

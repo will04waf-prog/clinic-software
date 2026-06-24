@@ -80,6 +80,12 @@ export function AiTwinTile() {
   // W10 — briefing sub-row state. Independent failure path; if this
   // fetch errors the weekly metrics above still render.
   const [briefing, setBriefing] = useState<BriefingSummary | null>(null)
+  // Phase 2 tier gating — when the briefing endpoint returns 402
+  // (org below Scale) we omit the sub-row entirely and surface a
+  // tiny "Briefing (Scale)" badge for discoverability instead. No
+  // upgrade nag inside the morning brief — it's high-frequency and
+  // a CTA here would feel spammy.
+  const [briefingLocked, setBriefingLocked] = useState(false)
   // Lazy-load gate. Identical pattern to analytics-sections.tsx.
   const [visible, setVisible] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
@@ -124,12 +130,19 @@ export function AiTwinTile() {
       setMetrics(json)
 
       // Briefing failure is non-fatal — collapse the sub-row instead of
-      // killing the whole tile.
+      // killing the whole tile. A 402 tier-locked response routes the
+      // same way but also lights up the "Briefing (Scale)" badge so
+      // owners see the feature exists without being upsold inline.
       if (briefingRes.ok) {
         const bjson = (await briefingRes.json()) as BriefingSummary
         setBriefing(bjson)
+        setBriefingLocked(false)
+      } else if (briefingRes.status === 402) {
+        setBriefing(null)
+        setBriefingLocked(true)
       } else {
         setBriefing(null)
+        setBriefingLocked(false)
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load AI Twin metrics'
@@ -191,6 +204,15 @@ export function AiTwinTile() {
           <p className="text-[11px] font-bold uppercase tracking-wide text-[#14241D]/55">
             AI front-desk twin
           </p>
+          {briefingLocked && (
+            <Link
+              href="/pricing#scale"
+              className="inline-flex items-center rounded-full bg-[#02C39A]/15 px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-[#04B08C] hover:bg-[#02C39A]/25"
+              title="The 24-hour briefing is included on Scale"
+            >
+              Briefing · Scale
+            </Link>
+          )}
         </div>
         <Link
           href="/ai-drafts/review"
@@ -248,13 +270,16 @@ export function AiTwinTile() {
         </div>
       </div>
 
-      <BriefingSubRow briefing={briefing} />
+      <BriefingSubRow briefing={briefing} locked={briefingLocked} />
     </section>
   )
 }
 
 // ── W10: "Last 24h" sub-row + link to /ai-twin/briefing ────────────
-function BriefingSubRow({ briefing }: { briefing: BriefingSummary | null }) {
+function BriefingSubRow({ briefing, locked }: { briefing: BriefingSummary | null; locked: boolean }) {
+  // When the org is below Scale, omit the sub-row entirely — the
+  // "Briefing · Scale" badge in the header is the only nudge.
+  if (locked) return null
   const ac = briefing?.action_counts
   const totalActivity = ac
     ? ac.auto_sent + ac.sent_unchanged + ac.edited + ac.rejected + ac.guardrail_failed + ac.pending_open + ac.safety_held

@@ -27,6 +27,11 @@ import {
   VOICE_EXAMPLE_CLASSES,
   type VoiceExampleClass,
 } from '@/lib/voice-profile'
+import {
+  UpgradeCardLocked,
+  isLockedResponse,
+  type LockedResponseBody,
+} from '@/components/billing/upgrade-card-locked'
 
 /**
  * /ai-twin/audit — Phase 2 W11.
@@ -48,6 +53,7 @@ const ACTION_FILTERS: { key: AuditAction; label: string }[] = [
   { key: 'ai_twin_auto_sent_flagged',           label: 'Flagged' },
   { key: 'ai_twin_auto_send_shadow_simulated',  label: 'Shadow simulated' },
   { key: 'ai_twin_auto_send_rollout_throttled', label: 'Rollout throttled' },
+  { key: 'ai_twin_auto_send_tier_blocked',      label: 'Tier blocked' },
   { key: 'ai_twin_auto_send_settings_changed',  label: 'Settings changed' },
 ]
 
@@ -68,6 +74,7 @@ function actionBadge(action: AuditAction): ActionBadge {
     case 'ai_twin_auto_send_settings_changed':  return { label: 'Settings changed', bg: '#0B202714', fg: '#14241D' }
     case 'ai_twin_auto_send_shadow_simulated':  return { label: 'Shadow simulated', bg: '#02809022', fg: '#026B78' }
     case 'ai_twin_auto_send_rollout_throttled': return { label: 'Rollout throttled',bg: '#B5710F18', fg: '#B5710F' }
+    case 'ai_twin_auto_send_tier_blocked':      return { label: 'Tier blocked',     bg: '#B5710F22', fg: '#B5710F' }
   }
 }
 
@@ -127,11 +134,13 @@ function AuditPageInner() {
   const [data, setData] = useState<AuditPage | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [locked, setLocked] = useState<LockedResponseBody | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setLocked(null)
     try {
       const qs = new URLSearchParams()
       if (activeActions.length > 0) qs.set('action', activeActions.join(','))
@@ -142,6 +151,16 @@ function AuditPageInner() {
       if (safetyOnly) qs.set('safety_only', '1')
       if (page > 1) qs.set('page', String(page))
       const res = await fetch(`/api/ai-twin/audit?${qs.toString()}`, { cache: 'no-store' })
+      // Tier gate — 402 means below Professional. Render the upgrade
+      // card inline (full-page, inside chrome) so users who land here
+      // via a link see what they're missing instead of a redirect.
+      if (res.status === 402) {
+        const body = await res.json().catch(() => null)
+        if (isLockedResponse(body)) {
+          setLocked(body)
+          return
+        }
+      }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(typeof body.error === 'string' ? body.error : `HTTP ${res.status}`)
@@ -271,6 +290,26 @@ function AuditPageInner() {
         </Link>
       </header>
 
+      {locked ? (
+        // Tier gate — Professional+. Render only the upgrade card in
+        // place of the audit body so this page is discoverable on
+        // Starter (no redirect) and explains WHY it's locked.
+        <div className="flex-1 overflow-y-auto px-6 py-10 sm:px-10">
+          <div className="mx-auto w-full max-w-[640px]">
+            <UpgradeCardLocked
+              requiredTier="professional"
+              currentTier={locked.current_tier}
+              capability="AI Twin audit"
+              title="AI Twin audit is on Professional"
+              bullets={[
+                'Every AI draft, send, edit, and rejection on one timeline',
+                'Filter by action, date, message class, or safety incident',
+                'Flag autonomous sends that shouldn’t have gone out',
+              ]}
+            />
+          </div>
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10 sm:py-7">
         <div className="mx-auto flex max-w-[1100px] flex-col gap-5">
 
@@ -441,6 +480,7 @@ function AuditPageInner() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }

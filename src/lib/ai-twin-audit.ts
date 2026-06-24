@@ -43,6 +43,9 @@ export const AUDIT_ACTIONS = [
   // did. The W11 partial index WHERE clause must include these.
   'ai_twin_auto_send_shadow_simulated',
   'ai_twin_auto_send_rollout_throttled',
+  // Tier-gating — runtime refusal because the org's effective tier
+  // doesn't include autonomous send (e.g. downgraded from Scale).
+  'ai_twin_auto_send_tier_blocked',
 ] as const
 
 export type AuditAction = typeof AUDIT_ACTIONS[number]

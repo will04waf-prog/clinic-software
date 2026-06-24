@@ -32,8 +32,10 @@ const NAV_ITEMS = [
   { href: '/automations',          label: 'Automations',      icon: Zap },
   // AI Twin operational surfaces (W10 briefing + W11 audit are both
   // reached via /ai-twin/* — surface audit in nav, briefing is
-  // reached from the morning tile and the audit page).
-  { href: '/ai-twin/audit',        label: 'AI Twin audit',    icon: ClipboardList },
+  // reached from the morning tile and the audit page). The "Pro"
+  // badge sets expectations upfront: Starter clicks land on the
+  // upgrade card, so labeling here avoids the cliff.
+  { href: '/ai-twin/audit',        label: 'AI Twin audit',    icon: ClipboardList, tierBadge: 'Pro' as const },
   { href: '/settings',             label: 'Settings',         icon: Settings },
 ]
 
@@ -68,7 +70,9 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
 
       {/* Nav — forest text on cream throughout */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.map((item) => {
+          const { href, label, icon: Icon } = item
+          const tierBadge = 'tierBadge' in item ? item.tierBadge : undefined
           // pathname has no hash, so href.includes('#') guarantees in-
           // page anchor entries never light up — keeps Dashboard the
           // only active row on /dashboard.
@@ -86,7 +90,12 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
               )}
             >
               <Icon className={cn('h-4 w-4', active ? 'text-[#02C39A]' : 'text-[#14241d]/55')} />
-              {label}
+              <span className="flex-1">{label}</span>
+              {tierBadge && (
+                <span className="inline-flex items-center rounded-full bg-[#028090]/15 px-1.5 py-0 text-[9.5px] font-semibold uppercase tracking-wide text-[#028090]">
+                  {tierBadge}
+                </span>
+              )}
             </Link>
           )
         })}

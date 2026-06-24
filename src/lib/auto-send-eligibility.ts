@@ -53,6 +53,12 @@ export type EligibilityReasonCode =
   | 'voice_health_unavailable'
   | 'rollout_throttled'
   | 'shadow_mode'
+  // Surfaced when the org's effective tier does not grant
+  // allowsAutonomousSend. Emitted by the runtime gate in
+  // attemptAutoSend() BEFORE Twilio is touched. Audit-only here —
+  // checkAutoSendEligibility itself never returns this code; it is
+  // produced by the upstream tier check in auto-send.ts.
+  | 'tier_disallowed'
 
 export interface EligibilityResult {
   eligible: boolean

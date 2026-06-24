@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireCapability } from '@/lib/billing/require-tier'
 
 /**
  * DELETE /api/org/voice-examples/[id] — remove one example.
@@ -22,6 +23,9 @@ export async function DELETE(
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
 
   const { data: existing } = await supabase
     .from('voice_examples')

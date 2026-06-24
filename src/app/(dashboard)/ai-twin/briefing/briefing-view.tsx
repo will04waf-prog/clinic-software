@@ -13,6 +13,11 @@ import {
   Clock,
 } from 'lucide-react'
 import type { BriefingPayload } from '@/lib/ai-twin-briefing'
+import {
+  UpgradeCardLocked,
+  isLockedResponse,
+  type LockedResponseBody,
+} from '@/components/billing/upgrade-card-locked'
 
 /**
  * Client-side briefing view. Lazy fetches /api/dashboard/ai-twin-briefing
@@ -67,12 +72,23 @@ export function BriefingView() {
   const [data, setData] = useState<BriefingPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [locked, setLocked] = useState<LockedResponseBody | null>(null)
 
   const load = useCallback(async (signal: AbortSignal) => {
     setLoading(true)
     setError(null)
+    setLocked(null)
     try {
       const res = await fetch('/api/dashboard/ai-twin-briefing', { cache: 'no-store', signal })
+      // Tier gate — 402 means below Scale. Swap the briefing for the
+      // upgrade card (no redirect; users land here from links).
+      if (res.status === 402) {
+        const body = await res.json().catch(() => null)
+        if (isLockedResponse(body)) {
+          if (!signal.aborted) setLocked(body)
+          return
+        }
+      }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
@@ -95,7 +111,24 @@ export function BriefingView() {
     return () => ctrl.abort()
   }, [load])
 
-  if (loading && !data) return <Skeleton />
+  if (loading && !data && !locked) return <Skeleton />
+  if (locked) {
+    return (
+      <div className="mx-auto w-full max-w-[640px] px-6 py-10 sm:px-10">
+        <UpgradeCardLocked
+          requiredTier="scale"
+          currentTier={locked.current_tier}
+          capability="AI Twin briefing"
+          title="The 24h briefing is on Scale"
+          bullets={[
+            'See exactly what your AI Twin handled in the last 24 hours',
+            'Safety triggers, voice-health delta, auto-send by class',
+            'A morning narrative that explains every action taken without you',
+          ]}
+        />
+      </div>
+    )
+  }
   if (error) return <ErrorBanner message={error} />
   if (!data) return null
 

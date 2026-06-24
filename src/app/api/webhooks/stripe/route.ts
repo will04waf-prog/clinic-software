@@ -129,6 +129,19 @@ export async function POST(req: NextRequest) {
         const update: Record<string, unknown> = { plan_status: planStatus }
         if (tier) {
           update.plan = tier
+          // Tier-gating safety: any downgrade from Scale to a lower
+          // tier must FORCE autonomous send off in the DB. The
+          // runtime gate in auto-send.ts already refuses, but
+          // leaving ai_twin_auto_send_enabled=true is misleading in
+          // the Settings UI and costs a Claude call per inbound.
+          // Reset rollout to 100% and shadow to false too so re-
+          // upgrading is a clean slate the owner must explicitly
+          // opt into.
+          if (tier !== 'scale') {
+            update.ai_twin_auto_send_enabled = false
+            update.ai_twin_auto_send_rollout_pct = 100
+            update.ai_twin_auto_send_shadow_mode = false
+          }
         } else if (priceId) {
           console.error(`[stripe-webhook] customer.subscription.updated: unknown price ${priceId} on sub ${sub.id} — leaving plan column unchanged`)
         }
@@ -140,7 +153,15 @@ export async function POST(req: NextRequest) {
       // ── Subscription canceled / deleted ───────────────────────────
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
-        await updateOrgBySubscription(sub.id, { plan_status: 'canceled' })
+        await updateOrgBySubscription(sub.id, {
+          plan_status: 'canceled',
+          // Cancellation forces autonomous send off — the org loses
+          // access at the proxy layer, but we don't want a stale
+          // "enabled" toggle waiting if they re-subscribe later.
+          ai_twin_auto_send_enabled: false,
+          ai_twin_auto_send_rollout_pct: 100,
+          ai_twin_auto_send_shadow_mode: false,
+        })
         break
       }
 

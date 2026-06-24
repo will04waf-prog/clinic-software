@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { requireCapability } from '@/lib/billing/require-tier'
 import {
   checkAutoSendEligibility,
   AUTO_SEND_BANNED_PHRASE_LOOKBACK_DAYS,
@@ -96,6 +97,9 @@ export async function GET(_req: NextRequest) {
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsAutonomousSend')
+  if (!gate.ok) return gate.response
 
   const orgId = profile.organization_id
 
@@ -285,6 +289,9 @@ export async function PATCH(request: NextRequest) {
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsAutonomousSend')
+  if (!gate.ok) return gate.response
 
   // Autonomous send goes to patients without further human review —
   // restrict toggle changes to admin-class roles.

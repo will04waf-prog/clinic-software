@@ -28,13 +28,18 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Up to 500 contacts',
     'Lead capture forms',
     'Pipeline & consultation tracking',
-    'Manual messaging',
+    'Manual AI draft button (review every reply)',
+    'Persistent drafts in inbox',
+    'Quiet hours',
     '500 SMS messages/month',
     'Email support',
   ],
   professional: [
     'Up to 2,500 contacts',
     'Everything in Starter',
+    'Voice training — capture your real reply style',
+    'Voice health metrics',
+    'AI Twin audit + flagging',
     'Automated email sequences',
     'Automated 24h/2h consultation reminders',
     'Bulk contact import',
@@ -44,12 +49,31 @@ const TIER_FEATURES: Record<TierId, string[]> = {
   scale: [
     'Unlimited contacts',
     'Everything in Professional',
+    'Autonomous send — AI replies 24/7 within your guardrails',
+    'Rollout dial + shadow mode',
+    'Provider briefing every 24 hours',
     'Advanced automation workflows',
     '5,000 SMS messages/month',
     'Direct founder support',
     'Dedicated onboarding session',
   ],
 }
+
+// Feature-matrix rows shown BELOW the three pricing cards. Honest
+// copy — a row is either available on a tier or it isn't. We use a
+// mint check for yes and a muted dash for no (no red Xs — we aren't
+// punishing lower tiers).
+const FEATURE_MATRIX: { feature: string; starter: boolean; professional: boolean; scale: boolean }[] = [
+  { feature: 'Manual AI Draft button',                          starter: true,  professional: true,  scale: true  },
+  { feature: 'Persistent drafts in inbox',                      starter: true,  professional: true,  scale: true  },
+  { feature: 'Quiet hours',                                     starter: true,  professional: true,  scale: true  },
+  { feature: 'Voice training (capture your reply style)',       starter: false, professional: true,  scale: true  },
+  { feature: 'Voice health metrics',                            starter: false, professional: true,  scale: true  },
+  { feature: 'AI Twin audit + flag',                            starter: false, professional: true,  scale: true  },
+  { feature: 'Autonomous send (AI replies without you)',        starter: false, professional: false, scale: true  },
+  { feature: 'Rollout dial + shadow mode',                      starter: false, professional: false, scale: true  },
+  { feature: 'Provider briefing every 24h',                     starter: false, professional: false, scale: true  },
+]
 
 const TIERS: TierId[] = ['starter', 'professional', 'scale']
 
@@ -244,6 +268,64 @@ export default function PricingPage() {
               )
             })}
           </div>
+
+          {/* ── Feature matrix ─────────────────────────────────────── */}
+          <section className="mt-20">
+            <p className="mx-auto max-w-2xl text-center text-[14px] text-gray-700 mb-6">
+              AI Twin is included on every plan. What changes is how much of
+              your voice it learns and whether it can send for you.
+            </p>
+            <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="bg-[#14241D] text-[#FAF6EC]">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold">Feature</th>
+                    <th className="px-4 py-3 text-center font-semibold">Starter</th>
+                    <th className="px-4 py-3 text-center font-semibold border-b-2 border-[#028090]">
+                      Professional
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold border-b-2 border-[#02C39A]">
+                      Scale
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURE_MATRIX.map((row, idx) => (
+                    <tr key={row.feature} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#FAF6EC]/40'}>
+                      <td className="px-4 py-3 text-gray-800">{row.feature}</td>
+                      <td className="px-4 py-3 text-center"><MatrixCell on={row.starter} /></td>
+                      <td className="px-4 py-3 text-center"><MatrixCell on={row.professional} /></td>
+                      <td className="px-4 py-3 text-center"><MatrixCell on={row.scale} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Anchor callouts — UpgradeCardLocked deep-links to
+                #professional and #scale, so each tier needs an anchor
+                target near the matrix. Informational only. */}
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              <TierCallout
+                id="starter"
+                name="Starter"
+                accent="#6B7572"
+                blurb="AI drafts for every inbound — you review and send. Quiet hours and persistent drafts included."
+              />
+              <TierCallout
+                id="professional"
+                name="Professional"
+                accent="#028090"
+                blurb="Train the AI on your voice with example messages and tone sliders. See voice health metrics. Audit and flag every AI action."
+              />
+              <TierCallout
+                id="scale"
+                name="Scale"
+                accent="#02C39A"
+                blurb="The AI Twin replies on its own within your guardrails. Rollout dial, shadow mode, and a 24-hour briefing that explains what it handled."
+              />
+            </div>
+          </section>
         </div>
       </main>
 
@@ -262,6 +344,47 @@ export default function PricingPage() {
         </div>
       </footer>
 
+    </div>
+  )
+}
+
+function MatrixCell({ on }: { on: boolean }) {
+  if (on) {
+    return (
+      <span
+        aria-label="included"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#02C39A] text-white"
+      >
+        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+    )
+  }
+  return (
+    <span aria-label="not included" className="inline-block h-0.5 w-3 rounded bg-[#6B7572]/60" />
+  )
+}
+
+interface TierCalloutProps {
+  id: string
+  name: string
+  accent: string
+  blurb: string
+}
+
+function TierCallout({ id, name, accent, blurb }: TierCalloutProps) {
+  return (
+    <div
+      id={id}
+      className="rounded-xl border bg-white p-5 scroll-mt-20"
+      style={{ borderColor: `${accent}40` }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
+        <h4 className="text-base font-semibold text-gray-900">{name}</h4>
+      </div>
+      <p className="mt-2 text-[13px] leading-relaxed text-gray-600">{blurb}</p>
     </div>
   )
 }

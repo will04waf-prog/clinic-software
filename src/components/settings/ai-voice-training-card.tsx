@@ -2,6 +2,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Sparkles, Plus, Trash2, Save, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  UpgradeCardLocked,
+  isLockedResponse,
+  type LockedResponseBody,
+} from '@/components/billing/upgrade-card-locked'
 
 /**
  * Phase 2 Week 6 — Voice training Settings card.
@@ -61,6 +66,7 @@ export function AiVoiceTrainingCard() {
   const [examples, setExamples] = useState<VoiceExample[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [locked, setLocked] = useState<LockedResponseBody | null>(null)
   const [savingProfile, setSavingProfile] = useState(false)
   const [savedProfile, setSavedProfile] = useState(false)
   const [profileDirty, setProfileDirty] = useState(false)
@@ -76,11 +82,23 @@ export function AiVoiceTrainingCard() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     setError('')
+    setLocked(null)
     try {
       const [pRes, eRes] = await Promise.all([
         fetch('/api/org/voice-profile',  { cache: 'no-store' }),
         fetch('/api/org/voice-examples', { cache: 'no-store' }),
       ])
+      // Tier gate — either endpoint returning 402 with the locked
+      // shape means the org is below Professional. Short-circuit
+      // to the upgrade surface instead of treating it as an error.
+      if (pRes.status === 402) {
+        const body = await pRes.json().catch(() => null)
+        if (isLockedResponse(body)) { setLocked(body); return }
+      }
+      if (eRes.status === 402) {
+        const body = await eRes.json().catch(() => null)
+        if (isLockedResponse(body)) { setLocked(body); return }
+      }
       if (!pRes.ok) throw new Error('Failed to load voice profile')
       if (!eRes.ok) throw new Error('Failed to load voice examples')
       const { profile: pData } = await pRes.json()
@@ -190,6 +208,21 @@ export function AiVoiceTrainingCard() {
           <p className="text-sm text-gray-400">Loading…</p>
         </CardContent>
       </Card>
+    )
+  }
+  if (locked) {
+    return (
+      <UpgradeCardLocked
+        requiredTier="professional"
+        currentTier={locked.current_tier}
+        capability="Voice training"
+        title="Voice training is on Professional"
+        bullets={[
+          'Capture your real reply style',
+          'AI Twin matches your tone, signoff, and banned phrases',
+          'Voice health scoring on every draft',
+        ]}
+      />
     )
   }
   if (!profile) {

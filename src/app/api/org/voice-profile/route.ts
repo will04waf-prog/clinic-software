@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireCapability } from '@/lib/billing/require-tier'
 import {
   VoiceProfileSchema,
   readVoiceProfile,
@@ -30,6 +31,9 @@ export async function GET(_req: NextRequest) {
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
+
   const { data: org, error } = await supabase
     .from('organizations')
     .select('ai_twin_voice_profile')
@@ -52,6 +56,9 @@ export async function PATCH(request: NextRequest) {
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
 
   let rawBody: unknown
   try {

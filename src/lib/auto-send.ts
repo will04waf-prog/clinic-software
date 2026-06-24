@@ -128,7 +128,7 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
     // catch it here before Twilio.
     supabaseAdmin
       .from('organizations')
-      .select('ai_twin_voice_profile, ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_auto_send_rollout_pct, ai_twin_auto_send_shadow_mode')
+      .select('ai_twin_voice_profile, ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_auto_send_rollout_pct, ai_twin_auto_send_shadow_mode, plan, plan_status, trial_ends_at')
       .eq('id', args.organizationId)
       .single(),
   ])
@@ -140,6 +140,58 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
   const freshAllowlist = ((orgRes.data?.ai_twin_auto_send_classes as string[] | null) ?? [])
   if (!freshAllowlist.includes(args.messageClass)) {
     return { ok: false, reason_code: 'class_not_in_allowlist', reason: 'Class removed from allowlist mid-flight.' }
+  }
+
+  // ── Tier gate (NON-NEGOTIABLE). Refuse if the org's effective tier
+  // does not grant allowsAutonomousSend. Reading from the same fresh
+  // organizations payload (plan, plan_status, trial_ends_at) means a
+  // downgrade that landed mid-flight is caught here BEFORE Twilio.
+  //
+  // Placement rationale:
+  //  (a) AFTER cheap fast-path rejections (no DB query if we'd reject
+  //      on consent/quiet-hours/opted-out anyway)
+  //  (b) AFTER the fresh master-toggle re-read (uses the same orgRes
+  //      payload — zero extra DB roundtrip, no TOCTOU gap)
+  //  (c) BEFORE computeVoiceHealth and BEFORE sendSMS — Twilio is
+  //      never touched on tier_disallowed
+  //  (d) Dynamic import keeps the static import graph of this module
+  //      unchanged (org-tier is the only Phase-2-tier-aware module).
+  //
+  // This gate must NOT rely on the UI gate or API gate — it is the
+  // only barrier protecting customers when a Scale→Pro downgrade
+  // lands while ai_twin_auto_send_enabled is still true in the DB.
+  const { effectiveTierFor } = await import('@/lib/billing/org-tier')
+  const orgDataAny = orgRes.data as {
+    plan?:          string | null
+    plan_status?:   string | null
+    trial_ends_at?: string | null
+  } | null
+  const eff = effectiveTierFor(
+    orgDataAny?.plan ?? null,
+    orgDataAny?.plan_status ?? null,
+    orgDataAny?.trial_ends_at ?? null,
+  )
+  if (!eff.limits.allowsAutonomousSend) {
+    // Best-effort audit so an owner who downgraded can see what was
+    // blocked. We don't fail the request if the insert errors — the
+    // refusal itself is what matters.
+    await supabaseAdmin.from('activity_log').insert({
+      organization_id: args.organizationId,
+      contact_id:      args.contactId,
+      action:          'ai_twin_auto_send_tier_blocked',
+      metadata: {
+        draft_id:           args.draftRowId,
+        effective_tier:     eff.tier,
+        effective_reason:   eff.reason,
+        trigger_message_id: args.triggerMessageId,
+        message_class:      args.messageClass,
+      },
+    })
+    return {
+      ok: false,
+      reason_code: 'tier_disallowed',
+      reason: `Autonomous send requires the Scale tier (current: ${eff.tier}).`,
+    }
   }
 
   const rows: HealthDraftRow[] = ((draftsRes.data ?? []) as Array<{

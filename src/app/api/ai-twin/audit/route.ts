@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireCapability } from '@/lib/billing/require-tier'
 import {
   AUDIT_ACTIONS,
   type AuditAction,
@@ -41,6 +42,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
   const orgId = profile.organization_id as string
+
+  const gate = await requireCapability(supabase, orgId, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
 
   const url = new URL(req.url)
   const parsed = parseAuditFilters(url.searchParams)

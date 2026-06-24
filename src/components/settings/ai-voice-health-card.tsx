@@ -3,6 +3,11 @@ import { useEffect, useState } from 'react'
 import { Activity, AlertCircle, Info, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { VOICE_CLASS_LABEL, type VoiceExampleClass } from '@/lib/voice-profile'
+import {
+  UpgradeCardLocked,
+  isLockedResponse,
+  type LockedResponseBody,
+} from '@/components/billing/upgrade-card-locked'
 
 /**
  * Phase 2 W8 — Voice training health card.
@@ -73,12 +78,21 @@ export function AiVoiceHealthCard() {
   const [data, setData]       = useState<VoiceHealth | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
+  const [locked, setLocked]   = useState<LockedResponseBody | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
         const res = await fetch('/api/org/voice-health', { cache: 'no-store' })
+        // Tier gate — 402 means Starter org; swap in the upgrade card.
+        if (res.status === 402) {
+          const body = await res.json().catch(() => null)
+          if (isLockedResponse(body)) {
+            if (!cancelled) setLocked(body)
+            return
+          }
+        }
         if (!res.ok) throw new Error('Failed to load voice health')
         const json = (await res.json()) as VoiceHealth
         if (!cancelled) setData(json)
@@ -97,6 +111,21 @@ export function AiVoiceHealthCard() {
       <CardShell>
         <p className="text-sm text-gray-400">Loading…</p>
       </CardShell>
+    )
+  }
+  if (locked) {
+    return (
+      <UpgradeCardLocked
+        requiredTier="professional"
+        currentTier={locked.current_tier}
+        capability="Voice health metrics"
+        title="Voice health metrics are on Professional"
+        bullets={[
+          'Per-class edit-ratio tracking',
+          'Voice-lift comparison (with vs without examples)',
+          'Recommendations on which classes need more training',
+        ]}
+      />
     )
   }
   if (!data) {

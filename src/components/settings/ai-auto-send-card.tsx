@@ -3,6 +3,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, Bot, CheckCircle2, Eye, History, Loader2, Lock, SlidersHorizontal } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { VOICE_CLASS_LABEL, type VoiceExampleClass } from '@/lib/voice-profile'
+import {
+  UpgradeCardLocked,
+  isLockedResponse,
+  type LockedResponseBody,
+} from '@/components/billing/upgrade-card-locked'
 
 /**
  * Phase 2 W9 — Autonomous send settings.
@@ -68,12 +73,25 @@ export function AiAutoSendCard() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
+  const [locked, setLocked]   = useState<LockedResponseBody | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
+    setLocked(null)
     try {
       const res = await fetch('/api/org/auto-send-settings', { cache: 'no-store' })
+      // Tier gate — 402 means org is below Scale. Replace the entire
+      // settings surface (including the master toggle) with the
+      // upgrade card; a disabled toggle next to an upgrade prompt is
+      // ambiguous about whether re-enabling is even possible.
+      if (res.status === 402) {
+        const body = await res.json().catch(() => null)
+        if (isLockedResponse(body)) {
+          setLocked(body)
+          return
+        }
+      }
       if (!res.ok) throw new Error('Failed to load auto-send settings')
       const json = (await res.json()) as AutoSendSettings
       setData(json)
@@ -153,6 +171,21 @@ export function AiAutoSendCard() {
       <CardShell>
         <p className="text-sm text-gray-400">Loading…</p>
       </CardShell>
+    )
+  }
+  if (locked) {
+    return (
+      <UpgradeCardLocked
+        requiredTier="scale"
+        currentTier={locked.current_tier}
+        capability="Autonomous send"
+        title="Autonomous send is on Scale"
+        bullets={[
+          'AI Twin can reply 24/7 within your guardrails',
+          'Rollout dial + shadow mode for gradual trust',
+          'Provider briefing every 24 hours',
+        ]}
+      />
     )
   }
   if (!data) {

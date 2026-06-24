@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { requireCapability } from '@/lib/billing/require-tier'
 
 /**
  * GET   /api/org/voice-examples — list all voice examples for the
@@ -33,6 +34,9 @@ export async function GET(_req: NextRequest) {
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
+
   const { data: examples, error } = await supabase
     .from('voice_examples')
     .select('id, class, label, body, created_at, updated_at')
@@ -54,6 +58,9 @@ export async function POST(request: NextRequest) {
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  if (!gate.ok) return gate.response
 
   let rawBody: unknown
   try { rawBody = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }

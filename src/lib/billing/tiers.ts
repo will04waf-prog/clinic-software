@@ -11,6 +11,13 @@ export interface TierLimits {
   allowsBulkImport:          boolean
   allowsMultiLocation:       boolean
   smsCreditsPerMonth:        number
+  // Phase 2 AI Twin capability flags ─────────────────────────────────
+  /** Gates voice-profile read/write, voice examples CRUD, voice-health,
+   * AI Twin audit + flag endpoints. Starter:false, Pro:true, Scale:true. */
+  allowsVoiceTraining:       boolean
+  /** Gates auto-send settings, AI Twin briefing, AND the runtime
+   * attemptAutoSend() refusal. Starter:false, Pro:false, Scale:true. */
+  allowsAutonomousSend:      boolean
 }
 
 export interface TierPricing {
@@ -32,6 +39,8 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsBulkImport:          false,
     allowsMultiLocation:       false,
     smsCreditsPerMonth:        500,
+    allowsVoiceTraining:       false,
+    allowsAutonomousSend:      false,
   },
   professional: {
     maxContacts:               2500,
@@ -40,6 +49,8 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsBulkImport:          true,
     allowsMultiLocation:       false,
     smsCreditsPerMonth:        2000,
+    allowsVoiceTraining:       true,
+    allowsAutonomousSend:      false,
   },
   scale: {
     maxContacts:               Number.POSITIVE_INFINITY,
@@ -48,6 +59,8 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsBulkImport:          true,
     allowsMultiLocation:       true,
     smsCreditsPerMonth:        5000,
+    allowsVoiceTraining:       true,
+    allowsAutonomousSend:      true,
   },
 }
 
