@@ -91,13 +91,18 @@ export function checkGuardrails(body: string): { ok: true } | { ok: false; viola
   }
 
   // Medical advice — phrases that cross from front-desk into clinical
-  // territory. Checked BEFORE the broader "promised_outcome" rule and
-  // before the length cap so the most useful violation reason is
-  // reported when multiple rules would otherwise fire.
+  // territory. Tightened from "you should/need to" (W4 ship) which
+  // caught benign phrasing like "let us know when you should arrive."
+  // Now matches only the clinical-advice shapes that immediately
+  // follow with a medical/procedural verb. Plus the always-clinical
+  // patterns like "stop taking" and "side effects of."
   const MEDICAL_ADVICE_PATTERNS = [
-    /\byou\s+(?:should|need\s+to)\b/i,
+    // "you should take/avoid/use/apply/expect/feel/notice/experience…"
+    /\byou\s+(?:should|need\s+to)\s+(?:take|avoid|use|apply|expect|feel|notice|experience|consult|see\s+a\s+doctor|stop|start|continue|increase|decrease)\b/i,
     /\bstop\s+taking\b/i,
     /\bside\s+effects?\s+of\b/i,
+    /\bdosage\b/i,
+    /\bprescrib(?:e|ed|ing)\b/i,
   ]
   for (const re of MEDICAL_ADVICE_PATTERNS) {
     if (re.test(body)) return { ok: false, violation: 'medical_advice' }
