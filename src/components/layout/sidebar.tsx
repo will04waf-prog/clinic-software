@@ -50,8 +50,9 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
 
   return (
     <aside className="hidden md:flex h-full w-60 flex-col bg-[#F5EFE1]">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b border-[#14241d]/10 px-5">
+      {/* Logo strip — h-16 + mint hairline to match the top bars on
+          every dashboard page, so the dividers all sit on one line. */}
+      <div className="flex h-16 items-center border-b border-[#02C39A]/35 px-5">
         <LogoMark size="md" standalone />
       </div>
 

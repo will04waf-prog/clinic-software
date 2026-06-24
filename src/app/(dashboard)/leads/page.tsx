@@ -9,7 +9,11 @@ import { InboxList } from '@/components/leads/inbox-list'
 import { ConversationPane } from '@/components/leads/conversation-pane'
 import type { Contact } from '@/types'
 
-const POLL_INTERVAL_MS = 6_000
+// Bumped from 6s → 20s. The leads list still refreshes on tab focus
+// and visibilitychange, so the user-perceived freshness on the
+// "tab back to dashboard" demo path is unchanged; this just cuts
+// background polling cost by 3.3×.
+const POLL_INTERVAL_MS = 20_000
 
 function contactsSignature(rows: Contact[]): string {
   return rows

@@ -122,7 +122,7 @@ export default function DashboardPage() {
           AM" with a sun-horizon icon and right-side actions. We don't
           touch the shared <Header> (used by every other page) — this is
           a dashboard-only widget that takes its place. */}
-      <header className="flex min-h-[76px] items-center justify-between gap-3 border-b border-[#0B2027]/8 bg-white px-4 sm:px-6">
+      <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[#02C39A]/35 bg-[#F5EFE1] px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <span className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-[#02C39A]/15">
             <Sun className="h-5 w-5 text-[#028090]" fill="currentColor" />

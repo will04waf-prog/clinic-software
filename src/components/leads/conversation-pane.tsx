@@ -31,7 +31,9 @@ interface ConversationPaneProps {
   onArchived: () => void
 }
 
-const POLL_INTERVAL_MS = 6_000
+// Bumped from 6s → 15s. Refreshes immediately on send + tab focus,
+// so live conversation feel is preserved with less background load.
+const POLL_INTERVAL_MS = 15_000
 
 /**
  * Right-pane conversation view for the inbox. Loads messages for the

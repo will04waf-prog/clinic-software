@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { cached } from '@/lib/route-cache'
 import type { LeadSource } from '@/types'
+
+// 30s in-memory cache, keyed per (org, range). Analytics aggregation
+// is heavy (4 parallel queries that scan contacts+messages+consults
+// across up to 90 days) and the values barely move minute-to-minute.
+const ANALYTICS_CACHE_TTL_MS = 30_000
 
 /**
  * GET /api/dashboard/analytics?range=7d|30d|90d
@@ -44,6 +50,17 @@ export async function GET(req: NextRequest) {
   const range: Range = rangeParam && VALID_RANGES.includes(rangeParam) ? rangeParam : '30d'
   const days = rangeDays(range)
 
+  const cacheKey = `analytics:${orgId}:${range}`
+  const payload = await cached(cacheKey, ANALYTICS_CACHE_TTL_MS, () => buildAnalyticsPayload(supabase, orgId, range, days))
+  return NextResponse.json(payload)
+}
+
+async function buildAnalyticsPayload(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  range: Range,
+  days: number,
+) {
   const now = new Date()
   const startLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1))
   const startIso = startLocal.toISOString()
@@ -138,12 +155,12 @@ export async function GET(req: NextRequest) {
   const sources = Array.from(sourceCounts, ([key, count]) => ({ key, count }))
     .sort((a, b) => b.count - a.count)
 
-  return NextResponse.json({
+  return {
     range,
     days,
     totalContacts,
     timeseries,
     funnel,
     sources,
-  })
+  }
 }

@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { TrendChart, type AnalyticsRange, type TimeseriesPoint } from './trend-chart'
 import { FunnelStrip } from './funnel-strip'
 import { SourceBreakdown } from './source-breakdown'
@@ -35,8 +35,34 @@ function SectionsSkeleton() {
 export function AnalyticsSections() {
   const [range, setRange] = useState<AnalyticsRange>('30d')
   const [data, setData] = useState<AnalyticsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Lazy-load gate: stays false until the section nears the viewport.
+  // This stops the heavy /api/dashboard/analytics call from happening
+  // on dashboard mount — the user only pays for it if they actually
+  // scroll down to Performance.
+  const [visible, setVisible] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (visible) return
+    const el = sentinelRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setVisible(true)
+      return
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisible(true)
+          obs.disconnect()
+        }
+      },
+      { rootMargin: '300px 0px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [visible])
 
   const load = useCallback(async (r: AnalyticsRange) => {
     setLoading(true)
@@ -57,8 +83,18 @@ export function AnalyticsSections() {
     }
   }, [])
 
-  useEffect(() => { load(range) }, [load, range])
+  // Fetch only after the section enters (or nears) the viewport.
+  // Re-fetches on range change as before.
+  useEffect(() => {
+    if (!visible) return
+    load(range)
+  }, [visible, load, range])
 
+  // Sentinel rendered even when nothing else is — gives the
+  // IntersectionObserver something to watch.
+  if (!visible && !data) {
+    return <div ref={sentinelRef} className="h-1" aria-hidden />
+  }
   if (loading && !data) return <SectionsSkeleton />
   if (error) {
     return (

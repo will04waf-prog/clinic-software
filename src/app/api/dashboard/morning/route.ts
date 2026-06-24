@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { cached } from '@/lib/route-cache'
 import type { LeadSource, Procedure } from '@/types'
+
+// In-memory TTL for the aggregated morning-briefing payload. The page
+// polls every 60s; serving cached results inside a 30s window means a
+// single sticky tab never triggers more than ~2 real aggregations per
+// minute. Per-org keyed so one org never sees another's cached payload.
+const MORNING_CACHE_TTL_MS = 30_000
 
 /**
  * GET /api/dashboard/morning
@@ -105,6 +112,20 @@ export async function GET(_req: NextRequest) {
   const orgId = profile.organization_id
   const firstName = (profile.full_name ?? '').split(' ')[0] || 'there'
 
+  // Cache the whole aggregation. The firstName is part of the brief
+  // sentence + greeting, so it has to be in the key — otherwise two
+  // users in the same org would see each other's name.
+  const cacheKey = `morning:${orgId}:${firstName}`
+  const payload = await cached(cacheKey, MORNING_CACHE_TTL_MS, () => buildMorningPayload(supabase, orgId, firstName, profile.full_name ?? firstName))
+  return NextResponse.json(payload)
+}
+
+async function buildMorningPayload(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  firstName: string,
+  fullName: string,
+) {
   // Time windows.
   const now = new Date()
   const startOfTodayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -555,8 +576,8 @@ export async function GET(_req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    user: { firstName, fullName: profile.full_name ?? firstName },
+  return {
+    user: { firstName, fullName },
     generatedAt: new Date().toISOString(),
     brief: { greeting: `Good morning, ${firstName}.`, segments: briefSegments },
     waiting: {
@@ -571,5 +592,5 @@ export async function GET(_req: NextRequest) {
     schedule,
     week,
     nudge,
-  })
+  }
 }
