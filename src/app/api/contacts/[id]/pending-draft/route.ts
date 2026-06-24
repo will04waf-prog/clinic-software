@@ -41,11 +41,17 @@ export async function GET(
     .single()
   if (!contact) return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
 
+  // Quiet-hours scheduling: hide drafts whose `available_after` is
+  // still in the future. NULL = immediately visible (existing W1+W2
+  // behavior). The column ships in select(...) too so a future "next
+  // available at HH:MM" UI hint doesn't need a new endpoint.
+  const nowIso = new Date().toISOString()
   const { data: draft, error } = await supabase
     .from('ai_drafts')
-    .select('id, draft_body, draft_subject, channel, model, trigger_message_id, generated_at')
+    .select('id, draft_body, draft_subject, channel, model, trigger_message_id, generated_at, available_after')
     .eq('contact_id', id)
     .eq('state', 'pending')
+    .or(`available_after.is.null,available_after.lte.${nowIso}`)
     .order('generated_at', { ascending: false })
     .limit(1)
     .maybeSingle()

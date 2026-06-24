@@ -6,6 +6,7 @@ import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
+import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
 import { ChangePasswordCard } from '@/components/settings/change-password-card'
 import { SignOutButton } from '@/components/ui/sign-out-button'
 
@@ -23,7 +24,8 @@ export default async function SettingsPage() {
       organization:organizations(
         name, slug, plan, timezone, plan_status, stripe_customer_id, procedures,
         sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
-        sms_template_confirmation, sms_template_reminder_24h, sms_template_reminder_2h
+        sms_template_confirmation, sms_template_reminder_24h, sms_template_reminder_2h,
+        ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end
       )
     `)
     .eq('id', user.id)
@@ -74,6 +76,13 @@ export default async function SettingsPage() {
           sms_template_confirmation: org?.sms_template_confirmation ?? null,
           sms_template_reminder_24h: org?.sms_template_reminder_24h ?? null,
           sms_template_reminder_2h:  org?.sms_template_reminder_2h  ?? null,
+        }} />
+
+        {/* AI Twin sits under SMS — it's downstream of SMS being on. */}
+        <AiTwinSettingsCard initial={{
+          ai_twin_enabled:            org?.ai_twin_enabled            ?? true,
+          ai_twin_quiet_hours_start:  org?.ai_twin_quiet_hours_start  ?? null,
+          ai_twin_quiet_hours_end:    org?.ai_twin_quiet_hours_end    ?? null,
         }} />
 
         <Card>

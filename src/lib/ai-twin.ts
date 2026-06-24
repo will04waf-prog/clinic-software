@@ -26,6 +26,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { formatProcedure } from '@/lib/utils'
+import { computeAvailableAfter } from '@/lib/quiet-hours'
 
 const MODEL = 'claude-haiku-4-5'
 const MAX_TOKENS = 300
@@ -77,19 +78,32 @@ export type DraftResult =
  * it doesn't.
  */
 export function checkGuardrails(body: string): { ok: true } | { ok: false; violation: string } {
-  const text = body.toLowerCase()
-
-  // Price quoting: $ followed by digits, "20 dollars", "20.00"
+  // Price quoting: $ followed by digits, "20 dollars", "20.00".
+  // Kept first — it's the most specific and the highest-stakes rule
+  // for med-spa compliance.
   if (/\$\s*\d/.test(body) || /\b\d{2,4}\s*(?:dollars|usd|bucks)\b/i.test(body)) {
     return { ok: false, violation: 'quoted_price' }
   }
 
-  // Medical doses: "0.5ml", "20 units", "1 syringe", "2 mg"
+  // Medical doses: "0.5ml", "20 units", "1 syringe", "2 mg".
   if (/\b\d+(?:\.\d+)?\s*(?:ml|mg|units?|syringes?|cc)\b/i.test(body)) {
     return { ok: false, violation: 'quoted_dose' }
   }
 
-  // Result promises — model gets explicit about outcomes
+  // Medical advice — phrases that cross from front-desk into clinical
+  // territory. Checked BEFORE the broader "promised_outcome" rule and
+  // before the length cap so the most useful violation reason is
+  // reported when multiple rules would otherwise fire.
+  const MEDICAL_ADVICE_PATTERNS = [
+    /\byou\s+(?:should|need\s+to)\b/i,
+    /\bstop\s+taking\b/i,
+    /\bside\s+effects?\s+of\b/i,
+  ]
+  for (const re of MEDICAL_ADVICE_PATTERNS) {
+    if (re.test(body)) return { ok: false, violation: 'medical_advice' }
+  }
+
+  // Result promises — model gets explicit about outcomes.
   const PROMISE_PATTERNS = [
     /\byou(?:'ll| will)\s+look\b/i,
     /\bguaranteed?\b/i,
@@ -101,19 +115,48 @@ export function checkGuardrails(body: string): { ok: true } | { ok: false; viola
     if (re.test(body)) return { ok: false, violation: 'promised_outcome' }
   }
 
-  // Provider name commitment — generic "Dr. X" / "with Dr. Y" pattern
+  // Provider name commitment — generic "Dr. X" / "with Dr. Y" pattern.
   if (/\bwith\s+dr\.?\s+[A-Z][a-z]+\b/.test(body)) {
     return { ok: false, violation: 'named_provider' }
   }
 
-  // Calendar commitment — "Thursday at 3pm", "tomorrow at 2"
-  if (/\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today)\s+at\s+\d/i.test(body)) {
-    return { ok: false, violation: 'committed_calendar_slot' }
+  // Calendar commitment — multiple shapes:
+  //   "Thursday at 3pm", "tomorrow at 2"      (day-name + at + digit)
+  //   "see you at 3pm", "see you at 11:30"    (greeting + time-like)
+  //   "I'll book you in", "we'll see you"     (commitment phrasing)
+  //   "scheduled you for"                     (already-booked phrasing)
+  // The "see you at X" digit is constrained to a real time pattern
+  // (1-12 with optional :MM or am/pm) so phrases like "see you at the
+  // consultation" don't trip the rule.
+  const CALENDAR_PATTERNS = [
+    /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today)\s+at\s+\d/i,
+    /\bsee\s+you\s+at\s+(?:1[0-2]|0?[1-9])(?::[0-5]\d)?\s*(?:am|pm)?\b/i,
+    /\bi['’]?ll\s+book\b/i,
+    /\bwe['’]?ll\s+see\s+you\b/i,
+    /\bscheduled\s+you\s+for\b/i,
+  ]
+  for (const re of CALENDAR_PATTERNS) {
+    if (re.test(body)) return { ok: false, violation: 'committed_calendar_slot' }
   }
 
-  // Discount language
+  // Discount language.
   if (/\b\d+\s*%\s*(?:off|discount)\b/i.test(body) || /\bpromo\s*code\b/i.test(body)) {
     return { ok: false, violation: 'discount_offered' }
+  }
+
+  // Profanity — tight, English-only word list. Acceptable scope for
+  // W4; revisit when we ship non-US clinics.
+  const PROFANITY_RE = /\b(?:fuck|shit|asshole)\b/i
+  if (PROFANITY_RE.test(body)) {
+    return { ok: false, violation: 'profanity' }
+  }
+
+  // Length cap — LAST, after all content rules, so a draft that
+  // violates a content rule still reports the more useful reason.
+  // 160 chars matches the SMS character budget the model is told to
+  // hit; the disclosure footer is appended at send time.
+  if (body.trim().length > 160) {
+    return { ok: false, violation: 'too_long' }
   }
 
   return { ok: true }
@@ -300,10 +343,13 @@ function guardrailNudge(violation: string): string {
   switch (violation) {
     case 'quoted_price':           return 'Do NOT include any dollar amount, price, or discount.'
     case 'quoted_dose':            return 'Do NOT mention units, ml, mg, or syringes.'
+    case 'medical_advice':         return 'Do NOT give medical advice. Avoid "you should", "stop taking", or describing side effects.'
     case 'promised_outcome':       return 'Do NOT promise outcomes. No "you\'ll look", no "guaranteed".'
     case 'named_provider':         return 'Do NOT name a specific provider.'
-    case 'committed_calendar_slot':return 'Do NOT commit to a specific day-and-time slot.'
+    case 'committed_calendar_slot':return 'Do NOT commit to a specific day-and-time slot or say you have booked the patient.'
     case 'discount_offered':       return 'Do NOT offer a discount or promo code.'
+    case 'profanity':              return 'Do NOT use profanity. Stay professional.'
+    case 'too_long':               return 'Your reply was too long. Keep it under 160 characters.'
     default:                       return 'Re-read the hard rules and stay strictly within them.'
   }
 }
@@ -348,7 +394,9 @@ export async function autoDraftForInbound(args: {
       .maybeSingle()
     if (existing) return
 
-    // Hydrate context.
+    // Hydrate context. Pull the AI Twin org-level controls in the same
+    // round-trip so we don't need a second SELECT after deciding to
+    // proceed.
     const [{ data: contact }, { data: org }, { data: history }] = await Promise.all([
       supabaseAdmin
         .from('contacts_active')
@@ -358,7 +406,7 @@ export async function autoDraftForInbound(args: {
         .single(),
       supabaseAdmin
         .from('organizations')
-        .select('name')
+        .select('name, timezone, ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end')
         .eq('id', args.organizationId)
         .single(),
       supabaseAdmin
@@ -372,6 +420,13 @@ export async function autoDraftForInbound(args: {
 
     if (!contact) {
       console.warn('[ai-twin] autoDraft: contact not found', args.contactId)
+      return
+    }
+
+    // Master switch: silently skip when the org has disabled the AI
+    // Twin. We don't write a row and we don't log activity — the
+    // owner asked for silence.
+    if (org && org.ai_twin_enabled === false) {
       return
     }
 
@@ -422,6 +477,17 @@ export async function autoDraftForInbound(args: {
       return
     }
 
+    // Quiet hours: if we're inside the org's configured window, defer
+    // making this draft visible to the inbox until the window closes.
+    // The draft itself is still generated and persisted so the model
+    // context is fresh; only the read path hides it.
+    const availableAfter = computeAvailableAfter(
+      new Date(),
+      org?.timezone ?? null,
+      (org?.ai_twin_quiet_hours_start as string | null) ?? null,
+      (org?.ai_twin_quiet_hours_end as string | null) ?? null,
+    )
+
     await supabaseAdmin.from('ai_drafts').insert({
       organization_id:    args.organizationId,
       contact_id:         args.contactId,
@@ -431,6 +497,7 @@ export async function autoDraftForInbound(args: {
       model:              MODEL,
       context_snapshot:   result.contextSnapshot,
       state:              'pending',
+      available_after:    availableAfter,
     })
 
     await supabaseAdmin.from('activity_log').insert({
