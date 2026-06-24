@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/ui/logo-mark'
@@ -18,13 +19,17 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard },
-  { href: '/leads',            label: 'Leads & Contacts', icon: Users },
-  { href: '/import-contacts',  label: 'Import Contacts',  icon: Upload },
-  { href: '/pipeline',         label: 'Pipeline',         icon: Kanban },
-  { href: '/consultations',    label: 'Consultations',    icon: CalendarCheck },
-  { href: '/automations',      label: 'Automations',      icon: Zap },
-  { href: '/settings',         label: 'Settings',         icon: Settings },
+  { href: '/dashboard',            label: 'Dashboard',        icon: LayoutDashboard },
+  { href: '/leads',                label: 'Leads & Contacts', icon: Users },
+  { href: '/import-contacts',      label: 'Import Contacts',  icon: Upload },
+  { href: '/pipeline',             label: 'Pipeline',         icon: Kanban },
+  { href: '/consultations',        label: 'Consultations',    icon: CalendarCheck },
+  // In-page anchor — the dashboard scroll container has scroll-behavior:
+  // smooth and the #performance heading has scroll-mt-24 so this jumps
+  // smoothly. Never lights up the active state (handled below).
+  { href: '/dashboard#performance', label: 'Analytics',       icon: BarChart3 },
+  { href: '/automations',          label: 'Automations',      icon: Zap },
+  { href: '/settings',             label: 'Settings',         icon: Settings },
 ]
 
 /**
@@ -59,7 +64,10 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
       {/* Nav — forest text on cream throughout */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href)
+          // pathname has no hash, so href.includes('#') guarantees in-
+          // page anchor entries never light up — keeps Dashboard the
+          // only active row on /dashboard.
+          const active = href.includes('#') ? false : pathname.startsWith(href)
           return (
             <Link
               key={href}
