@@ -1,28 +1,43 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Paperclip, Smile, Sparkles, Send } from 'lucide-react'
+import { Paperclip, Smile, Sparkles, Send, X } from 'lucide-react'
 
 /**
  * Inline SMS composer for the inbox conversation pane. Sends directly
  * to /api/leads/[id]/send-sms — no modal — so the inbox feels like a
  * messaging app instead of a CRM-form workflow.
  *
- * Behaviour:
+ * AI Front-Desk Twin (Phase 1 Week 2):
+ *  - When the parent passes a `pendingDraft`, the composer pre-fills
+ *    the textarea with the draft body the first time it's seen and
+ *    shows an "AI suggested" banner above the input. The user can
+ *    Send (resolves draft as 'sent' with edit_distance=0), edit and
+ *    Send (resolves as 'edited' with the real distance), or Discard
+ *    (PATCHes the draft to 'rejected').
+ *  - draft_id is threaded through the send-sms POST so the server
+ *    can compute distance + append the disclosure footer at send
+ *    time. The footer is NOT shown in the composer — it's appended
+ *    by the route so the user never sees (or can delete) it.
+ *  - The manual AI Draft button still works for contacts without an
+ *    auto-generated pending draft.
+ *
+ * Other behaviour preserved:
  *  - Textarea grows up to ~4 lines, Enter sends, Shift+Enter newlines.
- *  - AI Draft hits /api/leads/[id]/draft-message and replaces the
- *    textarea contents (with a confirm prompt if there's existing
- *    text). Same endpoint the SendSmsDialog uses.
- *  - Opted-out: composer disabled with a red inline notice. Mirrors
- *    the dialog's hard-block.
- *  - No-consent: inline amber notice + a "I have consent" checkbox
- *    must be ticked before sending. Sends with
- *    manual_consent_confirmed: true so the server's audit log
- *    captures it. Mirrors the dialog's TCPA-safe flow exactly.
+ *  - Opted-out: composer disabled with a red inline notice.
+ *  - No-consent: amber notice + "I have consent" checkbox required.
  *  - Phone missing: composer disabled with notice.
- *  - On success, calls onSent() so the parent pane can refresh its
- *    message list immediately (instead of waiting for the next poll
- *    tick).
+ *  - On success, calls onSent() so the parent pane refreshes.
  */
+
+interface PendingDraft {
+  id: string
+  draft_body: string
+  draft_subject: string | null
+  channel: 'sms' | 'email'
+  model: string
+  trigger_message_id: string | null
+  generated_at: string
+}
 
 interface Props {
   contactId: string
@@ -30,7 +45,9 @@ interface Props {
   firstName: string
   smsConsent: boolean
   optedOutSms: boolean
+  pendingDraft?: PendingDraft | null
   onSent: () => void
+  onDraftResolved?: () => void
 }
 
 function smsSegmentInfo(text: string): { chars: number; segments: number } {
@@ -45,7 +62,9 @@ export function InlineComposer({
   firstName,
   smsConsent,
   optedOutSms,
+  pendingDraft,
   onSent,
+  onDraftResolved,
 }: Props) {
   const [body, setBody] = useState('')
   const [consentChecked, setConsentChecked] = useState(false)
@@ -53,6 +72,11 @@ export function InlineComposer({
   const [errorMsg, setErrorMsg] = useState('')
   const [drafting, setDrafting] = useState(false)
   const [draftError, setDraftError] = useState('')
+  // The draft we're currently editing. When the parent passes a new
+  // pendingDraft we mirror it into local state; from then on the user
+  // owns the body until they Send, Discard, or switch contacts.
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
+  const [discarding, setDiscarding] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   const hasPhone = !!contactPhone
@@ -76,7 +100,23 @@ export function InlineComposer({
     setErrorMsg('')
     setDrafting(false)
     setDraftError('')
+    setActiveDraftId(null)
+    setDiscarding(false)
   }, [contactId])
+
+  // When a new pending draft arrives (or appears on initial mount),
+  // pre-fill the composer. Only if the user hasn't started typing — we
+  // never overwrite in-progress text on a poll-tick refresh.
+  useEffect(() => {
+    if (!pendingDraft) return
+    if (pendingDraft.id === activeDraftId) return // already mirrored
+    if (body.trim().length > 0 && activeDraftId === null) return // user is mid-type
+    setBody(pendingDraft.draft_body)
+    setActiveDraftId(pendingDraft.id)
+    setStatus('idle')
+    setErrorMsg('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDraft?.id])
 
   // Auto-grow the textarea up to ~4 lines.
   useEffect(() => {
@@ -98,18 +138,48 @@ export function InlineComposer({
         body: JSON.stringify({
           body: trimmed,
           manual_consent_confirmed: needsConsentConfirm ? true : undefined,
+          // Pass the draft id when present so the server resolves the
+          // draft + appends the disclosure footer. Server tolerates a
+          // stale draft id (already resolved → ignored).
+          draft_id: activeDraftId ?? undefined,
         }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.message ?? json.error ?? `HTTP ${res.status}`)
-      // Reset + notify parent. Parent refreshes the message list.
+      // Reset + notify parent. Parent refreshes the message list AND
+      // the pending-draft endpoint, so the draft pre-fill clears too.
       setBody('')
       setConsentChecked(false)
       setStatus('idle')
+      setActiveDraftId(null)
       onSent()
     } catch (err: any) {
       setStatus('error')
       setErrorMsg(err.message ?? 'Failed to send')
+    }
+  }
+
+  async function handleDiscardDraft() {
+    if (!activeDraftId || discarding) return
+    setDiscarding(true)
+    try {
+      const res = await fetch(`/api/ai-drafts/${activeDraftId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject' }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.message ?? json.error ?? `HTTP ${res.status}`)
+      }
+      setBody('')
+      setActiveDraftId(null)
+      onDraftResolved?.()
+    } catch (err: any) {
+      // Failed to discard — show error but don't lose the body.
+      setDraftError(err.message ?? 'Failed to discard draft')
+    } finally {
+      setDiscarding(false)
     }
   }
 
@@ -136,8 +206,13 @@ export function InlineComposer({
       if (typeof json.draft !== 'string' || !json.draft) {
         throw new Error("Couldn't generate a draft — try again.")
       }
+      // Manual-draft button doesn't get a draft_id (the legacy endpoint
+      // doesn't persist). Manual sends go through the non-disclosure
+      // path. If we later want manual drafts persisted, the legacy
+      // endpoint can start writing ai_drafts rows the same way the
+      // inbound hook does.
       setBody(json.draft)
-      // Focus so the user can keep typing.
+      setActiveDraftId(null)
       textareaRef.current?.focus()
     } catch (err: any) {
       setDraftError(err.message ?? 'Failed to draft')
@@ -174,9 +249,32 @@ export function InlineComposer({
     )
   }
 
+  const showingDraft = !!activeDraftId
+
   return (
     <div className="border-t border-[#0B2027]/8 bg-white px-5 py-3">
       <div className="mx-auto max-w-3xl space-y-2">
+        {/* AI draft banner — shown when the textarea contents originated
+            from a pending suggestion. Disappears the moment the user
+            sends or discards. */}
+        {showingDraft && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[#02C39A]/30 bg-[#02C39A]/[0.08] px-3 py-1.5">
+            <p className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#04B08C]">
+              <Sparkles className="h-3.5 w-3.5" fill="currentColor" />
+              AI suggested · review, edit, or discard
+            </p>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              disabled={discarding || status === 'sending'}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11.5px] font-semibold text-[#0B2027]/70 hover:bg-white hover:text-[#0B2027] transition-colors disabled:opacity-60"
+            >
+              <X className="h-3 w-3" />
+              {discarding ? 'Discarding…' : 'Discard'}
+            </button>
+          </div>
+        )}
+
         {needsConsentConfirm && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">
             <p className="font-medium">No SMS consent on file</p>
@@ -215,7 +313,7 @@ export function InlineComposer({
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Write a message…"
+            placeholder={showingDraft ? 'AI draft above — edit or send as-is' : 'Write a message…'}
             disabled={status === 'sending'}
             rows={1}
             className="flex-1 resize-none bg-transparent text-sm text-[#0B2027] placeholder:text-[#0B2027]/45 focus:outline-none disabled:opacity-60 py-1.5 leading-[22px]"
@@ -229,6 +327,10 @@ export function InlineComposer({
           >
             <Smile className="h-4 w-4" />
           </button>
+          {/* The manual AI Draft button stays available even when a
+              pending draft is loaded, so the user can re-roll if the
+              suggestion is off. Calling it clears the draft binding so
+              the next send is treated as a manual send. */}
           <button
             type="button"
             onClick={handleDraft}
@@ -236,7 +338,7 @@ export function InlineComposer({
             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#02C39A] px-3 text-[12px] font-semibold text-[#0B2027] hover:bg-[#02C39A]/90 transition-colors disabled:opacity-60"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            {drafting ? 'Drafting…' : 'AI Draft'}
+            {drafting ? 'Drafting…' : showingDraft ? 'Re-draft' : 'AI Draft'}
           </button>
           <button
             type="button"

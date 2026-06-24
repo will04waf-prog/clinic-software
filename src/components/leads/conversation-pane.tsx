@@ -53,8 +53,19 @@ const POLL_INTERVAL_MS = 15_000
  *     Draft button + circular send arrow. The AI Draft button opens
  *     the existing SendSmsDialog, which already wires AI drafting.
  */
+interface PendingDraft {
+  id: string
+  draft_body: string
+  draft_subject: string | null
+  channel: 'sms' | 'email'
+  model: string
+  trigger_message_id: string | null
+  generated_at: string
+}
+
 export function ConversationPane({ contact, onArchived }: ConversationPaneProps) {
   const [messages, setMessages] = useState<Message[]>([])
+  const [pendingDraft, setPendingDraft] = useState<PendingDraft | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
@@ -67,16 +78,36 @@ export function ConversationPane({ contact, onArchived }: ConversationPaneProps)
     if (!silent) setLoading(true)
     if (!silent) setError(null)
     try {
-      const res = await fetch(`/api/contacts/${contactId}/messages`, { cache: 'no-store' })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? `HTTP ${res.status}`)
+      // Messages and the pending draft are fetched together so the
+      // composer pre-fill arrives in the same render tick as the
+      // conversation history. The /pending-draft endpoint is cheap
+      // (single-row maybeSingle) so paying for it on every poll is
+      // fine.
+      const [msgRes, draftRes] = await Promise.all([
+        fetch(`/api/contacts/${contactId}/messages`, { cache: 'no-store' }),
+        fetch(`/api/contacts/${contactId}/pending-draft`, { cache: 'no-store' }),
+      ])
+
+      if (!msgRes.ok) {
+        const body = await msgRes.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${msgRes.status}`)
       }
-      const { messages: data } = (await res.json()) as { messages: Message[] }
-      const sig = data.map(m => `${m.id}:${m.status}`).join('|')
+      const { messages: data } = (await msgRes.json()) as { messages: Message[] }
+
+      // Signature includes the pending-draft id so a brand-new
+      // suggestion arriving while the user is on the thread also
+      // triggers a re-render.
+      let draftData: PendingDraft | null = null
+      if (draftRes.ok) {
+        const { draft } = (await draftRes.json()) as { draft: PendingDraft | null }
+        draftData = draft
+      }
+
+      const sig = data.map(m => `${m.id}:${m.status}`).join('|') + `|d:${draftData?.id ?? '-'}`
       if (silent && sig === lastSignatureRef.current) return
       lastSignatureRef.current = sig
       setMessages(data ?? [])
+      setPendingDraft(draftData)
     } catch (err: any) {
       console.error('[conversation-pane] load error:', err)
       if (!silent) setError(err.message ?? 'Failed to load messages')
@@ -88,6 +119,7 @@ export function ConversationPane({ contact, onArchived }: ConversationPaneProps)
   // Reset + initial load when the selected contact changes.
   useEffect(() => {
     lastSignatureRef.current = ''
+    setPendingDraft(null)
     setMessages([])
     setError(null)
     if (contactId) load()
@@ -324,7 +356,9 @@ export function ConversationPane({ contact, onArchived }: ConversationPaneProps)
         firstName={contact.first_name}
         smsConsent={(contact as unknown as { sms_consent?: boolean }).sms_consent === true}
         optedOutSms={contact.opted_out_sms === true}
+        pendingDraft={pendingDraft}
         onSent={() => load(true)}
+        onDraftResolved={() => load(true)}
       />
     </div>
   )
