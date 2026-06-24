@@ -29,6 +29,20 @@ export const VOICE_EXAMPLE_CLASSES = [
 export type VoiceExampleClass = typeof VOICE_EXAMPLE_CLASSES[number]
 
 /**
+ * Human-readable labels — single source of truth for UI surfaces and
+ * the voice-health aggregator. Adding a class to the enum forces TS
+ * to surface a missing label here.
+ */
+export const VOICE_CLASS_LABEL: Record<VoiceExampleClass, string> = {
+  greeting:        'Welcome / first reply',
+  faq:             'Answering a question',
+  follow_up:       'Follow-up nudge',
+  consult_confirm: 'Consult confirmation',
+  follow_up_cold:  'Re-engaging cold lead',
+  custom:          'Other',
+}
+
+/**
  * When the requested class has fewer than 3 matching examples, walk
  * these fallback classes (in order) to fill the slots. 'custom' is
  * never used as a fallback target — it's a catch-all bucket the

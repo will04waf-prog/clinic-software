@@ -8,6 +8,7 @@ import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
 import { AiVoiceTrainingCard } from '@/components/settings/ai-voice-training-card'
+import { AiVoiceHealthCard } from '@/components/settings/ai-voice-health-card'
 import { ChangePasswordCard } from '@/components/settings/change-password-card'
 import { SignOutButton } from '@/components/ui/sign-out-button'
 
@@ -89,6 +90,10 @@ export default async function SettingsPage() {
         {/* Voice training (Phase 2 W6). Loads via /api/org/voice-profile
             + /api/org/voice-examples, so no server prefetch needed. */}
         <AiVoiceTrainingCard />
+
+        {/* Voice training health (Phase 2 W8). Loads via /api/org/voice-health
+            — surfaces edit-pattern signals + recommendations. */}
+        <AiVoiceHealthCard />
 
         <Card>
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>

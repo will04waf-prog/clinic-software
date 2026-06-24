@@ -442,12 +442,13 @@ export function AiVoiceTrainingCard() {
           )}
         </section>
 
-        {/* Phase 2 W6 honest scoping note. Removed when W7 lands. */}
+        {/* Phase 2 W7+ reality: voice is live in drafts. */}
         <div className="rounded-lg bg-[#02C39A]/10 border border-[#02C39A]/30 px-3 py-2 text-[12px] text-[#04B08C]">
-          <p className="font-semibold">Coming next: drafts that use your voice</p>
+          <p className="font-semibold">Your drafts are tuned to this voice</p>
           <p className="mt-0.5 text-[#026B78]">
-            We're collecting tone + examples now. Next week, every AI draft will be
-            tuned to match what you save here.
+            AI drafts use your tone settings and pull matching examples into the
+            prompt. See "Voice training health" below to track how well it's
+            working over time.
           </p>
         </div>
       </CardContent>
