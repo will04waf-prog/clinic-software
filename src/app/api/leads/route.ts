@@ -49,10 +49,17 @@ export async function GET(req: NextRequest) {
 
   if (status) query = query.eq('status', status)
 
-  // Run in parallel: contacts + latest inbound timestamp per contact.
-  // The inbound query is org-scoped and indexed on contact_id; we then
-  // reduce in JS to a Map<contact_id, latestCreatedAt>.
-  const [{ data: contacts, error }, { data: inbound, error: inboundError }] = await Promise.all([
+  // Run in parallel: contacts + latest inbound timestamp per contact
+  // + the set of contacts with a currently-visible pending AI draft.
+  // All three are org-scoped + indexed; the drafts aggregate is the
+  // cheapest of the three because it filters on the partial index
+  // ai_drafts_org_pending_idx (state='pending').
+  const nowIso = new Date().toISOString()
+  const [
+    { data: contacts, error },
+    { data: inbound, error: inboundError },
+    { data: pendingDrafts, error: draftError },
+  ] = await Promise.all([
     query,
     supabase
       .from('messages')
@@ -60,10 +67,23 @@ export async function GET(req: NextRequest) {
       .eq('organization_id', profile.organization_id)
       .eq('direction', 'inbound')
       .order('created_at', { ascending: false }),
+    supabase
+      .from('ai_drafts')
+      .select('contact_id')
+      .eq('organization_id', profile.organization_id)
+      .eq('state', 'pending')
+      .or(`available_after.is.null,available_after.lte.${nowIso}`),
   ])
 
   if (error)        return NextResponse.json({ error: error.message },        { status: 500 })
   if (inboundError) return NextResponse.json({ error: inboundError.message }, { status: 500 })
+  // Drafts are non-essential to inbox rendering — if the query fails
+  // (table missing, column missing during a deploy skew, RLS hiccup)
+  // we degrade to has_pending_draft=false rather than 500ing the
+  // inbox itself.
+  if (draftError) {
+    console.error('[api/leads] pending-draft aggregate failed:', draftError.message)
+  }
 
   const latestInboundByContact = new Map<string, string>()
   for (const row of inbound ?? []) {
@@ -74,7 +94,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Flatten the nested tags join + derive has_unread.
+  const pendingDraftContactIds = new Set<string>()
+  if (!draftError) {
+    for (const row of pendingDrafts ?? []) {
+      if (row.contact_id) pendingDraftContactIds.add(row.contact_id)
+    }
+  }
+
+  // Flatten the nested tags join + derive has_unread + has_pending_draft.
   const normalized = (contacts ?? []).map((c: any) => {
     const latest = latestInboundByContact.get(c.id)
     const seen   = c.messages_last_seen_at
@@ -82,6 +109,7 @@ export async function GET(req: NextRequest) {
       ...c,
       tags: (c.tags ?? []).map((t: any) => t.tag).filter(Boolean),
       has_unread: !!latest && (!seen || latest > seen),
+      has_pending_draft: pendingDraftContactIds.has(c.id),
     }
   })
 

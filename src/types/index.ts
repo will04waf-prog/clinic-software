@@ -140,6 +140,11 @@ export interface Contact {
   // Derived by /api/leads — true when an inbound message arrived
   // after messages_last_seen_at.
   has_unread?: boolean
+  // Derived by /api/leads via aggregate over ai_drafts where
+  // state='pending' AND (available_after IS NULL OR available_after
+  // <= now()). Drives the inbox Sparkles indicator + "AI ready"
+  // filter without per-row N+1 fetches.
+  has_pending_draft?: boolean
 }
 
 export interface Consultation {

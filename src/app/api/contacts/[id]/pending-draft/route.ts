@@ -41,11 +41,18 @@ export async function GET(
     .single()
   if (!contact) return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
 
+  // Visibility predicate matches the /api/leads aggregate so the
+  // inbox Sparkles flag and the composer pre-fill agree on whether a
+  // draft is currently surfaceable. NULL = visible immediately;
+  // a future timestamp keeps a scheduled draft out of sight until
+  // its cool-down expires.
+  const nowIso = new Date().toISOString()
   const { data: draft, error } = await supabase
     .from('ai_drafts')
     .select('id, draft_body, draft_subject, channel, model, trigger_message_id, generated_at')
     .eq('contact_id', id)
     .eq('state', 'pending')
+    .or(`available_after.is.null,available_after.lte.${nowIso}`)
     .order('generated_at', { ascending: false })
     .limit(1)
     .maybeSingle()

@@ -17,7 +17,7 @@ const POLL_INTERVAL_MS = 20_000
 
 function contactsSignature(rows: Contact[]): string {
   return rows
-    .map((c) => `${c.id}:${c.has_unread ? 1 : 0}:${c.last_activity_at ?? ''}:${c.status}:${c.is_archived ? 1 : 0}`)
+    .map((c) => `${c.id}:${c.has_unread ? 1 : 0}:${c.has_pending_draft ? 1 : 0}:${c.last_activity_at ?? ''}:${c.status}:${c.is_archived ? 1 : 0}`)
     .join('|')
 }
 
@@ -127,8 +127,9 @@ export default function LeadsInboxPage() {
   // same as before).
   const filteredContacts = useMemo(() => {
     let rows = contacts
-    if (filter === 'unread') rows = rows.filter(c => c.has_unread)
-    if (filter === 'booked') rows = rows.filter(c => c.status === 'patient')
+    if (filter === 'unread')   rows = rows.filter(c => c.has_unread)
+    if (filter === 'booked')   rows = rows.filter(c => c.status === 'patient')
+    if (filter === 'ai_ready') rows = rows.filter(c => c.has_pending_draft)
     const q = search.toLowerCase().trim()
     if (q) {
       const qDigits = q.replace(/\D/g, '')
@@ -148,6 +149,21 @@ export default function LeadsInboxPage() {
         )
       })
     }
+    // Only on the All filter do we re-sort by priority. The Unread /
+    // Booked / AI ready filters already isolate the cohort they care
+    // about, so a secondary sort would just shuffle within-cohort
+    // ordering relative to last_activity_at.
+    //
+    // Array.prototype.sort is stable in modern V8, so equal priority
+    // rows keep the server's last_activity_at desc ordering.
+    if (filter === 'all') {
+      const priority = (c: Contact) => {
+        if (c.has_pending_draft) return 0
+        if (c.has_unread)        return 1
+        return 2
+      }
+      rows = rows.slice().sort((a, b) => priority(a) - priority(b))
+    }
     return rows
   }, [contacts, filter, search])
 
@@ -159,7 +175,10 @@ export default function LeadsInboxPage() {
     if (loading) return
     if (selectedId) { autoSelectedRef.current = true; return }
     if (contacts.length === 0) return
-    const target = contacts.find(c => c.has_unread) ?? contacts[0]
+    const target =
+      contacts.find(c => c.has_pending_draft) ??
+      contacts.find(c => c.has_unread) ??
+      contacts[0]
     if (target) {
       const params = new URLSearchParams(searchParams.toString())
       params.set('c', target.id)
@@ -179,8 +198,9 @@ export default function LeadsInboxPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
-  const unreadTotal = useMemo(() => contacts.filter(c => c.has_unread).length, [contacts])
-  const bookedTotal = useMemo(() => contacts.filter(c => c.status === 'patient').length, [contacts])
+  const unreadTotal  = useMemo(() => contacts.filter(c => c.has_unread).length, [contacts])
+  const bookedTotal  = useMemo(() => contacts.filter(c => c.status === 'patient').length, [contacts])
+  const aiReadyTotal = useMemo(() => contacts.filter(c => c.has_pending_draft).length, [contacts])
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -221,6 +241,7 @@ export default function LeadsInboxPage() {
                     onChange={setFilter}
                     unreadCount={unreadTotal}
                     bookedCount={bookedTotal}
+                    aiReadyCount={aiReadyTotal}
                   />
                 }
               />

@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { MoreHorizontal, Search } from 'lucide-react'
+import { MoreHorizontal, Search, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -64,7 +64,20 @@ export function InboxList({
     }
   }
 
-  const unreadTotal = contacts.filter(c => c.has_unread).length
+  const unreadTotal  = contacts.filter(c => c.has_unread).length
+  const aiReadyTotal = contacts.filter(c => c.has_pending_draft).length
+
+  // One chip total. When both counts are non-zero we collapse to a
+  // single "N new · M AI ready" line so the header doesn't grow a
+  // second pill on busy days. Empty state is empty — no zero pills.
+  let headerChip: string | null = null
+  if (unreadTotal > 0 && aiReadyTotal > 0) {
+    headerChip = `${unreadTotal} new · ${aiReadyTotal} AI ready`
+  } else if (unreadTotal > 0) {
+    headerChip = `${unreadTotal} new`
+  } else if (aiReadyTotal > 0) {
+    headerChip = `${aiReadyTotal} AI ready`
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden border-r border-[#0B2027]/8 bg-white">
@@ -72,9 +85,9 @@ export function InboxList({
       <div className="border-b border-[#0B2027]/8 px-4 pt-4 pb-3 space-y-3">
         <div className="flex items-center gap-2">
           <h2 className="text-[15px] font-semibold text-[#0B2027]">Inbox</h2>
-          {unreadTotal > 0 && (
+          {headerChip && (
             <span className="inline-flex items-center rounded-full bg-[#02C39A]/15 px-2 py-0.5 text-[11px] font-semibold text-[#028090]">
-              {unreadTotal} new
+              {headerChip}
             </span>
           )}
         </div>
@@ -119,16 +132,25 @@ export function InboxList({
                 <ContactAvatar firstName={contact.first_name} lastName={contact.last_name} size="md" />
 
                 <div className="min-w-0 flex-1">
-                  {/* Top row — name + time */}
+                  {/* Top row — name + sparkle + time */}
                   <div className="flex items-start justify-between gap-3">
-                    <p
-                      className={cn(
-                        'truncate text-[14px] leading-tight text-[#0B2027]',
-                        contact.has_unread ? 'font-semibold' : 'font-medium',
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <p
+                        className={cn(
+                          'truncate text-[14px] leading-tight text-[#0B2027]',
+                          contact.has_unread ? 'font-semibold' : 'font-medium',
+                        )}
+                      >
+                        {name}
+                      </p>
+                      {contact.has_pending_draft && (
+                        <Sparkles
+                          aria-label="AI draft ready"
+                          className="h-3.5 w-3.5 shrink-0 text-[#02C39A] [animation:twin-pulse_2.4s_ease-in-out_infinite]"
+                          fill="currentColor"
+                        />
                       )}
-                    >
-                      {name}
-                    </p>
+                    </div>
                     {time && (
                       <span className="shrink-0 text-[11px] text-[#0B2027]/45">
                         {time}
