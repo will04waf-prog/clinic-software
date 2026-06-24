@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * filter live in the URL so the back button works.
  */
 
-type FilterState = 'all' | 'sent' | 'edited' | 'rejected' | 'blocked'
+type FilterState = 'all' | 'sent' | 'edited' | 'rejected' | 'blocked' | 'auto_sent'
 
 type DraftStateCol =
   | 'pending'
@@ -21,6 +21,7 @@ type DraftStateCol =
   | 'rejected'
   | 'expired'
   | 'guardrail_failed'
+  | 'auto_sent'
 
 interface DraftRow {
   id: string
@@ -341,12 +342,13 @@ function DraftCard({ row }: { row: DraftRow }) {
 
 function stateBadgeProps(state: DraftStateCol): { label: string; bg: string; fg: string } {
   switch (state) {
-    case 'sent':             return { label: 'Sent',     bg: '#02C39A22', fg: '#04B08C' }
-    case 'edited':           return { label: 'Edited',   bg: '#02809022', fg: '#026B78' }
-    case 'rejected':         return { label: 'Rejected', bg: '#B5710F22', fg: '#B5710F' }
-    case 'guardrail_failed': return { label: 'Blocked',  bg: '#B5710F22', fg: '#B5710F' }
-    case 'expired':          return { label: 'Expired',  bg: '#0B202714', fg: '#14241D' }
-    case 'pending':          return { label: 'Pending',  bg: '#0B202714', fg: '#14241D' }
+    case 'sent':             return { label: 'Sent',       bg: '#02C39A22', fg: '#04B08C' }
+    case 'edited':           return { label: 'Edited',     bg: '#02809022', fg: '#026B78' }
+    case 'auto_sent':        return { label: 'Auto-sent',  bg: '#02809033', fg: '#028090' }
+    case 'rejected':         return { label: 'Rejected',   bg: '#B5710F22', fg: '#B5710F' }
+    case 'guardrail_failed': return { label: 'Blocked',    bg: '#B5710F22', fg: '#B5710F' }
+    case 'expired':          return { label: 'Expired',    bg: '#0B202714', fg: '#14241D' }
+    case 'pending':          return { label: 'Pending',    bg: '#0B202714', fg: '#14241D' }
   }
 }
 

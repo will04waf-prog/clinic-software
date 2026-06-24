@@ -44,6 +44,7 @@ interface ClassMetrics {
   sent_with_minor_edits: number
   sent_with_significant_edits: number
   sent_with_heavy_edits: number
+  auto_sent: number
   rejected: number
   guardrail_failed: number
   avg_edit_ratio: number | null
@@ -286,6 +287,7 @@ function BarBucket({ cm }: { cm: ClassMetrics }) {
     `${cm.sent_with_minor_edits} minor edits, ` +
     `${cm.sent_with_significant_edits} significant edits, ` +
     `${cm.sent_with_heavy_edits} heavy edits, ` +
+    `${cm.auto_sent} auto-sent, ` +
     `${cm.rejected + cm.guardrail_failed} rejected or blocked`
   return (
     <div
@@ -297,6 +299,7 @@ function BarBucket({ cm }: { cm: ClassMetrics }) {
       <span className="bg-[#02C39A]/60"   style={{ width: seg(cm.sent_with_minor_edits) }} />
       <span className="bg-[#B5710F]/70"   style={{ width: seg(cm.sent_with_significant_edits) }} />
       <span className="bg-red-500/80"     style={{ width: seg(cm.sent_with_heavy_edits) }} />
+      <span className="bg-[#028090]/70"   style={{ width: seg(cm.auto_sent) }} />
       <span className="bg-gray-300"       style={{ width: seg(cm.rejected + cm.guardrail_failed) }} />
     </div>
   )

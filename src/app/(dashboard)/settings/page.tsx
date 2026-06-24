@@ -9,6 +9,7 @@ import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
 import { AiVoiceTrainingCard } from '@/components/settings/ai-voice-training-card'
 import { AiVoiceHealthCard } from '@/components/settings/ai-voice-health-card'
+import { AiAutoSendCard } from '@/components/settings/ai-auto-send-card'
 import { ChangePasswordCard } from '@/components/settings/change-password-card'
 import { SignOutButton } from '@/components/ui/sign-out-button'
 
@@ -94,6 +95,10 @@ export default async function SettingsPage() {
         {/* Voice training health (Phase 2 W8). Loads via /api/org/voice-health
             — surfaces edit-pattern signals + recommendations. */}
         <AiVoiceHealthCard />
+
+        {/* Autonomous send (Phase 2 W9). Loads via /api/org/auto-send-settings
+            — master toggle + per-class allowlist + recent auto-sends. */}
+        <AiAutoSendCard />
 
         <Card>
           <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>

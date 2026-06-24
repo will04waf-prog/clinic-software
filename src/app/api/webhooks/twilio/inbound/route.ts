@@ -286,6 +286,7 @@ export async function POST(request: Request) {
       organizationId:    orgId,
       contactId:         contactId!,
       triggerMessageId:  insertedMessage.id,
+      inboundBody:       bodyRaw,
     })
   }
 

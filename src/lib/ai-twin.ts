@@ -34,6 +34,8 @@ import {
   VOICE_EXAMPLE_CLASSES,
   type VoiceExampleClass,
 } from '@/lib/voice-profile'
+import { classifyInbound, type ClassifierResult } from '@/lib/inbound-classifier'
+import { attemptAutoSend } from '@/lib/auto-send'
 
 // Phase 2 W7 — voice training tunables.
 //
@@ -574,26 +576,6 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-/**
- * Infer messageClass from history. We only ever call this from the
- * auto-draft path (autoDraftForInbound) — manual callers pass
- * messageClass explicitly.
- *
- * Heuristic: if the clinic has NEVER replied (no outbound messages
- * in the window), treat as 'greeting' — this is a first-touch
- * situation regardless of how many inbound bursts the lead sent.
- * Once at least one outbound exists, the conversation is in flight
- * and the patient is almost always asking something → 'faq'.
- * Fancier classification (consult_confirm via "yes book me",
- * follow_up_cold via re-engagement) is deferred to W8 once we have
- * edit-pattern data.
- */
-function inferMessageClass(
-  recentMessages: Array<{ direction: 'inbound' | 'outbound' }>,
-): VoiceExampleClass {
-  return recentMessages.some(m => m.direction === 'outbound') ? 'faq' : 'greeting'
-}
-
 
 function guardrailNudge(violation: string): string {
   switch (violation) {
@@ -638,16 +620,18 @@ export async function autoDraftForInbound(args: {
   organizationId: string
   contactId: string
   triggerMessageId: string
+  /** Raw inbound body — required for classifier + safety triggers. */
+  inboundBody: string
 }): Promise<void> {
   try {
     // Idempotency: don't create a second draft if one already exists
-    // for this trigger. The unique partial index also enforces this
-    // at the DB level — this just avoids the API call.
+    // for this trigger. Includes pending + auto_sent so the
+    // autonomous send path can't double-fire on a webhook retry.
     const { data: existing } = await supabaseAdmin
       .from('ai_drafts')
-      .select('id')
+      .select('id, state')
       .eq('trigger_message_id', args.triggerMessageId)
-      .eq('state', 'pending')
+      .in('state', ['pending', 'auto_sent'])
       .maybeSingle()
     if (existing) return
 
@@ -657,13 +641,13 @@ export async function autoDraftForInbound(args: {
     const [{ data: contact }, { data: org }, { data: history }] = await Promise.all([
       supabaseAdmin
         .from('contacts_active')
-        .select('id, first_name, procedure_interest, source, status, created_at, last_contacted_at, sms_consent, opted_out_sms')
+        .select('id, first_name, phone, procedure_interest, source, status, created_at, last_contacted_at, sms_consent, opted_out_sms')
         .eq('id', args.contactId)
         .eq('organization_id', args.organizationId)
         .single(),
       supabaseAdmin
         .from('organizations')
-        .select('name, timezone, ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end')
+        .select('name, timezone, ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end, ai_twin_auto_send_enabled, ai_twin_auto_send_classes')
         .eq('id', args.organizationId)
         .single(),
       supabaseAdmin
@@ -697,6 +681,13 @@ export async function autoDraftForInbound(args: {
       .reverse()
       .map(m => ({ channel: m.channel, direction: m.direction, body: m.body }))
 
+    // W9 — classify the inbound up front. The classifier output may
+    // be 'unknown', in which case we still generate a draft (using
+    // 'faq' as the prompt class for example selection) but never
+    // qualify for auto-send.
+    const classified: ClassifierResult = classifyInbound(args.inboundBody, recentMessages)
+    const promptClass: VoiceExampleClass = classified === 'unknown' ? 'faq' : classified
+
     const ctx: DraftContext = {
       contactId: args.contactId,
       organizationId: args.organizationId,
@@ -712,7 +703,7 @@ export async function autoDraftForInbound(args: {
       clinicName: org?.name ?? 'our clinic',
       recentMessages,
       triggerMessageId: args.triggerMessageId,
-      messageClass: inferMessageClass(recentMessages),
+      messageClass: promptClass,
     }
 
     const result = await generateDraft(ctx)
@@ -747,19 +738,83 @@ export async function autoDraftForInbound(args: {
       (org?.ai_twin_quiet_hours_start as string | null) ?? null,
       (org?.ai_twin_quiet_hours_end as string | null) ?? null,
     )
+    const isInQuietHours = availableAfter !== null
 
-    await supabaseAdmin.from('ai_drafts').insert({
-      organization_id:    args.organizationId,
-      contact_id:         args.contactId,
-      channel:            'sms',
-      trigger_message_id: args.triggerMessageId,
-      draft_body:         result.body,
+    // Persist the raw classifier verdict alongside the prompt class
+    // so W8 metrics can distinguish "model said 'unknown', we forced
+    // 'faq'" from "classifier returned faq directly". The prompt
+    // class drives example selection; the classified value is the
+    // source of truth for the inbound's actual intent.
+    const contextSnapshotWithClass = {
+      ...result.contextSnapshot,
+      classified_class: classified,
+    }
+
+    // ── W9: pre-claim the trigger as a pending draft. ──
+    // The unique partial index on (trigger_message_id) WHERE state
+    // ='pending' is our mutex. Two concurrent webhooks (retry, race)
+    // serialize here — only the winning insert proceeds to Twilio.
+    // The loser exits silently.
+    const { data: draftRow, error: claimErr } = await supabaseAdmin
+      .from('ai_drafts')
+      .insert({
+        organization_id:    args.organizationId,
+        contact_id:         args.contactId,
+        channel:            'sms',
+        trigger_message_id: args.triggerMessageId,
+        draft_body:         result.body,
+        model:              MODEL,
+        context_snapshot:   contextSnapshotWithClass,
+        state:              'pending',
+        available_after:    availableAfter,
+      })
+      .select('id')
+      .single()
+
+    if (claimErr || !draftRow) {
+      // 23505 = duplicate trigger (concurrent invocation won the
+      // race). Other errors logged and bailed; the next call/retry
+      // can pick it up.
+      if (claimErr && (claimErr as { code?: string }).code === '23505') {
+        console.info('[ai-twin] another instance claimed this trigger; exiting')
+      } else {
+        console.error('[ai-twin] pending ai_drafts pre-claim failed:', claimErr)
+      }
+      return
+    }
+
+    // ── W9: attempt autonomous send. ──
+    // Refuses by default. attemptAutoSend transitions the pre-claimed
+    // pending row to 'auto_sent' on success; on refusal/failure the
+    // row stays 'pending' for the human to handle (no double-send).
+    const autoSendOutcome = await attemptAutoSend({
+      organizationId:     args.organizationId,
+      contactId:          args.contactId,
+      contactPhone:       (contact.phone as string | null) ?? null,
+      contactSmsConsent:  contact.sms_consent === true,
+      contactOptedOut:    contact.opted_out_sms === true,
+      clinicName:         org?.name ?? 'our clinic',
+      orgAutoSendEnabled: (org?.ai_twin_auto_send_enabled as boolean | null) === true,
+      orgAutoSendClasses: ((org?.ai_twin_auto_send_classes as string[] | null) ?? []),
+      isInQuietHours,
+      triggerMessageId:   args.triggerMessageId,
+      messageClass:       classified,
+      inboundBody:        args.inboundBody,
+      draftBody:          result.body,
+      disclosureFooter:   disclosureFooter(org?.name ?? 'our clinic'),
       model:              MODEL,
-      context_snapshot:   result.contextSnapshot,
-      state:              'pending',
-      available_after:    availableAfter,
+      draftRowId:         draftRow.id,
     })
 
+    if (autoSendOutcome.ok) {
+      console.info('[ai-twin] auto-sent', { orgId: args.organizationId, contactId: args.contactId, messageId: autoSendOutcome.messageId, class: classified })
+      return
+    }
+
+    console.info('[ai-twin] auto-send skipped — pending draft retained', { orgId: args.organizationId, contactId: args.contactId, reason_code: autoSendOutcome.reason_code })
+
+    // Activity log for the human-review pending draft. The
+    // pre-claimed row already lives in ai_drafts(state='pending').
     await supabaseAdmin.from('activity_log').insert({
       organization_id: args.organizationId,
       contact_id:      args.contactId,
@@ -769,6 +824,8 @@ export async function autoDraftForInbound(args: {
         model: MODEL,
         trigger: 'inbound_auto',
         trigger_message_id: args.triggerMessageId,
+        message_class: classified,
+        auto_send_skipped_reason: autoSendOutcome.reason_code,
       },
     })
   } catch (err) {

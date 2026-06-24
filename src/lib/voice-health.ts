@@ -72,7 +72,7 @@ export const VOICE_LIFT_NEGATIVE_THRESHOLD = -0.05 // ≤-5% (worse) → "harmfu
 
 // ─── Types ─────────────────────────────────────────────────────────
 
-export type HealthDraftState = 'sent' | 'edited' | 'rejected' | 'guardrail_failed' | 'pending' | 'expired'
+export type HealthDraftState = 'sent' | 'edited' | 'rejected' | 'guardrail_failed' | 'pending' | 'expired' | 'auto_sent'
 
 /**
  * Row shape we pull from ai_drafts. The voice_* fields live inside
@@ -111,6 +111,8 @@ export interface ClassMetrics {
   sent_with_minor_edits: number
   sent_with_significant_edits: number
   sent_with_heavy_edits: number
+  /** Phase 2 W9 — drafts auto-sent without human review. */
+  auto_sent: number
   rejected: number
   guardrail_failed: number
   /**
@@ -203,6 +205,7 @@ export function computeVoiceHealth(
       counts.sent_with_minor_edits +
       counts.sent_with_significant_edits +
       counts.sent_with_heavy_edits +
+      counts.auto_sent +
       counts.rejected +
       counts.guardrail_failed
 
@@ -285,6 +288,7 @@ interface EditBuckets {
   sent_with_minor_edits: number
   sent_with_significant_edits: number
   sent_with_heavy_edits: number
+  auto_sent: number
   rejected: number
   guardrail_failed: number
 }
@@ -295,12 +299,20 @@ function bucketByEdit(rows: ReadonlyArray<HealthDraftRow>): EditBuckets {
     sent_with_minor_edits: 0,
     sent_with_significant_edits: 0,
     sent_with_heavy_edits: 0,
+    auto_sent: 0,
     rejected: 0,
     guardrail_failed: 0,
   }
   for (const r of rows) {
     if (r.state === 'sent') {
       b.sent_unchanged += 1
+      continue
+    }
+    if (r.state === 'auto_sent') {
+      // Separate bucket — auto-sent has no human edit signal, so
+      // it doesn't belong in sent_unchanged or any edit-ratio
+      // bucket. Surfaced distinctly in the UI.
+      b.auto_sent += 1
       continue
     }
     if (r.state === 'edited') {

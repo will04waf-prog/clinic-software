@@ -18,6 +18,7 @@ type DraftState =
   | 'rejected'
   | 'expired'
   | 'guardrail_failed'
+  | 'auto_sent'
 
 interface DraftRow {
   id: string
@@ -32,6 +33,7 @@ interface PeriodCounts {
   drafts_generated_this_week: number
   sent_unchanged_count: number
   sent_edited_count: number
+  auto_sent_count: number
   rejected_count: number
   guardrail_failed_count: number
 }
@@ -57,6 +59,7 @@ function bucket(rows: DraftRow[]): PeriodCounts {
     drafts_generated_this_week: 0,
     sent_unchanged_count: 0,
     sent_edited_count: 0,
+    auto_sent_count: 0,
     rejected_count: 0,
     guardrail_failed_count: 0,
   }
@@ -68,6 +71,10 @@ function bucket(rows: DraftRow[]): PeriodCounts {
         break
       case 'edited':
         c.sent_edited_count += 1
+        c.drafts_generated_this_week += 1
+        break
+      case 'auto_sent':
+        c.auto_sent_count += 1
         c.drafts_generated_this_week += 1
         break
       case 'rejected':
@@ -144,7 +151,10 @@ async function build(
     ? Math.round(edited.reduce((sum, r) => sum + (r.edit_distance ?? 0), 0) / edited.length)
     : 0
 
-  const acceptedThisWeek = current.sent_unchanged_count + current.sent_edited_count
+  // Auto-sent drafts count toward "accepted" — they're outbound
+  // SMS that went out and saved the staffer time (more than reviewed
+  // drafts, even, since no human was in the loop).
+  const acceptedThisWeek = current.sent_unchanged_count + current.sent_edited_count + current.auto_sent_count
   const hoursSaved = Math.round((acceptedThisWeek * MINUTES_SAVED_PER_DRAFT) / 6) / 10
 
   const top5 = thisWeek

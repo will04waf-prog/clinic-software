@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 
 const PAGE_SIZE = 50
 
-const StateFilter = z.enum(['all', 'sent', 'edited', 'rejected', 'blocked'])
+const StateFilter = z.enum(['all', 'sent', 'edited', 'rejected', 'blocked', 'auto_sent'])
 
 const QuerySchema = z.object({
   state: StateFilter.optional().default('all'),
@@ -26,6 +26,7 @@ type DraftStateCol =
   | 'rejected'
   | 'expired'
   | 'guardrail_failed'
+  | 'auto_sent'
 
 export interface DraftRow {
   id: string
