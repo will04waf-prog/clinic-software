@@ -3,15 +3,45 @@
  *
  * Lives on organizations.ai_twin_voice_profile (jsonb column, default
  * '{}'). We chose jsonb over discrete columns so future Phase 2 work
- * (W7 few-shot wiring, W8 edit-pattern auto-tuning) can extend the
- * shape without per-field migrations.
+ * (W8 edit-pattern auto-tuning) can extend the shape without
+ * per-field migrations.
  *
- * Phase 2 W6 stores it. Phase 2 W7 reads it into draft prompts. W6
- * code paths only touch the read/validate side — drafts are
- * unchanged this week.
+ * Phase 2 W6 stored it. Phase 2 W7 wires it into generateDraft() —
+ * see src/lib/ai-twin.ts.
  */
 
 import { z } from 'zod'
+
+// ─── Message class taxonomy ────────────────────────────────────────
+//
+// The class enum matches the DB CHECK constraint on voice_examples.class.
+// Order matters for UI listings and fallback walks below.
+
+export const VOICE_EXAMPLE_CLASSES = [
+  'greeting',
+  'faq',
+  'follow_up',
+  'consult_confirm',
+  'follow_up_cold',
+  'custom',
+] as const
+
+export type VoiceExampleClass = typeof VOICE_EXAMPLE_CLASSES[number]
+
+/**
+ * When the requested class has fewer than 3 matching examples, walk
+ * these fallback classes (in order) to fill the slots. 'custom' is
+ * never used as a fallback target — it's a catch-all bucket the
+ * clinic owner uses, and the semantics are unknown to us.
+ */
+export const FALLBACK_CLASS_ORDER: Record<VoiceExampleClass, VoiceExampleClass[]> = {
+  greeting:        ['faq', 'follow_up'],
+  faq:             ['greeting', 'follow_up'],
+  follow_up:       ['follow_up_cold', 'faq'],
+  consult_confirm: ['follow_up', 'faq'],
+  follow_up_cold:  ['follow_up', 'faq'],
+  custom:          ['faq', 'follow_up'],
+}
 
 // Tone sliders are 0-100. 0 and 100 are the extremes the user reads
 // as the slider labels; everything in between is a blend.
@@ -27,17 +57,64 @@ export const MAX_BANNED_PHRASES = 30
 export const MAX_BANNED_PHRASE_LEN = 60
 export const MAX_SIGNOFF_LEN = 80
 
+// Minimum banned-phrase length. Single chars or short stop-words
+// like "a", "the", "you" would brick every draft via the
+// banned_phrase guardrail. 3 chars rules out the worst cases while
+// still allowing useful short phrases like "tbh" or "lol".
+export const MIN_BANNED_PHRASE_LEN = 3
+
+// Phrase characters that would corrupt the system prompt if
+// concatenated verbatim — newlines could open a new instruction
+// section; quotes could escape the wrapping context.
+const PROMPT_UNSAFE_CHARS = /[\n\r"]/
+
 // Zod schema for incoming PATCH payloads. The DB column is jsonb with
 // no constraints, so this is the only place we enforce shape.
-export const VoiceProfileSchema = z.object({
-  tone_formal: z.number().int().min(0).max(100).optional(),
-  tone_warm:   z.number().int().min(0).max(100).optional(),
-  banned_phrases: z
-    .array(z.string().min(1).max(MAX_BANNED_PHRASE_LEN))
-    .max(MAX_BANNED_PHRASES)
-    .optional(),
-  custom_signoff: z.string().max(MAX_SIGNOFF_LEN).nullable().optional(),
-})
+//
+// Schema is also reused on the READ path (readVoiceProfile uses
+// safeParse and falls back to defaults). The strict rules here mean
+// that pre-W7 data violating the new constraints will silently fall
+// back to defaults on read — acceptable because W6 just shipped and
+// no production data exists yet.
+export const VoiceProfileSchema = z
+  .object({
+    tone_formal: z.number().int().min(0).max(100).optional(),
+    tone_warm:   z.number().int().min(0).max(100).optional(),
+    banned_phrases: z
+      .array(
+        z
+          .string()
+          .min(MIN_BANNED_PHRASE_LEN, `Banned phrases must be at least ${MIN_BANNED_PHRASE_LEN} characters.`)
+          .max(MAX_BANNED_PHRASE_LEN)
+          .refine(s => !PROMPT_UNSAFE_CHARS.test(s), 'Banned phrases cannot contain quotes or line breaks.'),
+      )
+      .max(MAX_BANNED_PHRASES)
+      .optional(),
+    custom_signoff: z
+      .string()
+      .max(MAX_SIGNOFF_LEN)
+      .refine(s => !PROMPT_UNSAFE_CHARS.test(s), 'Sign-off cannot contain quotes or line breaks.')
+      .nullable()
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Sign-off must not contain any of the org's banned phrases —
+    // otherwise the model is told to sign off with X AND told
+    // never to say X, and every draft fails the banned_phrase
+    // guardrail forever.
+    if (!data.custom_signoff || !data.banned_phrases?.length) return
+    const lower = data.custom_signoff.toLowerCase()
+    for (const phrase of data.banned_phrases) {
+      if (lower.includes(phrase.toLowerCase())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['custom_signoff'],
+          message: `Sign-off contains a banned phrase ("${phrase}"). Remove the phrase or change the sign-off.`,
+        })
+        return
+      }
+    }
+  })
 
 export type VoiceProfile = z.infer<typeof VoiceProfileSchema>
 
@@ -68,17 +145,19 @@ export function readVoiceProfile(raw: unknown): Required<VoiceProfile> {
 export function voiceProfileToPromptFragment(profile: Required<VoiceProfile>): string {
   const lines: string[] = []
 
-  // Tone — only emit when the slider has moved off the midpoint band.
-  // The thresholds avoid generating noisy prompt text for orgs that
-  // accepted the defaults without thinking about it.
-  if (profile.tone_formal <= 25) {
+  // Tone — only emit when the slider has CROSSED a quartile boundary.
+  // Strict comparisons (<25 / >75) ensure that the all-defaults
+  // profile (tone_formal=55, tone_warm=25) emits NOTHING — voice
+  // settings are opt-in. The user has to actively pull the slider
+  // past the boundary for a tone rule to appear.
+  if (profile.tone_formal < 25) {
     lines.push('Tone: casual, like texting a friend. Use contractions.')
-  } else if (profile.tone_formal >= 75) {
+  } else if (profile.tone_formal > 75) {
     lines.push('Tone: formal. Use full sentences, no contractions.')
   }
-  if (profile.tone_warm <= 25) {
+  if (profile.tone_warm < 25) {
     lines.push('Warmth: very warm, personable, conversational.')
-  } else if (profile.tone_warm >= 75) {
+  } else if (profile.tone_warm > 75) {
     lines.push('Warmth: clinical and efficient, not chatty.')
   }
 

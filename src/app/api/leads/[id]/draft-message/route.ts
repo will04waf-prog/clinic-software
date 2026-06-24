@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
-import { formatProcedure } from '@/lib/utils'
+import { generateDraft, type DraftContext } from '@/lib/ai-twin'
+
+/**
+ * POST /api/leads/[id]/draft-message — manual "AI Draft" button on
+ * the lead detail page. Pre-W7 this route inlined its own Anthropic
+ * call with no guardrails; W7 unifies it on generateDraft() so the
+ * same voice profile, examples, banned-phrase enforcement, and
+ * retry-with-nudge logic apply on BOTH manual and auto paths.
+ *
+ * messageClass is hardcoded to 'follow_up' — staff click Draft when
+ * they want to proactively re-engage a lead. The auto-draft path
+ * (inbound webhook) uses 'greeting'/'faq' based on history. A future
+ * UI dropdown could let staff override the class.
+ */
 
 const BodySchema = z.object({
   channel: z.enum(['sms', 'email']),
@@ -29,7 +41,7 @@ export async function POST(
   if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const orgId = profile.organization_id
-  const org   = profile.organization as any
+  const org   = profile.organization as { name?: string } | null
 
   let rawBody: unknown
   try {
@@ -50,7 +62,6 @@ export async function POST(
     )
   }
 
-  // Org-scoped contact fetch (explicit, belt + suspenders with RLS).
   const { data: contact } = await supabase
     .from('contacts_active')
     .select('id, first_name, procedure_interest, source, status, created_at, last_contacted_at, organization_id')
@@ -60,7 +71,7 @@ export async function POST(
 
   if (!contact) return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
 
-  // Rate limit: count ai_draft_generated entries in the last hour for this org.
+  // Rate limit: 20 ai_draft_generated entries per org per hour.
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
   const { count: recentDraftCount } = await supabase
     .from('activity_log')
@@ -79,179 +90,93 @@ export async function POST(
     )
   }
 
-  // Recent message history (last 5, newest first), org-scoped.
-  const { data: recentMessages } = await supabase
+  // Recent message history (last 5, oldest first to match DraftContext).
+  const { data: recentMessagesRaw } = await supabase
     .from('messages')
-    .select('channel, direction, body, sent_at, created_at')
+    .select('channel, direction, body, created_at')
     .eq('contact_id', contactId)
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
     .limit(5)
 
-  const procedures = (contact.procedure_interest as string[] | null ?? [])
-    .map(formatProcedure)
-    .filter(Boolean)
-
-  const daysSinceCreated = daysSince(contact.created_at as string)
-  const daysSinceLastContact = contact.last_contacted_at
-    ? daysSince(contact.last_contacted_at as string)
-    : null
-
-  const messageSummary = (recentMessages ?? [])
+  const recentMessages = ((recentMessagesRaw ?? []) as Array<{ channel: string; direction: 'inbound' | 'outbound'; body: string }>)
     .reverse()
-    .map(m => {
-      const dir = m.direction === 'outbound' ? 'We sent' : 'They sent'
-      const ch  = m.channel === 'sms' ? 'SMS' : 'email'
-      const preview = (m.body ?? '').slice(0, 120).replace(/\s+/g, ' ')
-      return `- ${dir} (${ch}): "${preview}${(m.body ?? '').length > 120 ? '…' : ''}"`
-    })
-    .join('\n')
+    .map(m => ({ channel: m.channel, direction: m.direction, body: m.body ?? '' }))
 
-  const systemPrompt = channel === 'sms'
-    ? SMS_SYSTEM_PROMPT
-    : EMAIL_SYSTEM_PROMPT
-
-  const userPrompt = buildUserPrompt({
-    firstName: contact.first_name,
+  const ctx: DraftContext = {
+    contactId,
+    organizationId: orgId,
+    channel,
+    firstName: (contact.first_name as string | null) ?? 'there',
+    procedureInterest: (contact.procedure_interest as string[] | null) ?? [],
+    source: (contact.source as string | null) ?? null,
+    status: (contact.status as string | null) ?? null,
+    daysSinceCreated: daysSince(contact.created_at as string),
+    daysSinceLastContact: contact.last_contacted_at
+      ? daysSince(contact.last_contacted_at as string)
+      : null,
     clinicName: org?.name ?? 'our clinic',
-    procedures,
-    source: contact.source as string | null,
-    status: contact.status as string | null,
-    daysSinceCreated,
-    daysSinceLastContact,
-    messageSummary,
-  })
+    recentMessages,
+    triggerMessageId: null,
+    messageClass: 'follow_up',
+  }
 
-  const client = new Anthropic()
+  const result = await generateDraft(ctx)
 
-  try {
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 300,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    })
-
-    const textBlock = response.content.find(b => b.type === 'text')
-    const rawText = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
-
-    if (!rawText) {
+  if (!result.ok) {
+    if (result.reason === 'guardrail_failed') {
+      return NextResponse.json(
+        {
+          error: 'guardrail_failed',
+          message: "AI draft hit a safety rule — try clicking Draft again.",
+          violation: result.violation ?? null,
+        },
+        { status: 502 },
+      )
+    }
+    if (result.reason === 'empty') {
       return NextResponse.json(
         { error: 'empty_response', message: "Couldn't generate draft — try again." },
         { status: 502 },
       )
     }
-
-    // Log the draft event for rate-limiting. Body content is NOT stored —
-    // drafts are not sends, and we don't want them in user-visible message history.
-    await supabase.from('activity_log').insert({
-      organization_id: orgId,
-      contact_id:      contactId,
-      action:          'ai_draft_generated',
-      metadata: {
-        channel,
-        model: 'claude-haiku-4-5',
-      },
-    })
-
-    if (channel === 'email') {
-      const { subject, body } = splitEmailDraft(rawText)
-      return NextResponse.json({ subject, draft: body })
-    }
-
-    return NextResponse.json({ draft: rawText })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'AI draft failed'
     return NextResponse.json(
-      { error: 'draft_failed', message: "Couldn't generate draft — try again.", detail: message },
+      { error: 'draft_failed', message: "Couldn't generate draft — try again.", detail: result.detail },
       { status: 502 },
     )
   }
+
+  // Log the draft event for rate-limiting + observability. Body
+  // intentionally NOT stored — drafts aren't sends, and manual
+  // drafts don't land in ai_drafts (only auto-drafts do, by design).
+  await supabase.from('activity_log').insert({
+    organization_id: orgId,
+    contact_id:      contactId,
+    action:          'ai_draft_generated',
+    metadata: {
+      channel,
+      model: 'claude-haiku-4-5',
+      trigger: 'manual',
+      voice_class: (result.contextSnapshot?.voice_class as string | undefined) ?? null,
+      voice_examples_used: (result.contextSnapshot?.voice_examples_used as number | undefined) ?? 0,
+    },
+  })
+
+  if (channel === 'email') {
+    return NextResponse.json({ subject: result.subject ?? '', draft: result.body })
+  }
+  // SMS: the W7 unified prompt forbids a model-emitted signature
+  // because the inbound auto-draft path has the disclosure footer
+  // appended at send time. The manual path doesn't get that footer
+  // (no draft_id, no AI-disclosure path), so we append a plain
+  // clinic-name signoff here so staff don't have to type it every
+  // time. Matches the W6 manual-draft user experience.
+  const clinicName = org?.name ?? 'our clinic'
+  const signedOff = `${result.body}\n— ${clinicName}`
+  return NextResponse.json({ draft: signedOff })
 }
 
 function daysSince(iso: string): number {
   const ms = Date.now() - new Date(iso).getTime()
   return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)))
-}
-
-interface PromptVars {
-  firstName: string
-  clinicName: string
-  procedures: string[]
-  source: string | null
-  status: string | null
-  daysSinceCreated: number
-  daysSinceLastContact: number | null
-  messageSummary: string
-}
-
-function buildUserPrompt(v: PromptVars): string {
-  const lines: string[] = []
-  lines.push(`Contact first name: ${v.firstName}`)
-  lines.push(`Procedure interest: ${v.procedures.length > 0 ? v.procedures.join(', ') : 'unspecified'}`)
-  lines.push(`Lead source: ${v.source ?? 'unknown'}`)
-  lines.push(`Lead status: ${v.status ?? 'lead'}`)
-  lines.push(`Days since lead created: ${v.daysSinceCreated}`)
-  lines.push(
-    v.daysSinceLastContact !== null
-      ? `Days since last contacted: ${v.daysSinceLastContact}`
-      : `Last contacted: never`,
-  )
-  lines.push(`Clinic name: ${v.clinicName}`)
-  if (v.messageSummary) {
-    lines.push(``)
-    lines.push(`Recent message history (oldest first):`)
-    lines.push(v.messageSummary)
-  }
-  lines.push(``)
-  lines.push(`Write the follow-up message now. Output ONLY the message text, no preamble or commentary.`)
-  return lines.join('\n')
-}
-
-const SMS_SYSTEM_PROMPT = `You write warm, professional follow-up SMS messages from a med spa or aesthetic clinic to a prospective patient.
-
-Hard rules:
-- Maximum 160 characters total.
-- No emojis.
-- No pushy sales language ("act now", "limited time", "don't miss out").
-- Reference the contact's procedure interest naturally if one is provided.
-- Include a soft call to action — offer to book a consultation or answer questions.
-- Never invent medical claims, before/after results, specific outcomes, pricing, discounts, or promotions.
-- Never claim a procedure is "right for them" or guarantee results.
-- Address the contact by first name.
-- Sign off as the clinic name.
-
-Output ONLY the SMS body text. No preamble, no quotes, no labels.`
-
-const EMAIL_SYSTEM_PROMPT = `You write warm, professional follow-up emails from a med spa or aesthetic clinic to a prospective patient.
-
-Hard rules:
-- First line is exactly: Subject: <subject line here>
-- Then a blank line, then the email body.
-- Email body is 3-4 short sentences, plain text only.
-- No emojis.
-- No pushy sales language.
-- Reference the contact's procedure interest naturally if one is provided.
-- Include a soft call to action — offer to book a consultation or answer questions.
-- Never invent medical claims, before/after results, specific outcomes, pricing, discounts, or promotions.
-- Never claim a procedure is "right for them" or guarantee results.
-- Address the contact by first name.
-- Sign off using the clinic name.
-
-Output ONLY the email in the format described. No preamble, no quotes, no commentary.`
-
-function splitEmailDraft(raw: string): { subject: string; body: string } {
-  // Model is instructed to emit "Subject: ..." then blank line then body.
-  const lines = raw.split('\n')
-  const firstLine = lines[0]?.trim() ?? ''
-  const subjectMatch = firstLine.match(/^subject\s*:\s*(.+)$/i)
-
-  if (subjectMatch) {
-    const subject = subjectMatch[1].trim()
-    const body = lines.slice(1).join('\n').replace(/^\s+/, '').trim()
-    return { subject, body }
-  }
-
-  // Fallback: no Subject prefix — return the whole thing as body, leave subject empty.
-  return { subject: '', body: raw }
 }

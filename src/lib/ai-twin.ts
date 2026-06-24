@@ -27,6 +27,23 @@ import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { formatProcedure } from '@/lib/utils'
 import { computeAvailableAfter } from '@/lib/quiet-hours'
+import {
+  readVoiceProfile,
+  voiceProfileToPromptFragment,
+  FALLBACK_CLASS_ORDER,
+  VOICE_EXAMPLE_CLASSES,
+  type VoiceExampleClass,
+} from '@/lib/voice-profile'
+
+// Phase 2 W7 — voice training tunables.
+//
+// MAX_VOICE_EXAMPLES caps how many past-message exemplars get
+// injected into the system prompt. 3 keeps the SMS prompt under ~2KB
+// even when each example is at the 400-char render cap. Most clinics
+// will save 5-10 examples per class; we pick the newest by class +
+// fallback walk so old examples don't pollute current voice.
+const MAX_VOICE_EXAMPLES = 3
+const MAX_EXAMPLE_BODY_CHARS = 400
 
 const MODEL = 'claude-haiku-4-5'
 const MAX_TOKENS = 300
@@ -48,6 +65,13 @@ export interface DraftContext {
   recentMessages: Array<{ direction: 'inbound' | 'outbound'; channel: string; body: string }>
   /** Inbound message that triggered this auto-draft. Null for manual invocations. */
   triggerMessageId: string | null
+  /**
+   * Phase 2 W7 — what KIND of message the twin is drafting. Drives
+   * which voice_examples get pulled in as exemplars and what tone
+   * fallbacks apply. Optional; defaults to 'faq' inside generateDraft
+   * (the most common real-world case — patient asks, twin answers).
+   */
+  messageClass?: VoiceExampleClass
 }
 
 export type DraftResult =
@@ -76,8 +100,17 @@ export type DraftResult =
  * These rules MUST match the prohibitions in the system prompt;
  * the model usually obeys, the guardrails catch the cases where
  * it doesn't.
+ *
+ * W7: optional opts.bannedPhrases adds a per-org banned-phrase
+ * check between profanity and too_long. Omitting opts preserves
+ * exact W6 behavior. The phrase list is the owner's voice-profile
+ * banned_phrases array — semantic matches (case-insensitive,
+ * word-boundary where safe, substring fallback otherwise).
  */
-export function checkGuardrails(body: string): { ok: true } | { ok: false; violation: string } {
+export function checkGuardrails(
+  body: string,
+  opts?: { bannedPhrases?: string[] },
+): { ok: true } | { ok: false; violation: string } {
   // Price quoting: $ followed by digits, "20 dollars", "20.00".
   // Kept first — it's the most specific and the highest-stakes rule
   // for med-spa compliance.
@@ -156,6 +189,26 @@ export function checkGuardrails(body: string): { ok: true } | { ok: false; viola
     return { ok: false, violation: 'profanity' }
   }
 
+  // Per-org banned phrases (Phase 2 W7). Placed AFTER compliance
+  // rules so a banned-phrase match doesn't preempt a price or
+  // medical-advice violation. Word-boundary match when the phrase
+  // is pure alphanumeric+spaces; substring includes() fallback for
+  // phrases with apostrophes or punctuation ("y'all", "no problem!").
+  if (opts?.bannedPhrases && opts.bannedPhrases.length > 0) {
+    const lowerBody = body.toLowerCase()
+    for (const phrase of opts.bannedPhrases) {
+      const p = phrase.trim()
+      if (!p) continue
+      const lowerP = p.toLowerCase()
+      if (/^[\w\s]+$/.test(p)) {
+        const re = new RegExp(`\\b${escapeRegex(p)}\\b`, 'i')
+        if (re.test(body)) return { ok: false, violation: 'banned_phrase' }
+      } else if (lowerBody.includes(lowerP)) {
+        return { ok: false, violation: 'banned_phrase' }
+      }
+    }
+  }
+
   // Length cap — LAST, after all content rules, so a draft that
   // violates a content rule still reports the more useful reason.
   // 160 chars matches the SMS character budget the model is told to
@@ -165,6 +218,10 @@ export function checkGuardrails(body: string): { ok: true } | { ok: false; viola
   }
 
   return { ok: true }
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 // ─── Disclosure footer ─────────────────────────────────────
@@ -276,9 +333,62 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
     return { ok: false, reason: 'api_error', detail: 'ANTHROPIC_API_KEY missing' }
   }
 
-  const client = new Anthropic()
-  const systemPrompt = ctx.channel === 'sms' ? SMS_SYSTEM_PROMPT : EMAIL_SYSTEM_PROMPT
+  // Defensive class resolution — if a future caller (or a JSON
+  // boundary cast) passes a string not in the enum, fall back to
+  // 'faq'. Prevents a TypeError when FALLBACK_CLASS_ORDER[bad] is
+  // undefined inside the for-of in selectVoiceExamples.
+  const requested = ctx.messageClass
+  const resolvedClass: VoiceExampleClass =
+    requested && (VOICE_EXAMPLE_CLASSES as readonly string[]).includes(requested)
+      ? requested
+      : 'faq'
+
+  // Fetch voice profile + the org's top-30 examples in parallel.
+  // Selection (class match + fallback) happens in-process from the
+  // 30-row window — keeps the hot path to one round-trip when the
+  // exact class has zero matches and the fallback walk needs to see
+  // every class. limit(30) matches the org-level soft cap enforced
+  // by the API on insert.
+  //
+  // Either query failing → degrade gracefully to defaults (no voice
+  // applied). The warning logs let an outage on voice_examples show
+  // up in observability instead of silently reverting every org.
+  const [orgRes, examplesRes] = await Promise.all([
+    supabaseAdmin
+      .from('organizations')
+      .select('ai_twin_voice_profile')
+      .eq('id', ctx.organizationId)
+      .single(),
+    supabaseAdmin
+      .from('voice_examples')
+      .select('id, class, label, body, created_at')
+      .eq('organization_id', ctx.organizationId)
+      .order('created_at', { ascending: false })
+      .limit(30),
+  ])
+  if (orgRes.error)      console.warn('[ai-twin] voice profile fetch failed:',  ctx.organizationId, orgRes.error.message)
+  if (examplesRes.error) console.warn('[ai-twin] voice examples fetch failed:', ctx.organizationId, examplesRes.error.message)
+
+  const profile = readVoiceProfile(orgRes.data?.ai_twin_voice_profile ?? {})
+  const voiceFragment = voiceProfileToPromptFragment(profile)
+  // Email examples are deferred — saved exemplars are SMS-flavored
+  // (short, fragmented) and pushing the model toward that shape
+  // conflicts with the email prompt's 3-4-sentence rule. Skip until
+  // a future migration adds a `channel` column on voice_examples.
+  const selectedExamples = ctx.channel === 'sms'
+    ? selectVoiceExamples(examplesRes.data ?? [], resolvedClass)
+    : []
+  const examplesBlock = renderVoiceExamplesBlock(selectedExamples)
+
+  const baseSystemPrompt = ctx.channel === 'sms' ? SMS_SYSTEM_PROMPT : EMAIL_SYSTEM_PROMPT
+  // Both fragment and examples-block supply their own leading
+  // whitespace (or empty string) — direct concatenation produces a
+  // byte-identical W6 prompt when profile is all-defaults AND
+  // examples is empty.
+  const systemPrompt = baseSystemPrompt + voiceFragment + examplesBlock
   const userPrompt = buildUserPrompt(ctx)
+
+  const client = new Anthropic()
 
   const contextSnapshot: Record<string, unknown> = {
     channel: ctx.channel,
@@ -290,6 +400,18 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
     recent_messages_count: ctx.recentMessages.length,
     trigger_message_id: ctx.triggerMessageId,
     model: MODEL,
+    // ── W7 voice metadata ──────────────────────────────────────
+    // Snapshot the voice signals at draft time so W8 edit-pattern
+    // analysis can correlate edit_distance with voice settings even
+    // after the org tweaks them later.
+    voice_class: resolvedClass,
+    voice_examples_used: selectedExamples.length,
+    voice_example_classes_used: selectedExamples.map(e => e.class),
+    voice_profile_active: voiceFragment.length > 0,
+    voice_applied: voiceFragment.length > 0 || selectedExamples.length > 0,
+    voice_banned_phrases_count: profile.banned_phrases.length,
+    voice_tone_formal: profile.tone_formal,
+    voice_tone_warm: profile.tone_warm,
   }
 
   async function callOnce(extraNudge?: string): Promise<{ raw: string } | { error: string }> {
@@ -309,6 +431,8 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
     }
   }
 
+  const guardrailOpts = { bannedPhrases: profile.banned_phrases }
+
   // First attempt.
   const first = await callOnce()
   if ('error' in first) {
@@ -317,7 +441,14 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
   }
 
   const { body: firstBody, subject: firstSubject } = ctx.channel === 'email' ? splitEmailDraft(first.raw) : { body: first.raw, subject: undefined }
-  const firstCheck = checkGuardrails(firstBody)
+  // Email subjects often carry marketing-y rule violations (prices,
+  // discounts, promised outcomes). Run guardrails on subject+body
+  // for email so the subject can't slip a violation through. SMS
+  // has no subject.
+  const firstCheckTarget = ctx.channel === 'email' && firstSubject
+    ? `${firstSubject}\n${firstBody}`
+    : firstBody
+  const firstCheck = checkGuardrails(firstCheckTarget, guardrailOpts)
   if (firstCheck.ok) {
     return { ok: true, body: firstBody, subject: firstSubject, contextSnapshot }
   }
@@ -326,10 +457,19 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
   const nudge = guardrailNudge(firstCheck.violation)
   const retry = await callOnce(nudge)
   if ('error' in retry) {
-    return { ok: false, reason: 'guardrail_failed', detail: firstCheck.violation, violation: firstCheck.violation, contextSnapshot }
+    // Retry call itself failed (network blip, rate limit, empty
+    // response). Don't mislabel as guardrail_failed — that's a
+    // content judgment, this was an infra failure.
+    if (retry.error === 'empty') {
+      return { ok: false, reason: 'empty', detail: 'Retry returned empty', contextSnapshot }
+    }
+    return { ok: false, reason: 'api_error', detail: retry.error, contextSnapshot }
   }
   const { body: retryBody, subject: retrySubject } = ctx.channel === 'email' ? splitEmailDraft(retry.raw) : { body: retry.raw, subject: undefined }
-  const retryCheck = checkGuardrails(retryBody)
+  const retryCheckTarget = ctx.channel === 'email' && retrySubject
+    ? `${retrySubject}\n${retryBody}`
+    : retryBody
+  const retryCheck = checkGuardrails(retryCheckTarget, guardrailOpts)
   if (retryCheck.ok) {
     return { ok: true, body: retryBody, subject: retrySubject, contextSnapshot }
   }
@@ -344,6 +484,117 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
   }
 }
 
+// ─── Voice example selection + rendering ───────────────────
+
+interface VoiceExampleRow {
+  id: string
+  class: VoiceExampleClass
+  label: string | null
+  body: string
+  created_at: string
+}
+
+/**
+ * Pick up to MAX_VOICE_EXAMPLES exemplars from the org's saved rows,
+ * preferring exact-class matches and walking FALLBACK_CLASS_ORDER
+ * when fewer than the budget exist. Rows must arrive sorted newest
+ * first (the caller's query does this).
+ *
+ * 'custom' is never used as a fallback target — semantics are
+ * undefined. If the requested class is 'custom', we still fall back
+ * to faq/follow_up to fill the budget.
+ */
+function selectVoiceExamples(
+  rows: ReadonlyArray<VoiceExampleRow>,
+  requestedClass: VoiceExampleClass,
+): VoiceExampleRow[] {
+  if (rows.length === 0) return []
+
+  const exact = rows.filter(r => r.class === requestedClass).slice(0, MAX_VOICE_EXAMPLES)
+  if (exact.length >= MAX_VOICE_EXAMPLES) return exact
+
+  // Dedup by row id — robust to identical body text saved under
+  // multiple classes (cheaper + safer than the class+body string).
+  const picked: VoiceExampleRow[] = [...exact]
+  const taken = new Set(picked.map(p => p.id))
+  for (const cls of FALLBACK_CLASS_ORDER[requestedClass]) {
+    if (picked.length >= MAX_VOICE_EXAMPLES) break
+    for (const r of rows) {
+      if (picked.length >= MAX_VOICE_EXAMPLES) break
+      if (r.class !== cls) continue
+      if (taken.has(r.id)) continue
+      picked.push(r)
+      taken.add(r.id)
+    }
+  }
+  return picked
+}
+
+/**
+ * Renders the <voice_examples> block injected into the system
+ * prompt. Returns '' when there are no examples — so the W6/W7
+ * prompts are byte-identical for orgs with empty voice training.
+ *
+ * XML tags chosen over multi-turn assistant messages because the
+ * latter would pollute the recent-message slice the user prompt
+ * already shows, and risk the model interleaving exemplars with
+ * real conversation history.
+ *
+ * Each example body is truncated at MAX_EXAMPLE_BODY_CHARS to keep
+ * the prompt budget in check — the 600-char DB cap is generous for
+ * UI but oversized for prompt context.
+ */
+function renderVoiceExamplesBlock(examples: VoiceExampleRow[]): string {
+  if (examples.length === 0) return ''
+  const lines: string[] = []
+  lines.push('')
+  lines.push('')
+  lines.push('<voice_examples>')
+  lines.push('The following are real past replies from this clinic. Match their tone, phrasing, and structure. Do not copy verbatim — adapt to the current contact.')
+  for (const ex of examples) {
+    const label = ex.label ? ` label="${escapeXml(ex.label)}"` : ''
+    // Truncate first, then XML-escape. Escape protects against a
+    // clinic owner pasting "</example></voice_examples><system>..."
+    // into a saved example body — without escaping the model would
+    // see a closed examples block followed by what reads as a new
+    // system instruction.
+    const truncated = ex.body.length > MAX_EXAMPLE_BODY_CHARS
+      ? ex.body.slice(0, MAX_EXAMPLE_BODY_CHARS) + '…'
+      : ex.body
+    lines.push('')
+    lines.push(`<example class="${ex.class}"${label}>`)
+    lines.push(escapeXml(truncated))
+    lines.push('</example>')
+  }
+  lines.push('</voice_examples>')
+  return lines.join('\n')
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/**
+ * Infer messageClass from history. We only ever call this from the
+ * auto-draft path (autoDraftForInbound) — manual callers pass
+ * messageClass explicitly.
+ *
+ * Heuristic: if the clinic has NEVER replied (no outbound messages
+ * in the window), treat as 'greeting' — this is a first-touch
+ * situation regardless of how many inbound bursts the lead sent.
+ * Once at least one outbound exists, the conversation is in flight
+ * and the patient is almost always asking something → 'faq'.
+ * Fancier classification (consult_confirm via "yes book me",
+ * follow_up_cold via re-engagement) is deferred to W8 once we have
+ * edit-pattern data.
+ */
+function inferMessageClass(
+  recentMessages: Array<{ direction: 'inbound' | 'outbound' }>,
+): VoiceExampleClass {
+  return recentMessages.some(m => m.direction === 'outbound') ? 'faq' : 'greeting'
+}
+
+
 function guardrailNudge(violation: string): string {
   switch (violation) {
     case 'quoted_price':           return 'Do NOT include any dollar amount, price, or discount.'
@@ -354,6 +605,7 @@ function guardrailNudge(violation: string): string {
     case 'committed_calendar_slot':return 'Do NOT commit to a specific day-and-time slot or say you have booked the patient.'
     case 'discount_offered':       return 'Do NOT offer a discount or promo code.'
     case 'profanity':              return 'Do NOT use profanity. Stay professional.'
+    case 'banned_phrase':          return 'Do NOT use the clinic\'s forbidden phrases. Re-read the voice rules above.'
     case 'too_long':               return 'Your reply was too long. Keep it under 160 characters.'
     default:                       return 'Re-read the hard rules and stay strictly within them.'
   }
@@ -441,6 +693,10 @@ export async function autoDraftForInbound(args: {
       return
     }
 
+    const recentMessages = ((history ?? []) as Array<{ channel: string; direction: 'inbound' | 'outbound'; body: string }>)
+      .reverse()
+      .map(m => ({ channel: m.channel, direction: m.direction, body: m.body }))
+
     const ctx: DraftContext = {
       contactId: args.contactId,
       organizationId: args.organizationId,
@@ -454,10 +710,9 @@ export async function autoDraftForInbound(args: {
         ? daysSince(contact.last_contacted_at as string)
         : null,
       clinicName: org?.name ?? 'our clinic',
-      recentMessages: ((history ?? []) as Array<{ channel: string; direction: 'inbound' | 'outbound'; body: string }>)
-        .reverse()
-        .map(m => ({ channel: m.channel, direction: m.direction, body: m.body })),
+      recentMessages,
       triggerMessageId: args.triggerMessageId,
+      messageClass: inferMessageClass(recentMessages),
     }
 
     const result = await generateDraft(ctx)
