@@ -78,7 +78,11 @@ export async function GET(_req: NextRequest) {
     service_ids: byProvider.get(p.id) ?? [],
   }))
 
-  return NextResponse.json(enriched)
+  // Wrap the array under `providers` to match the UI's expected
+  // response shape — all the booking-settings cards read pJson.providers
+  // and the staff/voice-examples conventions return the same { key: [] }
+  // shape elsewhere in the API.
+  return NextResponse.json({ providers: enriched })
 }
 
 // ─── POST /api/booking/providers ──────────────────────────────

@@ -84,7 +84,9 @@ export async function GET(_req: NextRequest) {
     provider_ids: byService.get(s.id) ?? [],
   }))
 
-  return NextResponse.json(enriched)
+  // Wrap under `services` to match the UI's expected shape (matches
+  // /api/org/staff and /api/org/voice-examples conventions).
+  return NextResponse.json({ services: enriched })
 }
 
 // ─── POST /api/booking/services ───────────────────────────────
