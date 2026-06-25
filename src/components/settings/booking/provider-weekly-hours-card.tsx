@@ -315,26 +315,37 @@ export function ProviderWeeklyHoursCard({ timezone }: Props) {
                         </div>
                       ))}
                       {addingDay === day.idx ? (
+                        // Stack vertically so each time input gets the full
+                        // card width — the native browser time picker needs
+                        // ~80px minimum, which the previous side-by-side
+                        // layout clipped in the 7-column grid.
                         <div className="space-y-1.5 rounded-md border border-gray-200 p-2">
-                          <div className="flex items-center gap-1">
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                              From
+                            </label>
                             <input
                               type="time"
                               value={draftStart}
                               onChange={(e) => setDraftStart(e.target.value)}
-                              className="w-full rounded border border-gray-300 px-1 py-0.5 text-[11px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                              className="w-full rounded border border-gray-300 px-1.5 py-1 text-[12px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                             />
-                            <span className="text-[11px] text-gray-400">–</span>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                              To
+                            </label>
                             <input
                               type="time"
                               value={draftEnd}
                               onChange={(e) => setDraftEnd(e.target.value)}
-                              className="w-full rounded border border-gray-300 px-1 py-0.5 text-[11px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                              className="w-full rounded border border-gray-300 px-1.5 py-1 text-[12px] focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                             />
                           </div>
                           {addError && (
                             <p className="text-[10px] text-red-600">{addError}</p>
                           )}
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 pt-0.5">
                             <button
                               type="button"
                               onClick={commitAdd}
