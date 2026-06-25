@@ -266,7 +266,7 @@ alter table public.consultations add column if not exists end_at     timestamptz
 alter table public.consultations add column if not exists time_range tstzrange;
 
 create or replace function set_consultation_derived_fields()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql as $func$
 begin
   if new.scheduled_at is not null and new.duration_min is not null then
     new.end_at     := new.scheduled_at + make_interval(mins => new.duration_min);
@@ -277,7 +277,7 @@ begin
   end if;
   return new;
 end;
-$$;
+$func$;
 
 drop trigger if exists set_consultation_derived_fields_trg on public.consultations;
 
@@ -297,28 +297,32 @@ where scheduled_at is not null
   and duration_min is not null
   and (end_at is null or time_range is null);
 
--- booked_via enum-by-check. DO block keeps reruns safe.
-do $$
+-- booked_via enum-by-check. Tagged dollar-quote ($ddl1$..$ddl1$)
+-- so the Supabase SQL editor doesn't mis-balance against the $func$
+-- block above.
+do $ddl1$
 begin
   alter table public.consultations
     add constraint consultations_booked_via_check
     check (booked_via in ('manual', 'public_page', 'ai_twin', 'api'));
 exception when duplicate_object then null;
-end$$;
+end
+$ddl1$;
 
 -- Status enum-by-check. The legacy table had no constraint on
 -- status at all (just a default of 'scheduled'). Adding one
 -- explicitly that includes 'hold' so the booking lifecycle is
 -- documented in the schema. DROP first in case a prior partial
 -- migration left a stale version behind.
-do $$
+do $ddl2$
 begin
   alter table public.consultations drop constraint if exists consultations_status_check;
   alter table public.consultations
     add constraint consultations_status_check
     check (status in ('hold', 'scheduled', 'confirmed', 'completed', 'no_show', 'canceled', 'rescheduled'));
 exception when duplicate_object then null;
-end$$;
+end
+$ddl2$;
 
 -- The race-prevention guarantee. GIST EXCLUDE on
 -- (provider_id =, time_range &&) means: no two rows with the
@@ -326,14 +330,15 @@ end$$;
 -- among rows that are actually holding the slot
 -- (status in hold/scheduled/confirmed AND provider_id set).
 -- Legacy rows with provider_id NULL are untouched.
-do $$
+do $ddl3$
 begin
   alter table public.consultations
     add constraint consultations_no_provider_overlap
     exclude using gist (provider_id with =, time_range with &&)
     where (status in ('hold', 'scheduled', 'confirmed') and provider_id is not null);
 exception when duplicate_object then null;
-end$$;
+end
+$ddl3$;
 
 -- Helper index for the engine's "fetch existing bookings in
 -- window for these providers" query.
