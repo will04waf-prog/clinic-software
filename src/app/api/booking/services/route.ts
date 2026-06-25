@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
-const ADMIN_ROLES = new Set(['owner', 'admin'])
+const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 
 // Hex color (#RGB or #RRGGBB) — same shape we accept elsewhere.
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
-const ADMIN_ROLES = new Set(['owner', 'admin'])
+const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 const HHMM_RE = /^([01][0-9]|2[0-3]):[0-5][0-9]$/
 
 const ruleSchema = z.object({

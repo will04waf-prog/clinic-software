@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
-const ADMIN_ROLES = new Set(['owner', 'admin'])
+const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 
 const createProviderSchema = z.object({
   display_name:      z.string().trim().min(1).max(120),
   role_label:        z.string().trim().max(80).nullable().optional(),
-  photo_url:         z.string().trim().url().max(500).nullable().optional(),
+  // Permissive — any string up to 500 chars, including empty. UI
+  // gracefully handles broken/empty URLs via a fallback initial.
+  // Stricter URL validation can return when Supabase storage upload
+  // ships in W2 and we know the field is always a real URL.
+  photo_url:         z.string().trim().max(500).nullable().optional(),
   profile_id:        z.string().uuid().nullable().optional(),
   buffer_before_min: z.number().int().min(0).max(240).optional(),
   buffer_after_min:  z.number().int().min(0).max(240).optional(),

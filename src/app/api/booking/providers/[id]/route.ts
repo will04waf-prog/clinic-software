@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
-const ADMIN_ROLES = new Set(['owner', 'admin'])
+const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 
 const patchProviderSchema = z.object({
   display_name:      z.string().trim().min(1).max(120).optional(),
   role_label:        z.string().trim().max(80).nullable().optional(),
-  photo_url:         z.string().trim().url().max(500).nullable().optional(),
+  photo_url:         z.string().trim().max(500).nullable().optional(),
   profile_id:        z.string().uuid().nullable().optional(),
   is_active:         z.boolean().optional(),
   buffer_before_min: z.number().int().min(0).max(240).optional(),
