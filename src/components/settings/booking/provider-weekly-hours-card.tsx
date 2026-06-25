@@ -26,6 +26,22 @@ const WEEKDAYS: Array<{ idx: number; short: string; full: string }> = [
 
 const HHMM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/
 
+/**
+ * Format a "HH:MM" (24h, stored) string as a human-friendly 12h
+ * label. "09:00" -> "9 AM", "17:30" -> "5:30 PM", "12:00" -> "12 PM",
+ * "00:00" -> "12 AM". The DB + availability engine still store and
+ * consume 24h strings — this is display-only.
+ */
+function formatHHMM12(s: string): string {
+  if (!HHMM.test(s)) return s
+  const [hStr, mStr] = s.split(':')
+  const h = Number(hStr)
+  const m = Number(mStr)
+  const period = h >= 12 ? 'PM' : 'AM'
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return m === 0 ? `${display} ${period}` : `${display}:${mStr} ${period}`
+}
+
 interface Props {
   timezone: string | null
 }
@@ -283,7 +299,7 @@ export function ProviderWeeklyHoursCard({ timezone }: Props) {
             {rulesLoading ? (
               <p className="text-gray-400">Loading hours…</p>
             ) : (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {rulesByDay.map((day) => (
                   <div
                     key={day.idx}
@@ -302,7 +318,7 @@ export function ProviderWeeklyHoursCard({ timezone }: Props) {
                           className="flex items-center justify-between gap-1 rounded-md bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700"
                         >
                           <span>
-                            {r.startTime}–{r.endTime}
+                            {formatHHMM12(r.startTime)}–{formatHHMM12(r.endTime)}
                           </span>
                           <button
                             type="button"

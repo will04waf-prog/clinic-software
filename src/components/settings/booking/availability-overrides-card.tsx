@@ -36,6 +36,17 @@ interface DraftOverride {
 
 const HHMM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/
 
+/** Display-only: "HH:MM" 24h -> "9 AM" / "5:30 PM". DB stores 24h. */
+function formatHHMM12(s: string): string {
+  if (!HHMM.test(s)) return s
+  const [hStr, mStr] = s.split(':')
+  const h = Number(hStr)
+  const m = Number(mStr)
+  const period = h >= 12 ? 'PM' : 'AM'
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return m === 0 ? `${display} ${period}` : `${display}:${mStr} ${period}`
+}
+
 function todayISO(): string {
   const now = new Date()
   const y = now.getFullYear()
@@ -278,7 +289,7 @@ export function AvailabilityOverridesCard({ timezone }: AvailabilityOverridesCar
                     <p className="mt-0.5 text-xs text-gray-500">
                       {prv ? prv.display_name : 'Clinic-wide'}
                       {o.kind === 'custom' && o.start_time && o.end_time && (
-                        <> · {o.start_time}–{o.end_time}</>
+                        <> · {formatHHMM12(o.start_time)}–{formatHHMM12(o.end_time)}</>
                       )}
                       {o.reason && <> · {o.reason}</>}
                     </p>

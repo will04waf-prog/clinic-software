@@ -174,10 +174,14 @@ export function AvailabilityPreviewCard({ timezone }: Props) {
 
   const timeFmt = useMemo(() => {
     if (!timezone) return null
-    return new Intl.DateTimeFormat(undefined, {
+    // hour12: true forces "9:00 AM" / "5:30 PM" regardless of the
+    // browser's locale default — the user explicitly wants 12-hour
+    // display, not 24-hour military time.
+    return new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     })
   }, [timezone])
 
