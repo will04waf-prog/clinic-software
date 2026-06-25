@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
+import { BookingSettingsLinkCard } from '@/components/settings/booking-settings-link-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
@@ -70,6 +71,12 @@ export default async function SettingsPage() {
         )}
 
         <ServicesCard initial={org?.procedures ?? null} />
+
+        {/* Booking calendar — links to /settings/booking. Sits next to
+            ServicesCard because the two are conceptually paired: services
+            here is the intake-form taxonomy; bookable services + providers
+            + availability live on the booking sub-page. */}
+        <BookingSettingsLinkCard />
 
         <SmsSettingsCard initial={{
           sms_enabled:               org?.sms_enabled               ?? false,

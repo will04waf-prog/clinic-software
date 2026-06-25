@@ -4,6 +4,7 @@ import { enrollContact } from '@/lib/automation-engine'
 import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
 import { sendConsultationSms } from '@/lib/consultation-reminders'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { mapBookingError } from '@/lib/booking/db-errors'
 import { z } from 'zod'
 
 const VALID_TYPES = ['in_person', 'virtual'] as const
@@ -127,7 +128,13 @@ export async function POST(req: NextRequest) {
     .select('id')
     .single()
 
-  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
+  if (insertError) {
+    // The EXCLUDE constraint added in W1 catches provider double-
+    // bookings. Map 23P01 to a clear 409 instead of a raw 500.
+    const conflictResponse = mapBookingError(insertError)
+    if (conflictResponse) return conflictResponse
+    return NextResponse.json({ error: insertError.message }, { status: 500 })
+  }
 
   // Move contact to "Consultation Booked" stage if it exists for this org
   const { data: bookedStage } = await supabase

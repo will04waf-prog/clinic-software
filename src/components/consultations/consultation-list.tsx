@@ -11,6 +11,10 @@ import { formatDateTime, formatProcedure } from '@/lib/utils'
 import type { Consultation } from '@/types'
 
 const STATUS_CONFIG = {
+  // 'hold' is a W1 booking foundation state — a tentative reservation
+  // awaiting patient confirmation. Treated visually as a warning so
+  // staff know it isn't yet a firm booking.
+  hold:        { label: 'On hold',     variant: 'warning'     as const },
   scheduled:   { label: 'Scheduled',   variant: 'default'     as const },
   confirmed:   { label: 'Confirmed',   variant: 'success'     as const },
   completed:   { label: 'Completed',   variant: 'success'     as const },
