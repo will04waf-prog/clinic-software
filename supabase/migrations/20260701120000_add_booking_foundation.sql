@@ -253,12 +253,23 @@ alter table public.consultations add column if not exists held_until   timestamp
 -- end_at is a stored generated column so the EXCLUDE constraint
 -- has something deterministic to range over. duration_min is
 -- already on the table.
-alter table public.consultations add column if not exists end_at timestamptz generated always as (scheduled_at + (duration_min * interval '1 minute')) stored;
+--
+-- IMPORTANT: use make_interval(mins => ...) here, not
+-- (duration_min * interval '1 minute'). Postgres can't prove the
+-- implicit int→float8 cast inside the multiplication is
+-- IMMUTABLE, and STORED generated columns require IMMUTABLE
+-- expressions — the multiplication form fails with 42P17
+-- "generation expression is not immutable". make_interval is
+-- explicitly tagged IMMUTABLE in the catalog.
+alter table public.consultations add column if not exists end_at timestamptz generated always as (scheduled_at + make_interval(mins => duration_min)) stored;
 
 -- time_range is the tstzrange the EXCLUDE constraint uses.
--- Half-open [start, end) is the canonical Postgres range form
--- so back-to-back appointments do not collide.
-alter table public.consultations add column if not exists time_range tstzrange generated always as (tstzrange(scheduled_at, scheduled_at + (duration_min * interval '1 minute'), '[)')) stored;
+-- Two-arg tstzrange defaults to '[)' (half-open at end), the
+-- canonical Postgres range form — so back-to-back appointments
+-- do not collide. Dropping the explicit text-bounds arg also
+-- avoids any IMMUTABLE-cast issue Postgres might raise on the
+-- three-arg overload.
+alter table public.consultations add column if not exists time_range tstzrange generated always as (tstzrange(scheduled_at, scheduled_at + make_interval(mins => duration_min))) stored;
 
 -- booked_via enum-by-check. DO block keeps reruns safe.
 do $$
