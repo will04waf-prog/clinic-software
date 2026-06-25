@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cached } from '@/lib/route-cache'
+import { timeOfDay, greetingFor, briefLabelFor, type TimeOfDay } from '@/lib/time-of-day'
 import type { LeadSource, Procedure } from '@/types'
 
 // In-memory TTL for the aggregated morning-briefing payload. The page
@@ -104,19 +105,22 @@ export async function GET(_req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, full_name')
+    .select('organization_id, full_name, organization:organizations(timezone)')
     .eq('id', user.id)
     .single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
   const orgId = profile.organization_id
   const firstName = (profile.full_name ?? '').split(' ')[0] || 'there'
+  const org = profile.organization as { timezone?: string | null } | null
+  const tod = timeOfDay(new Date(), org?.timezone ?? null)
 
-  // Cache the whole aggregation. The firstName is part of the brief
-  // sentence + greeting, so it has to be in the key — otherwise two
-  // users in the same org would see each other's name.
-  const cacheKey = `morning:${orgId}:${firstName}`
-  const payload = await cached(cacheKey, MORNING_CACHE_TTL_MS, () => buildMorningPayload(supabase, orgId, firstName, profile.full_name ?? firstName))
+  // Cache the whole aggregation. The firstName + tod are part of the
+  // brief sentence + greeting, so both have to be in the key —
+  // otherwise two users in the same org would see each other's name,
+  // and the cache would serve a stale "Good morning" at 3pm.
+  const cacheKey = `morning:${orgId}:${firstName}:${tod}`
+  const payload = await cached(cacheKey, MORNING_CACHE_TTL_MS, () => buildMorningPayload(supabase, orgId, firstName, profile.full_name ?? firstName, tod))
   return NextResponse.json(payload)
 }
 
@@ -125,6 +129,7 @@ async function buildMorningPayload(
   orgId: string,
   firstName: string,
   fullName: string,
+  tod: TimeOfDay,
 ) {
   // Time windows.
   const now = new Date()
@@ -493,9 +498,12 @@ async function buildMorningPayload(
     },
   ]
 
-  // ── Morning brief sentence (templated; LLM swap is a follow-up) ──
+  // ── Brief sentence (templated; LLM swap is a follow-up) ──
+  // Greeting matches the clinic owner's local time-of-day, not the
+  // server's UTC clock. Computed from the org timezone upstream.
+  const greeting = greetingFor(tod)
   const briefSegments: Array<{ t: string; k?: 'hl' | 'num' }> = []
-  briefSegments.push({ t: `Good morning, ${firstName}. ` })
+  briefSegments.push({ t: `${greeting}, ${firstName}. ` })
   if (waitingCount > 0) {
     const word = waitingCount === 1 ? 'lead is' : `${waitingCount === 2 ? 'two' : waitingCount === 3 ? 'three' : waitingCount} leads are`
     briefSegments.push({ t: `${waitingCount === 1 ? 'One' : 'Several'} ${word} waiting on a reply` })
@@ -575,7 +583,7 @@ async function buildMorningPayload(
   return {
     user: { firstName, fullName },
     generatedAt: new Date().toISOString(),
-    brief: { greeting: `Good morning, ${firstName}.`, segments: briefSegments },
+    brief: { greeting: `${greeting}, ${firstName}.`, label: briefLabelFor(tod), segments: briefSegments },
     waiting: {
       count: waitingCount,
       oldestMinutes: oldestWaitingMin,

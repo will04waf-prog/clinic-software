@@ -86,7 +86,7 @@ export interface NudgeCardData {
 export interface MorningResponse {
   user: { firstName: string; fullName: string }
   generatedAt: string
-  brief: { greeting: string; segments: MorningBriefSegment[] }
+  brief: { greeting: string; label: string; segments: MorningBriefSegment[] }
   waiting: {
     count: number
     oldestMinutes: number
