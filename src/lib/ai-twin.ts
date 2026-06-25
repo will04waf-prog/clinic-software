@@ -34,8 +34,10 @@ import {
   VOICE_EXAMPLE_CLASSES,
   type VoiceExampleClass,
 } from '@/lib/voice-profile'
-import { classifyInbound, type ClassifierResult } from '@/lib/inbound-classifier'
+import { classifyInbound, safetyTrigger, type ClassifierResult } from '@/lib/inbound-classifier'
 import { attemptAutoSend } from '@/lib/auto-send'
+import { classifyBookingIntent } from '@/lib/ai-twin/booking-intent'
+import { fetchSlotsForTwin, suggestionToPromptFragment, type SlotSuggestion } from '@/lib/ai-twin/booking-slots-for-twin'
 
 // Phase 2 W7 — voice training tunables.
 //
@@ -111,7 +113,7 @@ export type DraftResult =
  */
 export function checkGuardrails(
   body: string,
-  opts?: { bannedPhrases?: string[] },
+  opts?: { bannedPhrases?: string[]; allowCalendarCommit?: boolean },
 ): { ok: true } | { ok: false; violation: string } {
   // Price quoting: $ followed by digits, "20 dollars", "20.00".
   // Kept first — it's the most specific and the highest-stakes rule
@@ -175,7 +177,16 @@ export function checkGuardrails(
     /\bwe['’]?ll\s+see\s+you\b/i,
     /\bscheduled\s+you\s+for\b/i,
   ]
-  for (const re of CALENDAR_PATTERNS) {
+  // W3: when the Twin was given real, DB-backed open slots to pitch
+  // (allowCalendarCommit), the day-and-time-commit rule is suspended.
+  // The remaining "I'll book you in" / "scheduled you for" / "see you
+  // at" shapes still apply — those describe a confirmation we have
+  // NOT made (the patient still has to tap the booking link to claim
+  // a slot). Only the "Thursday at 3pm" naming pattern is exempted.
+  const calendarPatternsToCheck = opts?.allowCalendarCommit
+    ? CALENDAR_PATTERNS.slice(1)
+    : CALENDAR_PATTERNS
+  for (const re of calendarPatternsToCheck) {
     if (re.test(body)) return { ok: false, violation: 'committed_calendar_slot' }
   }
 
@@ -262,6 +273,40 @@ Hard rules:
 - NEVER promise an outcome ("you'll look", "guaranteed", "will eliminate", "no pain", "zero downtime").
 - NEVER name a specific provider (no "Dr. Smith", no "with our injector Maya").
 - NEVER commit to a specific day-and-time slot ("Tuesday at 3pm"). You can offer a consultation but don't pick the time.
+- Address the contact by first name.
+- Do NOT add a signature — one will be appended.
+
+Output ONLY the SMS body text. No preamble, no quotes, no labels.`
+
+/**
+ * W3 variant of SMS_SYSTEM_PROMPT used when real, DB-backed open
+ * slots are being injected via the "— Real-time availability —"
+ * fragment. The base prompt's "NEVER commit to a specific day-and-
+ * time slot" rule would directly contradict the injection's "weave
+ * 1-2 of these slots into the reply" directive — the model would
+ * either ignore the rule (and we'd want it to) or ignore the slots
+ * (defeating the feature). This variant drops only that rule. All
+ * other compliance rules (no prices, no doses, no provider names,
+ * no outcome promises) still apply — the calendar carve-out is
+ * narrow.
+ *
+ * The "do NOT promise the slot is reserved" sub-rule is enforced
+ * by the booking fragment itself, not the system prompt, so the
+ * draft can still mention times while staying honest about what
+ * happens next.
+ */
+const SMS_SYSTEM_PROMPT_WITH_SLOTS = `You write warm, professional follow-up SMS messages from a med spa or aesthetic clinic to a prospective patient.
+
+Hard rules:
+- Maximum 140 characters total (a disclosure footer is appended after you, so leave room).
+- No emojis.
+- No pushy sales language ("act now", "limited time", "don't miss out").
+- Reference the contact's procedure interest naturally if one is provided.
+- NEVER quote a dollar amount, percentage discount, or promo code.
+- NEVER quote a medical dose (units, ml, mg, syringes, cc).
+- NEVER promise an outcome ("you'll look", "guaranteed", "will eliminate", "no pain", "zero downtime").
+- NEVER name a specific provider (no "Dr. Smith", no "with our injector Maya").
+- When a "Real-time availability" block follows below, you MAY mention 1-2 of those specific day-and-time slots — they are verified open slots from the live calendar. Phrase them as available options ("Tuesday around 2pm or Thursday morning"), NOT as confirmed bookings. Never say "I'll book you in", "you're scheduled", or "see you at" — the patient has not booked yet.
 - Address the contact by first name.
 - Do NOT add a signature — one will be appended.
 
@@ -355,7 +400,11 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
   // Either query failing → degrade gracefully to defaults (no voice
   // applied). The warning logs let an outage on voice_examples show
   // up in observability instead of silently reverting every org.
-  const [orgRes, examplesRes] = await Promise.all([
+  // W3: also fetch service names so the booking-intent classifier
+  // can spot mentions like "lip filler" or "botox". Single extra
+  // round-trip in parallel with the voice profile fetch — no added
+  // latency on the hot path. Best-effort; errors logged + ignored.
+  const [orgRes, examplesRes, servicesNamesRes] = await Promise.all([
     supabaseAdmin
       .from('organizations')
       .select('ai_twin_voice_profile')
@@ -367,9 +416,17 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
       .eq('organization_id', ctx.organizationId)
       .order('created_at', { ascending: false })
       .limit(30),
+    supabaseAdmin
+      .from('services')
+      .select('name')
+      .eq('organization_id', ctx.organizationId)
+      .eq('is_active', true)
+      .eq('is_bookable_online', true),
   ])
-  if (orgRes.error)      console.warn('[ai-twin] voice profile fetch failed:',  ctx.organizationId, orgRes.error.message)
-  if (examplesRes.error) console.warn('[ai-twin] voice examples fetch failed:', ctx.organizationId, examplesRes.error.message)
+  if (orgRes.error)            console.warn('[ai-twin] voice profile fetch failed:',  ctx.organizationId, orgRes.error.message)
+  if (examplesRes.error)       console.warn('[ai-twin] voice examples fetch failed:', ctx.organizationId, examplesRes.error.message)
+  if (servicesNamesRes.error)  console.warn('[ai-twin] service names fetch failed:',  ctx.organizationId, servicesNamesRes.error.message)
+  const serviceNames = ((servicesNamesRes.data ?? []) as Array<{ name: string }>).map(s => s.name)
 
   const profile = readVoiceProfile(orgRes.data?.ai_twin_voice_profile ?? {})
   const voiceFragment = voiceProfileToPromptFragment(profile)
@@ -382,12 +439,49 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
     : []
   const examplesBlock = renderVoiceExamplesBlock(selectedExamples)
 
-  const baseSystemPrompt = ctx.channel === 'sms' ? SMS_SYSTEM_PROMPT : EMAIL_SYSTEM_PROMPT
+  // ── W3: booking intent + real-availability injection ──
+  // Pull the last inbound from recentMessages. If we can't find one
+  // (manual draft button on a brand-new contact, for example), skip
+  // intent classification — there's no inbound text to classify.
+  const lastInbound = [...ctx.recentMessages].reverse().find(m => m.direction === 'inbound')
+  let slotSuggestion: SlotSuggestion = { kind: 'none', reason: 'no_inbound_to_classify' }
+  let bookingFragment = ''
+  if (lastInbound && lastInbound.body) {
+    // Safety gate: messages flagged for safety triggers (self-harm,
+    // medical emergency, etc.) must NEVER receive a slot pitch — the
+    // tone would be catastrophic. The Twin still drafts a reply for
+    // staff review, but with NO real-availability injection. The
+    // safety-trigger blocklist already blocks auto-send for these
+    // messages, so we just skip the upsell.
+    const isSafety = safetyTrigger(lastInbound.body) !== null
+    if (!isSafety) {
+      const intent = classifyBookingIntent(lastInbound.body, serviceNames)
+      if (intent.intent !== 'other') {
+        slotSuggestion = await fetchSlotsForTwin({
+          organizationId: ctx.organizationId,
+          serviceHint:    intent.serviceHint,
+          messageClass:   ctx.messageClass,
+        })
+        bookingFragment = suggestionToPromptFragment(slotSuggestion)
+      }
+    }
+  }
+
+  // When real slots are being injected, the "NEVER commit to a
+  // specific day-and-time" rule in the system prompt directly
+  // contradicts the W3 directive ("mention 1-2 of these slots"). Swap
+  // in a tailored SMS prompt that drops the calendar-commit rule for
+  // this draft only. Email path is unchanged — slot injection is
+  // SMS-only.
+  const slotsInjected = slotSuggestion.kind === 'slots'
+  const promptForChannel = ctx.channel === 'sms'
+    ? (slotsInjected ? SMS_SYSTEM_PROMPT_WITH_SLOTS : SMS_SYSTEM_PROMPT)
+    : EMAIL_SYSTEM_PROMPT
   // Both fragment and examples-block supply their own leading
   // whitespace (or empty string) — direct concatenation produces a
   // byte-identical W6 prompt when profile is all-defaults AND
-  // examples is empty.
-  const systemPrompt = baseSystemPrompt + voiceFragment + examplesBlock
+  // examples is empty AND no booking-intent injection fires.
+  const systemPrompt = promptForChannel + voiceFragment + examplesBlock + bookingFragment
   const userPrompt = buildUserPrompt(ctx)
 
   const client = new Anthropic()
@@ -414,6 +508,15 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
     voice_banned_phrases_count: profile.banned_phrases.length,
     voice_tone_formal: profile.tone_formal,
     voice_tone_warm: profile.tone_warm,
+    // ── W3 booking-intent metadata ─────────────────────────────
+    // Lets W8 correlate "drafts where slots were injected" vs
+    // "drafts where the AI just answered" — different edit-quality
+    // signal, different conversion rate downstream.
+    booking_suggestion_kind: slotSuggestion.kind,
+    booking_slots_offered: slotSuggestion.kind === 'slots' ? slotSuggestion.slots.length : 0,
+    booking_service_offered: slotSuggestion.kind === 'slots' || slotSuggestion.kind === 'fully_booked'
+      ? slotSuggestion.service.name
+      : null,
   }
 
   async function callOnce(extraNudge?: string): Promise<{ raw: string } | { error: string }> {
@@ -433,7 +536,15 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
     }
   }
 
-  const guardrailOpts = { bannedPhrases: profile.banned_phrases }
+  const guardrailOpts = {
+    bannedPhrases: profile.banned_phrases,
+    // W3: when real slots were injected, allow the model to phrase
+    // them ("Tuesday around 2pm") without tripping the day-and-time
+    // calendar-commit guardrail. The remaining commit-shape rules
+    // ("I'll book you in", "see you at 3pm", "scheduled you for")
+    // still apply.
+    allowCalendarCommit: slotsInjected,
+  }
 
   // First attempt.
   const first = await callOnce()
