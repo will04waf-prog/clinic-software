@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
+import { BookingMasterToggleCard } from '@/components/settings/booking/booking-master-toggle-card'
 import { BookingProvidersCard } from '@/components/settings/booking/booking-providers-card'
 import { BookingServicesCard } from '@/components/settings/booking/booking-services-card'
 import { ProviderWeeklyHoursCard } from '@/components/settings/booking/provider-weekly-hours-card'
@@ -42,6 +43,7 @@ export default async function BookingSettingsPage() {
           Back to settings
         </Link>
 
+        <BookingMasterToggleCard />
         <BookingProvidersCard />
         <BookingServicesCard />
         <ProviderWeeklyHoursCard timezone={timezone} />
