@@ -11,8 +11,8 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
-  BarChart3,
   ClipboardList,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/ui/logo-mark'
@@ -25,16 +25,13 @@ const NAV_ITEMS = [
   { href: '/import-contacts',      label: 'Import Contacts',  icon: Upload },
   { href: '/pipeline',             label: 'Pipeline',         icon: Kanban },
   { href: '/consultations',        label: 'Consultations',    icon: CalendarCheck },
-  // In-page anchor — the dashboard scroll container has scroll-behavior:
-  // smooth and the #performance heading has scroll-mt-24 so this jumps
-  // smoothly. Never lights up the active state (handled below).
-  { href: '/dashboard#performance', label: 'Analytics',       icon: BarChart3 },
   { href: '/automations',          label: 'Automations',      icon: Zap },
-  // AI Twin operational surfaces (W10 briefing + W11 audit are both
-  // reached via /ai-twin/* — surface audit in nav, briefing is
-  // reached from the morning tile and the audit page). The "Pro"
-  // badge sets expectations upfront: Starter clicks land on the
-  // upgrade card, so labeling here avoids the cliff.
+  // AI Twin operational surfaces. /ai-drafts/review is the daily
+  // inbox of pending + resolved AI drafts (every tier uses it
+  // because the manual AI Draft button persists drafts on Pro+
+  // and the autonomous path persists them on Scale). The audit
+  // page is the full filterable history of every twin action.
+  { href: '/ai-drafts/review',     label: 'AI Drafts',        icon: Sparkles },
   { href: '/ai-twin/audit',        label: 'AI Twin audit',    icon: ClipboardList, tierBadge: 'Pro' as const },
   { href: '/settings',             label: 'Settings',         icon: Settings },
 ]
@@ -73,10 +70,7 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
         {NAV_ITEMS.map((item) => {
           const { href, label, icon: Icon } = item
           const tierBadge = 'tierBadge' in item ? item.tierBadge : undefined
-          // pathname has no hash, so href.includes('#') guarantees in-
-          // page anchor entries never light up — keeps Dashboard the
-          // only active row on /dashboard.
-          const active = href.includes('#') ? false : pathname.startsWith(href)
+          const active = pathname.startsWith(href)
           return (
             <Link
               key={href}
