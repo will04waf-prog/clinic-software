@@ -250,26 +250,52 @@ alter table public.consultations add column if not exists hold_token   uuid;
 
 alter table public.consultations add column if not exists held_until   timestamptz;
 
--- end_at is a stored generated column so the EXCLUDE constraint
--- has something deterministic to range over. duration_min is
--- already on the table.
+-- end_at and time_range cannot be STORED GENERATED columns: even
+-- with make_interval (which is IMMUTABLE), the outer
+-- `timestamptz + interval` operator is STABLE in Postgres because
+-- intervals containing months/days resolve against the session
+-- timezone for DST handling. Postgres can't statically prove our
+-- interval is minutes-only, so it rejects the expression with
+-- 42P17 "generation expression is not immutable".
 --
--- IMPORTANT: use make_interval(mins => ...) here, not
--- (duration_min * interval '1 minute'). Postgres can't prove the
--- implicit int→float8 cast inside the multiplication is
--- IMMUTABLE, and STORED generated columns require IMMUTABLE
--- expressions — the multiplication form fails with 42P17
--- "generation expression is not immutable". make_interval is
--- explicitly tagged IMMUTABLE in the catalog.
-alter table public.consultations add column if not exists end_at timestamptz generated always as (scheduled_at + make_interval(mins => duration_min)) stored;
+-- Workaround: regular columns kept in sync by a BEFORE
+-- INSERT/UPDATE trigger. Triggers don't require IMMUTABLE
+-- expressions. The EXCLUDE constraint that depends on time_range
+-- still works — it just reads the trigger-maintained value.
+alter table public.consultations add column if not exists end_at     timestamptz;
+alter table public.consultations add column if not exists time_range tstzrange;
 
--- time_range is the tstzrange the EXCLUDE constraint uses.
--- Two-arg tstzrange defaults to '[)' (half-open at end), the
--- canonical Postgres range form — so back-to-back appointments
--- do not collide. Dropping the explicit text-bounds arg also
--- avoids any IMMUTABLE-cast issue Postgres might raise on the
--- three-arg overload.
-alter table public.consultations add column if not exists time_range tstzrange generated always as (tstzrange(scheduled_at, scheduled_at + make_interval(mins => duration_min))) stored;
+create or replace function set_consultation_derived_fields()
+returns trigger language plpgsql as $$
+begin
+  if new.scheduled_at is not null and new.duration_min is not null then
+    new.end_at     := new.scheduled_at + make_interval(mins => new.duration_min);
+    new.time_range := tstzrange(new.scheduled_at, new.end_at, '[)');
+  else
+    new.end_at     := null;
+    new.time_range := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists set_consultation_derived_fields_trg on public.consultations;
+
+-- Fires on EVERY insert/update (not just scheduled_at/duration_min
+-- changes) so a stray direct write to end_at or time_range can't
+-- desync them from scheduled_at + duration_min.
+create trigger set_consultation_derived_fields_trg
+  before insert or update on public.consultations
+  for each row execute function set_consultation_derived_fields();
+
+-- Backfill existing rows so the EXCLUDE constraint added below
+-- can build its GIST index from a complete time_range column.
+update public.consultations
+set end_at     = scheduled_at + make_interval(mins => duration_min),
+    time_range = tstzrange(scheduled_at, scheduled_at + make_interval(mins => duration_min), '[)')
+where scheduled_at is not null
+  and duration_min is not null
+  and (end_at is null or time_range is null);
 
 -- booked_via enum-by-check. DO block keeps reruns safe.
 do $$
