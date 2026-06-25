@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { consume, ipFor, CONFIRM_LIMIT } from '@/lib/booking/public-rate-limit'
+import { sendConsultationSms } from '@/lib/consultation-reminders'
+import { notifyOwnerOfBooking } from '@/lib/booking/owner-notification'
 
 /**
  * POST /api/booking/confirm — Phase 4 W2.
@@ -50,6 +52,11 @@ export async function POST(req: NextRequest) {
   const { consultation_id, hold_token } = parsed.data
 
   const nowIso = new Date().toISOString()
+  // Contract: status='scheduled' is what makes this row eligible for
+  // the 24h + 2h reminder cron (consultation-reminders.ts query uses
+  // status IN ('scheduled','confirmed')). Don't change to a new
+  // status without updating the reminder cron query in lockstep, or
+  // public bookings will silently lose reminders.
   const { data, error } = await supabaseAdmin
     .from('consultations')
     .update({
@@ -92,6 +99,81 @@ export async function POST(req: NextRequest) {
       scheduled_at:    data.scheduled_at,
       booked_via:      'public_page',
     },
+  })
+
+  // ── W4: close the booking loop ─────────────────────────────────
+  // Patient gets a confirmation SMS; owner gets an email. Both run
+  // via `after()` so the serverless runtime keeps the function alive
+  // until they finish — a bare detached promise would be guillotined
+  // when the response flushes, silently dropping the SMS/email. The
+  // patient already sees "you're booked" client-side, so we never
+  // want to block the 200 on Twilio/Resend latency either.
+  //
+  // Both blocks are INSIDE the if(data) branch so a duplicate POST
+  // (patient triple-tapping) only fires notifications from the
+  // winning request — the loser's UPDATE returns null and we 410
+  // above before reaching here.
+  //
+  // DEFERRED to W5: enqueueEnrollment({triggerType:'consultation_booked'})
+  // — the manual-booking path at /api/consultations/route.ts fires
+  // this, but the public path intentionally does not yet. Owners with
+  // configured "consultation_booked" automations will NOT see them
+  // fire for public bookings until this is wired. Tracked as a known
+  // asymmetry; revisit alongside reschedule/cancel in W5.
+  after(async () => {
+    try {
+      const [{ data: orgSms }, { data: contactSms }] = await Promise.all([
+        supabaseAdmin
+          .from('organizations')
+          .select(`
+            name, timezone,
+            sms_enabled, sms_confirmation_enabled,
+            sms_template_confirmation
+          `)
+          .eq('id', data.organization_id)
+          .single(),
+        supabaseAdmin
+          .from('contacts_active')
+          .select('id, first_name, phone, opted_out_sms, sms_consent')
+          .eq('id', data.contact_id)
+          .single(),
+      ])
+      if (!orgSms || !contactSms) {
+        // Without these the helper can't gate-check — leave an
+        // observable breadcrumb (no PHI) so a missing-org or
+        // hard-deleted-contact race surfaces in logs instead of
+        // disappearing as a silent skip.
+        console.error('[public-booking confirmation sms] precondition fetch returned null')
+        return
+      }
+      await sendConsultationSms({
+        type: 'confirmation',
+        org: orgSms as any,
+        contact: contactSms,
+        consultation: {
+          id: data.id,
+          organization_id: data.organization_id,
+          scheduled_at: data.scheduled_at,
+        },
+      })
+    } catch {
+      // Scrub: never log raw err here — public path could surface PHI
+      // (phone/name) through it. The send helper already writes a
+      // skipped/failed row to sms_log; that's the audit trail.
+      console.error('[public-booking confirmation sms] failed')
+    }
+  })
+
+  after(async () => {
+    try {
+      await notifyOwnerOfBooking({
+        organizationId: data.organization_id,
+        consultationId: data.id,
+        scheduledAtIso: data.scheduled_at,
+      })
+    } catch {
+      console.error('[public-booking owner notification] failed')
+    }
   })
 
   // Move the contact to "lead → booked" stage if the org has it.

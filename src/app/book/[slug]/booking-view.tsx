@@ -808,7 +808,7 @@ function DoneStep({
       <div>
         <h2 className="text-[18px] font-semibold text-[#14241D]">You're booked</h2>
         <p className="mt-1 text-[13px] text-[#4A5A60]">
-          We sent a confirmation to your phone. Reminders 24h and 2h before.
+          You'll get a confirmation and a reminder by text if your phone is opted in for messages.
         </p>
       </div>
       <div className="mx-auto max-w-md rounded-xl border border-[#02C39A]/30 bg-white p-4 text-left text-[13px] text-[#14241D]">
@@ -830,7 +830,7 @@ function DoneStep({
         )}
       </div>
       <p className="text-[11.5px] text-[#7E8C90]">
-        Need to reschedule? Just reply to the SMS we just sent.
+        Need to change your time? Contact {orgName} and they'll move it.
       </p>
     </div>
   )

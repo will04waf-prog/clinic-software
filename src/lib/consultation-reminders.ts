@@ -53,6 +53,14 @@ export async function sendConsultationReminders() {
       opted_out_sms, sms_consent
     `
 
+    // ┌─ Contract for the public-booking flow (Phase 4 W2/W4): ────┐
+    // │ /api/booking/confirm writes status='scheduled' on success. │
+    // │ Booking-page reminders rely on this query continuing to    │
+    // │ include 'scheduled' rows with reminder_*_sent=false. If a  │
+    // │ future cleanup narrows .in() (e.g. to 'confirmed' only),   │
+    // │ also update the confirm route to write that new status —   │
+    // │ otherwise public bookings silently lose reminders.         │
+    // └─────────────────────────────────────────────────────────────┘
     const [{ data: due24 }, { data: due2h }] = await Promise.all([
       supabaseAdmin
         .from('consultations')

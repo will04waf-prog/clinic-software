@@ -34,12 +34,27 @@ export function renderTemplate(template: string, vars: Record<string, string>) {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key.toLowerCase()] ?? `{{${key}}}`)
 }
 
+// HTML-escape user-controlled strings before splicing into the
+// template. clinicName + body come from org config and our own code
+// today, but owner-edited fields could contain `<`, `>`, `"`, `&`,
+// or `'`. Without this, a stray angle bracket would either break
+// the email rendering or, in the malicious-owner case, inject HTML
+// into another owner's notification (cross-org via shared template).
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Minimal HTML wrapper for plain-text style emails
 export function wrapEmailHtml(body: string, clinicName = 'your clinic') {
   const paragraphs = body
     .split('\n')
     .filter(Boolean)
-    .map((p) => `<p style="margin:0 0 16px 0;line-height:1.6;">${p}</p>`)
+    .map((p) => `<p style="margin:0 0 16px 0;line-height:1.6;">${escapeHtml(p)}</p>`)
     .join('')
 
   return `<!DOCTYPE html>
@@ -49,7 +64,7 @@ export function wrapEmailHtml(body: string, clinicName = 'your clinic') {
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;padding:40px;box-shadow:0 1px 3px rgba(0,0,0,.08);">
     ${paragraphs}
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
-    <p style="font-size:12px;color:#9ca3af;margin:0;">${clinicName}</p>
+    <p style="font-size:12px;color:#9ca3af;margin:0;">${escapeHtml(clinicName)}</p>
   </div>
 </body>
 </html>`
