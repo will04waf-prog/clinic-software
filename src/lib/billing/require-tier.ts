@@ -22,7 +22,7 @@ import {
 } from '@/lib/billing/org-tier'
 import { type TierId, type TierLimits } from '@/lib/billing/tiers'
 
-export type CapabilityKey = 'allowsVoiceTraining' | 'allowsAutonomousSend'
+export type CapabilityKey = 'allowsVoiceTraining' | 'allowsAutonomousSend' | 'allowsCallAgent'
 
 /**
  * The required tier for each gated capability. Drives both the locked
@@ -32,6 +32,7 @@ export type CapabilityKey = 'allowsVoiceTraining' | 'allowsAutonomousSend'
 export const REQUIRED_TIER_FOR: Record<CapabilityKey, TierId> = {
   allowsVoiceTraining:  'professional',
   allowsAutonomousSend: 'scale',
+  allowsCallAgent:      'scale',
 }
 
 export interface LockedBody {

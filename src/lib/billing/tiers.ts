@@ -23,6 +23,10 @@ export interface TierLimits {
   /** Gates auto-send settings, AI Twin briefing, AND the runtime
    * attemptAutoSend() refusal. Starter:false, Pro:false, Scale:true. */
   allowsAutonomousSend:      boolean
+  /** Phase 5 W1. Gates /settings/call-agent + the voice tool routes
+   *  + the inbound voice webhook's "hand to Vapi" branch.
+   *  Starter:false, Pro:false, Scale:true (Scale-exclusive at launch). */
+  allowsCallAgent:           boolean
 }
 
 export interface TierPricing {
@@ -45,6 +49,7 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsBulkImport:          false,
     allowsVoiceTraining:       false,
     allowsAutonomousSend:      false,
+    allowsCallAgent:           false,
   },
   professional: {
     maxContacts:               2500,
@@ -54,6 +59,7 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsBulkImport:          true,
     allowsVoiceTraining:       true,
     allowsAutonomousSend:      false,
+    allowsCallAgent:           false,
   },
   scale: {
     maxContacts:               Number.POSITIVE_INFINITY,
@@ -63,6 +69,7 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
     allowsBulkImport:          true,
     allowsVoiceTraining:       true,
     allowsAutonomousSend:      true,
+    allowsCallAgent:           true,
   },
 }
 

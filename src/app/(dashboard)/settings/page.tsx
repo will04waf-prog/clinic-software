@@ -6,6 +6,7 @@ import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
 import { BookingSettingsLinkCard } from '@/components/settings/booking-settings-link-card'
 import { TeamSettingsLinkCard } from '@/components/settings/team-settings-link-card'
+import { CallAgentLinkCard } from '@/components/settings/call-agent-link-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
@@ -83,6 +84,12 @@ export default async function SettingsPage() {
             only when the current user is the org owner. /settings/team
             also hard-redirects non-owners (defense in depth). */}
         {profile?.role === 'owner' && <TeamSettingsLinkCard />}
+
+        {/* P5 W1: Call agent — owner-only at the link layer; the
+            page also handles non-Scale orgs by surfacing
+            UpgradeCardLocked, so all roles below owner are hidden
+            and non-Scale Scale owners see the upgrade card on click. */}
+        {profile?.role === 'owner' && <CallAgentLinkCard />}
 
         <SmsSettingsCard initial={{
           sms_enabled:               org?.sms_enabled               ?? false,
