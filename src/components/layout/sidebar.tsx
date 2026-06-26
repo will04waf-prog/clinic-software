@@ -77,7 +77,11 @@ export function Sidebar({
         {NAV_ITEMS.map((item) => {
           const { href, label, icon: Icon } = item
           const tierBadge = 'tierBadge' in item ? item.tierBadge : undefined
-          const active = pathname.startsWith(href)
+          const active =
+            href === '/settings'
+              ? pathname === '/settings' ||
+                (pathname.startsWith('/settings/') && !pathname.startsWith('/settings/team'))
+              : pathname.startsWith(href)
           return (
             <Link
               key={href}

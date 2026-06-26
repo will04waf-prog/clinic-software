@@ -61,6 +61,18 @@ export async function POST(
       { status: 410 },
     )
   }
+  // Refuse to resurrect an already-expired invitation. Resend would
+  // extend expires_at +7d which effectively un-expires a dead row
+  // (the W9 cleanup cron flips revoked_at AFTER expires_at passes,
+  // but there's a window before the cron runs where an expired-but-
+  // not-yet-revoked row sits in the DB). Force the owner to revoke +
+  // re-invite instead.
+  if (new Date(invitation.expires_at).getTime() <= Date.now()) {
+    return NextResponse.json(
+      { error: 'expired', message: 'This invitation expired. Revoke it and send a fresh invitation.' },
+      { status: 410 },
+    )
+  }
 
   // Throttle — shares the per-(org, email) budget with the original
   // POST so a resend can't loophole the 3/hr cap.
@@ -126,6 +138,7 @@ export async function POST(
     expiresAt: new Date(newExpiresAt),
   })
 
+  let emailSent = process.env.RESEND_API_KEY ? false : true
   try {
     if (process.env.RESEND_API_KEY) {
       await sendEmail({
@@ -136,9 +149,26 @@ export async function POST(
         // doesn't silently swallow the re-send.
         idempotencyKey: `invite:${invitation.id}:resend:${newResendCount}`,
       })
+      emailSent = true
     }
   } catch {
     console.error('[invitation-resend] resend send failed')
+  }
+
+  // Surface dispatch failure as 502 so the UI can prompt a retry
+  // instead of showing success while the email is silently dropped.
+  // The invitation row stays updated (resend_count bumped, expiry
+  // extended) — owner can retry resend without burning extra
+  // throttle since the throttle row is already in place.
+  if (!emailSent) {
+    return NextResponse.json(
+      {
+        error: 'email_dispatch_failed',
+        message: 'Could not send the email. Try again in a moment.',
+        resend_count: newResendCount,
+      },
+      { status: 502 },
+    )
   }
 
   return NextResponse.json({ ok: true, resend_count: newResendCount })

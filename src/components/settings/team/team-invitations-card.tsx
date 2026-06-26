@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Mail, Plus, X, Send } from 'lucide-react'
+import { AlertTriangle, Loader2, Mail, Plus, X, Send } from 'lucide-react'
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card'
@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { UpgradeCardLocked, type RequiredTier } from '@/components/billing/upgrade-card-locked'
 
 interface Invitation {
   id: string
@@ -42,6 +43,22 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
 
+  // W9 Fix #18 — keep row-action errors distinct from the top-level
+  // load error so a failed Resend/Revoke doesn't wipe out the list.
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  // W9 Fix #17 — fail-open seat indicator. If /api/org/team/seats
+  // returns a non-ok we show a subtle "Seat usage unavailable" note
+  // but leave the Invite button enabled rather than locking out an
+  // owner because of an internal infrastructure error.
+  const [seatsError, setSeatsError] = useState(false)
+
+  // W9 Fix #19 — track which row has an in-flight resend so a
+  // double-tap doesn't fire two POSTs (which would bump resend_count
+  // twice and send two emails). Same idea for revoke for symmetry.
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const [revokingId, setRevokingId]   = useState<string | null>(null)
+
   const [open, setOpen]         = useState(false)
   const [email, setEmail]       = useState('')
   const [role, setRole]         = useState<Invitation['role']>('staff')
@@ -62,6 +79,7 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setSeatsError(false)
     try {
       const [invRes, seatsRes] = await Promise.all([
         fetch('/api/org/team/invitations', { cache: 'no-store' }),
@@ -71,8 +89,20 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
       const j = await invRes.json()
       setInvitations(Array.isArray(j.invitations) ? j.invitations : [])
       if (seatsRes.ok) {
-        const s = await seatsRes.json()
-        setSeats(s)
+        try {
+          const s = await seatsRes.json()
+          setSeats(s)
+        } catch {
+          // Malformed body — treat as fail-open: surface the
+          // "usage unavailable" indicator but leave Invite enabled.
+          setSeats(null)
+          setSeatsError(true)
+        }
+      } else {
+        // W9 Fix #17 — fail-open. Don't block invites just because
+        // the seats endpoint is having a bad day.
+        setSeats(null)
+        setSeatsError(true)
       }
     } catch (err: any) {
       setError(err?.message ?? 'Could not load invitations')
@@ -120,6 +150,12 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
   }
 
   async function resend(id: string) {
+    // W9 Fix #19 — guard against double-tap. Without this, two quick
+    // taps fire two POSTs which both increment resend_count and send
+    // two emails.
+    if (resendingId) return
+    setResendingId(id)
+    setActionError(null)
     try {
       const res = await fetch(`/api/org/team/invitations/${id}/resend`, { method: 'POST' })
       if (!res.ok) {
@@ -128,12 +164,19 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
       }
       await load()
     } catch (err: any) {
-      setError(err?.message ?? 'Could not re-send')
+      // W9 Fix #18 — surface as an action banner, NOT as a list
+      // replacement. The list of invitations should keep rendering.
+      setActionError(err?.message ?? 'Could not re-send')
+    } finally {
+      setResendingId(null)
     }
   }
 
   async function revoke(id: string) {
+    if (revokingId) return
     if (!confirm('Revoke this invitation? The link in their email will stop working.')) return
+    setRevokingId(id)
+    setActionError(null)
     try {
       const res = await fetch(`/api/org/team/invitations/${id}`, { method: 'DELETE' })
       if (!res.ok) {
@@ -142,9 +185,18 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
       }
       await load()
     } catch (err: any) {
-      setError(err?.message ?? 'Could not revoke')
+      setActionError(err?.message ?? 'Could not revoke')
+    } finally {
+      setRevokingId(null)
     }
   }
+
+  // W9 Fix #16 — when the org is at its seat cap, render an upgrade
+  // banner above the list with a real path forward (not just a
+  // disabled button + tooltip). Owners on Starter/Professional jump
+  // one tier; Scale orgs are already unlimited so this never renders.
+  const upgradeTarget: RequiredTier =
+    seats?.tier === 'professional' ? 'scale' : 'professional'
 
   return (
     <Card>
@@ -165,6 +217,14 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
                 )}
               </p>
             )}
+            {seatsError && (
+              // W9 Fix #17 — fail-open. Tell the owner the count is
+              // stale; don't lock them out of inviting.
+              <p className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-amber-700">
+                <AlertTriangle className="h-3 w-3" aria-hidden />
+                Seat usage unavailable
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -182,7 +242,44 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
           </button>
         </div>
       </CardHeader>
-      <CardContent className="text-sm">
+      <CardContent className="space-y-3 text-sm">
+        {/* W9 Fix #16 — at-cap upgrade banner. Renders above the list
+            so the owner has a real path forward, not just a disabled
+            Invite button + tooltip. */}
+        {atCap && seats && (
+          <UpgradeCardLocked
+            requiredTier={upgradeTarget}
+            capability="Team seats"
+            currentTier={seats.tier}
+            bullets={[
+              'Up to 5 teammates on Pro',
+              'Unlimited teammates on Scale',
+              'Same role-based access controls',
+            ]}
+          />
+        )}
+
+        {/* W9 Fix #18 — row-action error banner. Dismissible, sits
+            above the list. We do NOT replace the list with it — only
+            the top-level load failure does that. */}
+        {actionError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+          >
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <p className="flex-1">{actionError}</p>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              aria-label="Dismiss"
+              className="rounded p-0.5 text-red-700 hover:bg-red-100"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-gray-400">Loading…</p>
         ) : error ? (
@@ -196,38 +293,54 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
           </div>
         ) : (
           <ul className="space-y-2">
-            {invitations.map((inv) => (
-              <li key={inv.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-900 truncate">{inv.email}</p>
-                    <Badge variant={inv.role === 'admin' ? 'default' : 'secondary'}>
-                      {ROLE_LABEL[inv.role]}
-                    </Badge>
+            {invitations.map((inv) => {
+              const isResending = resendingId === inv.id
+              const isRevoking  = revokingId === inv.id
+              return (
+                <li key={inv.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900 truncate">{inv.email}</p>
+                      <Badge variant={inv.role === 'admin' ? 'default' : 'secondary'}>
+                        {ROLE_LABEL[inv.role]}
+                      </Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Expires {new Date(inv.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    Expires {new Date(inv.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => resend(inv.id)}
-                  className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                  aria-label="Re-send email"
-                  title="Re-send invitation email"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => revoke(inv.id)}
-                  className="rounded-lg p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                  aria-label="Revoke"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </li>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => resend(inv.id)}
+                    disabled={isResending || isRevoking}
+                    className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+                    aria-label="Re-send email"
+                    aria-busy={isResending}
+                    title={isResending ? 'Sending…' : 'Re-send invitation email'}
+                  >
+                    {isResending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => revoke(inv.id)}
+                    disabled={isResending || isRevoking}
+                    className="rounded-lg p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500"
+                    aria-label="Revoke"
+                    aria-busy={isRevoking}
+                  >
+                    {isRevoking ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </CardContent>

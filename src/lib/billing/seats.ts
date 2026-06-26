@@ -35,6 +35,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export interface SeatLockedBody {
   locked:        true
   error:         'seat_cap_reached'
+  /** Human-readable copy. The accept-invite page renders this to the
+   *  invitee verbatim — owner-side flows render UpgradeCardLocked
+   *  instead. The wording assumes the reader is the invitee, not the
+   *  owner, because the only post-launch path that surfaces this
+   *  body in user-facing UI is the accept page. */
+  message:       string
   required_tier: TierId
   current_tier:  TierId
   capability:    'team_seats'
@@ -110,6 +116,7 @@ export async function requireSeatAvailable(
     const body: SeatLockedBody = {
       locked:        true,
       error:         'seat_cap_reached',
+      message:       'This clinic is not currently set up to add teammates. Ask the clinic owner to complete billing setup.',
       required_tier: 'professional',
       current_tier:  'starter',
       capability:    'team_seats',
@@ -127,6 +134,7 @@ export async function requireSeatAvailable(
     const body: SeatLockedBody = {
       locked:        true,
       error:         'seat_cap_reached',
+      message:       `This clinic is at its seat limit (${total} of ${cap}). Ask the clinic owner to upgrade their plan or free a seat before retrying.`,
       required_tier: nextTierForSeats(eff.tier),
       current_tier:  eff.tier,
       capability:    'team_seats',

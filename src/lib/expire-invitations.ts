@@ -17,7 +17,7 @@ import { withCronLock } from '@/lib/cron-locks'
 const LOCK_KEY = 'invitation_sweep'
 const LOCK_TTL_SECONDS = 120
 
-export async function expireInvitations(): Promise<{ expired: number; skipped?: boolean }> {
+export async function expireInvitations(): Promise<{ expired: number; skipped?: boolean; error?: string }> {
   const outcome = await withCronLock(LOCK_KEY, LOCK_TTL_SECONDS, async () => {
     const nowIso = new Date().toISOString()
     const { data, error } = await supabaseAdmin
@@ -30,7 +30,7 @@ export async function expireInvitations(): Promise<{ expired: number; skipped?: 
 
     if (error) {
       console.error('[expire-invitations] sweep failed:', error.message)
-      return { expired: 0 }
+      return { expired: 0, error: error.message }
     }
     const expired = data?.length ?? 0
     if (expired > 0) {

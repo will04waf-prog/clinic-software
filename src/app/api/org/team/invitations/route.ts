@@ -70,13 +70,6 @@ export async function POST(req: NextRequest) {
   if (isDenied(gate)) return gate.response
   const orgId = gate.orgId
 
-  // W9 seat-cap gate. Counts active profiles + pending invitations
-  // so an owner can't issue N invites past cap. Returns the same 402
-  // LockedBody shape as requireCapability so the UI's UpgradeCardLocked
-  // works without changes.
-  const seats = await requireSeatAvailable(supabase, orgId)
-  if (!seats.ok) return seats.response
-
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
@@ -87,13 +80,14 @@ export async function POST(req: NextRequest) {
   }
   const { email, role } = parsed.data
 
-  // ── Refuse inviting an existing teammate of this org. ──
-  // We zod-canonicalize email to .toLowerCase() at parse time, and
-  // profiles.email is stored as the user typed it at signup. Use
-  // ilike with the email VALUE escaped so '_' and '%' in the input
-  // can't act as SQL wildcards — `.eq` against a lowercased value
-  // would only match exact-case stores, so escape + ilike is the
-  // safer middle ground until we citext-ify profiles.email.
+  // ── existingMember check fires BEFORE the seat-cap gate. ──
+  // Without this ordering, an owner at cap who tries to re-invite a
+  // current teammate would see a confusing "seat limit reached" 402
+  // instead of the truthful "that email is already on your team" 409.
+  // existingMember is a cheap indexed lookup; doing it first costs
+  // nothing.
+  // ilike with '_' and '%' escaped so wildcards in the email value
+  // can't act as SQL patterns.
   const escapedEmail = email.replace(/[\\%_]/g, m => '\\' + m)
   const { data: existingMember } = await supabaseAdmin
     .from('profiles')
@@ -107,6 +101,19 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     )
   }
+
+  // W9 seat-cap gate. Counts active profiles + pending invitations
+  // so an owner can't issue N invites past cap.
+  //
+  // KNOWN TOCTOU: this read-then-insert is non-atomic; two parallel
+  // POSTs to DIFFERENT emails from the same owner can both pass the
+  // gate (the partial unique index only catches same-email dupes).
+  // The narrow race window means an owner can occasionally over-invite
+  // by 1-2 seats; the accept-time gate catches downstream. Proper fix
+  // is a pg_advisory_xact_lock RPC — deferred to W10 alongside other
+  // billing tightening.
+  const seats = await requireSeatAvailable(supabase, orgId)
+  if (!seats.ok) return seats.response
 
   // ── Throttle: per-(org, email) cap at 3/hour. ──
   // Scoping to organization_id closes the cross-tenant DoS + activity-
