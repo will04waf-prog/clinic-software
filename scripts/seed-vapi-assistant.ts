@@ -53,9 +53,12 @@ const APP_URL             = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunn
 const SUPABASE_URL        = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY        = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Cartesia "Sonic Multilingual" warm-female neutral — change at will.
-const VOICE_PROVIDER = process.env.VAPI_VOICE_PROVIDER ?? 'cartesia'
-const VOICE_ID       = process.env.VAPI_VOICE_ID       ?? 'sonic-english-female-warm'
+// OpenAI's "alloy" — neutral, professional, always available with
+// no extra credentials. Override with VAPI_VOICE_PROVIDER + _ID if
+// you want Vapi-native ("Elliot", "Riley") or a real Cartesia voice
+// UUID from your Cartesia account.
+const VOICE_PROVIDER = process.env.VAPI_VOICE_PROVIDER ?? 'openai'
+const VOICE_ID       = process.env.VAPI_VOICE_ID       ?? 'alloy'
 
 // ─── Tool name → tool-endpoint path mapping ────────────────────
 // The system prompt references `get_context`, `lookup_availability`,
