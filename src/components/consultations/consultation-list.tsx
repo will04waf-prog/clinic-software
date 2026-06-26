@@ -43,7 +43,11 @@ export function ConsultationList({ consultations, onRefresh }: ConsultationListP
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? `HTTP ${res.status}`)
+        // Prefer the patient-friendly `message` over the raw `error`
+        // code (e.g. mapBookingError now returns
+        // { error: 'slot_unavailable', message: 'Slot was just taken...' }
+        // for EXCLUDE constraint hits).
+        throw new Error(body.message ?? body.error ?? `HTTP ${res.status}`)
       }
       onRefresh()
     } catch (err: any) {

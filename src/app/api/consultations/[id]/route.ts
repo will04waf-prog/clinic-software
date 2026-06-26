@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { enrollContact } from '@/lib/automation-engine'
 import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
+import { mapBookingError } from '@/lib/booking/db-errors'
 import { z } from 'zod'
 
 const VALID_STATUSES = [
@@ -45,7 +46,7 @@ export async function PATCH(
 
   const { data: consultation, error: fetchError } = await supabase
     .from('consultations')
-    .select('id, status, contact_id, organization_id')
+    .select('id, status, contact_id, organization_id, scheduled_at')
     .eq('id', id)
     .eq('organization_id', orgId)
     .single()
@@ -73,7 +74,39 @@ export async function PATCH(
     .eq('id', id)
     .eq('organization_id', orgId)
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+  if (updateError) {
+    // EXCLUDE constraint violation (slot taken when patching
+    // scheduled_at via drag-to-reschedule) → 409 with patient-friendly
+    // message. Other errors fall through to generic 500.
+    const mapped = mapBookingError(updateError)
+    if (mapped) return mapped
+    return NextResponse.json({ error: updateError.message }, { status: 500 })
+  }
+
+  // W7: also log scheduled_at-only changes (drag-to-reschedule from
+  // the dashboard). Important note for future maintainers: this PATCH
+  // path intentionally does NOT fire patient-facing SMS or owner
+  // notification emails when scheduled_at changes. The dashboard
+  // reschedule modal copy explicitly tells the owner they control
+  // who gets notified ("text or call them after if needed"). The
+  // patient-self reschedule path /api/booking/reschedule is where
+  // the automated SMS lives.
+  if (
+    updates.scheduled_at &&
+    updates.scheduled_at !== consultation.scheduled_at
+  ) {
+    await supabaseAdmin.from('activity_log').insert({
+      organization_id: orgId,
+      contact_id:      consultation.contact_id,
+      user_id:         user.id,
+      action:          'consultation_rescheduled_by_owner',
+      metadata: {
+        consultation_id:   id,
+        old_scheduled_at:  consultation.scheduled_at,
+        new_scheduled_at:  updates.scheduled_at,
+      },
+    })
+  }
 
   if (statusChanged && updates.status) {
     // Activity log

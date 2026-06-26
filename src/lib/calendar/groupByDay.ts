@@ -117,11 +117,19 @@ export function weekDayKeysContaining(ref: string | Date, timezone: string): Day
  * Use this for prev/next-week navigation: shiftDayKey(dayKey, 7).
  */
 export function shiftDayKey(key: DayKey, deltaDays: number, timezone: string): DayKey {
-  // Parse YYYY-MM-DD as noon UTC — far enough from midnight that no
-  // realistic timezone offset wraps to a different date.
+  // Find a UTC instant whose clinic-local date matches `key`. Noon
+  // UTC works for most zones (-12..+12) but Pacific/Kiritimati
+  // (UTC+14) and similar can be a full day ahead, so we may need to
+  // step back. Conversely, very-negative zones could need to step
+  // forward. Two iterations is sufficient for every IANA zone.
   const [y, m, d] = key.split('-').map(Number)
-  const noonUtc = Date.UTC(y, m - 1, d, 12, 0, 0)
-  return dayKeyInTz(new Date(noonUtc + deltaDays * 86_400_000), timezone)
+  let probeMs = Date.UTC(y, m - 1, d, 12, 0, 0)
+  for (let i = 0; i < 3; i++) {
+    const actual = dayKeyInTz(new Date(probeMs), timezone)
+    if (actual === key) break
+    probeMs += (actual < key ? 1 : -1) * 86_400_000
+  }
+  return dayKeyInTz(new Date(probeMs + deltaDays * 86_400_000), timezone)
 }
 
 /**

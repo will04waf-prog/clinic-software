@@ -60,7 +60,13 @@ export default function ConsultationsPage() {
   const [timezone,      setTimezone]      = useState<string>('America/New_York')
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState<string | null>(null)
-  const [tab,           setTab]           = useState('upcoming') // list-mode sub-tab
+  // List-mode sub-tab now lives in URL too, so deep links like
+  // /consultations?tab=no_shows work and browser back/forward
+  // navigates the tabs naturally.
+  const tabParam = searchParams.get('tab')
+  const tab = (tabParam === 'today' || tabParam === 'no_shows' || tabParam === 'completed' || tabParam === 'upcoming')
+    ? tabParam
+    : 'upcoming'
   const [fetchWindow, setFetchWindow] = useState<{ fromIso: string; toIso: string } | null>(null)
 
   const load = useCallback(async () => {
@@ -192,7 +198,7 @@ export default function ConsultationsPage() {
         {/* ── List sub-tabs (only in list mode) ── */}
         {view === 'list' && (
           <div className="overflow-x-auto">
-            <Tabs value={tab} onValueChange={setTab}>
+            <Tabs value={tab} onValueChange={(t) => setParam('tab', t === 'upcoming' ? null : t)}>
               <TabsList>
                 <TabsTrigger value="upcoming">Upcoming ({upcoming.length})</TabsTrigger>
                 <TabsTrigger value="today">Today ({today.length})</TabsTrigger>
@@ -225,6 +231,7 @@ export default function ConsultationsPage() {
               selectedConsultationId={selectedId}
               onSelectConsultation={selectConsultation}
               fetchWindow={fetchWindow ?? undefined}
+              onMutated={load}
             />
           ) : loading ? (
             <ConsultationsSkeleton />

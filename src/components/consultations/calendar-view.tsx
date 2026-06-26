@@ -20,10 +20,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { cn } from '@/lib/utils'
 import { CalendarGrid } from './calendar-grid'
 import { CalendarSkeleton } from './calendar-skeleton'
 import { weekDayKeysContaining, shiftDayKey, dayKeyInTz } from '@/lib/calendar/groupByDay'
+import { openHoursForDay, type AvailabilityRule, type AvailabilityOverride, type MinuteInterval } from '@/lib/calendar/openHoursForDay'
+import { localToUtc } from '@/lib/booking/time-utils'
+import { Button } from '@/components/ui/button'
 import type { Consultation } from '@/types'
 
 interface Provider {
@@ -52,6 +56,11 @@ export interface CalendarViewProps {
    * it's actually "no data fetched."
    */
   fetchWindow?: { fromIso: string; toIso: string }
+  /**
+   * W7: bubble up a reschedule mutation so the page can refresh
+   * after the new scheduled_at is committed.
+   */
+  onMutated?: () => void
 }
 
 // Tailwind breakpoint hook — true when viewport is >=768px (md).
@@ -86,6 +95,7 @@ export function CalendarView({
   selectedConsultationId,
   onSelectConsultation,
   fetchWindow,
+  onMutated,
 }: CalendarViewProps) {
   const desktop = useIsDesktop()
   const dayKeys = useMemo(() => {
@@ -98,20 +108,133 @@ export function CalendarView({
     return weekDayKeysContaining(noonUtc, timezone)
   }, [desktop, date, timezone])
 
-  // ── Provider roster fetch ──
+  // ── Provider roster + availability rules + overrides fetch ──
+  // All three drive the calendar context (filter chips, open-hours
+  // shading). Fetched once per mount; the calendar doesn't refetch
+  // on date change because rules/overrides are small (<<1KB for a
+  // typical clinic) and don't change often.
   const [providers, setProviders] = useState<Provider[]>([])
+  const [rules,     setRules]     = useState<AvailabilityRule[]>([])
+  const [overrides, setOverrides] = useState<AvailabilityOverride[]>([])
   useEffect(() => {
     let cancelled = false
-    fetch('/api/booking/providers', { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
-      .then(json => {
-        if (cancelled) return
-        const list = Array.isArray(json) ? json : (json.providers ?? [])
+    const safeFetch = (url: string) =>
+      fetch(url, { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+        .catch(() => null)
+    Promise.all([
+      safeFetch('/api/booking/providers'),
+      safeFetch('/api/booking/availability-rules'),
+      safeFetch('/api/booking/availability-overrides'),
+    ]).then(([provs, rulesRes, ovsRes]) => {
+      if (cancelled) return
+      if (provs) {
+        const list = Array.isArray(provs) ? provs : (provs.providers ?? [])
         setProviders(list.filter((p: Provider) => p.is_active))
-      })
-      .catch(() => { /* non-fatal — chips just won't render */ })
+      }
+      if (Array.isArray(rulesRes)) setRules(rulesRes)
+      if (Array.isArray(ovsRes))   setOverrides(ovsRes)
+    })
     return () => { cancelled = true }
   }, [])
+
+  // ── Open-hours per visible day ──
+  // Pre-computed once per dependency change so the grid receives a
+  // ready-to-render map. Empty per-day intervals are fine — the
+  // grid renders no shading for that day, which is honest about a
+  // clinic-wide closure or unconfigured rules.
+  // Honors the active provider filter so the shading matches the
+  // tiles visible in the grid — when staff filter to "Dr. Smith"
+  // only, the shading reflects Dr. Smith's hours, not the union.
+  const openHoursByDay = useMemo(() => {
+    if (providers.length === 0) return new Map<string, MinuteInterval[]>()
+    // 'unassigned' is a sentinel chip that filters tile visibility
+    // but maps to no real provider id — drop it before resolving
+    // open hours so an unassigned-only filter shades nothing
+    // (correct: provider_id NULL has no hours).
+    const filterReal = selectedProviderIds.filter(id => id !== 'unassigned')
+    const providerIds = filterReal.length === 0
+      ? providers.map(p => p.id)
+      : filterReal
+    const m = new Map<string, MinuteInterval[]>()
+    for (const dk of dayKeys) {
+      m.set(dk, openHoursForDay(dk, providerIds, rules, overrides))
+    }
+    return m
+  }, [dayKeys, providers, selectedProviderIds, rules, overrides])
+
+  // ── W7: reschedule via drag — modal state ──
+  // The grid emits onReschedule when a tile is dropped on a day
+  // column. We show a confirmation modal before firing the API
+  // (the API has SMS + email side-effects; double-confirming the
+  // mutation is worth the extra click).
+  const [pendingMove, setPendingMove] = useState<{
+    consultation: Consultation
+    newScheduledAt: string
+    oldScheduledAt: string
+  } | null>(null)
+  const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
+  // Standalone toast for cases where there's no pending move to attach
+  // the error to (e.g. DST spring-forward gap blocks the drop before
+  // the modal even opens). Auto-dismisses; can also be cleared manually.
+  const [toast, setToast] = useState<string | null>(null)
+
+  function handleDropReschedule(consultationId: string, dayKey: string, minuteOfDay: number) {
+    const c = consultations.find(x => x.id === consultationId)
+    if (!c) return
+    const [y, m, d] = dayKey.split('-').map(Number)
+    const newUtc = localToUtc({ year: y, month: m, day: d }, minuteOfDay, timezone)
+    if (!newUtc) {
+      // DST spring-forward gap — picked an instant that doesn't
+      // exist in clinic time. The modal isn't open (no pendingMove)
+      // so surface the error via the top-level toast banner instead;
+      // otherwise this branch would set hidden error state and the
+      // owner would think the drop did nothing.
+      setToast('That time doesn\'t exist on this day (DST gap). Try a slightly different slot.')
+      window.setTimeout(() => setToast(null), 4500)
+      return
+    }
+    // If the drop is to the same minute, skip the modal — no-op.
+    if (Math.abs(newUtc.getTime() - new Date(c.scheduled_at).getTime()) < 60_000) return
+    setPendingMove({
+      consultation: c,
+      newScheduledAt: newUtc.toISOString(),
+      oldScheduledAt: c.scheduled_at,
+    })
+    setRescheduleError(null)
+  }
+
+  async function confirmReschedule() {
+    if (!pendingMove) return
+    setRescheduleSubmitting(true)
+    setRescheduleError(null)
+    try {
+      // We don't have a manage token here (those are signed for
+      // patients on /manage/[token]). Owner-side reschedule should
+      // be handled via the dashboard's authenticated PATCH
+      // endpoint, NOT the public /api/booking/reschedule which
+      // requires a manage_token. Use the authenticated PATCH on
+      // the consultation row.
+      const res = await fetch(`/api/consultations/${pendingMove.consultation.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduled_at: pendingMove.newScheduledAt }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        // 409 from EXCLUDE constraint = slot taken.
+        if (res.status === 409) throw new Error('That slot was just taken. Please pick another time.')
+        throw new Error(j.error || j.message || `HTTP ${res.status}`)
+      }
+      setPendingMove(null)
+      onMutated?.()
+    } catch (err: any) {
+      setRescheduleError(err?.message || 'Could not move the appointment.')
+    } finally {
+      setRescheduleSubmitting(false)
+    }
+  }
 
   // ── Filter consultations by selected providers ──
   const filtered = useMemo(() => {
@@ -243,6 +366,28 @@ export function CalendarView({
         </div>
       )}
 
+      {/* ── First-run hint: no availability rules configured yet ── */}
+      {!loading && providers.length > 0 && rules.length === 0 && (
+        <div className="rounded-md border border-[#0B2027]/15 bg-[#FAF6EC] px-3 py-2 text-[12px] text-[#4A5A60]">
+          No clinic hours set yet — the calendar can't shade open times until you{' '}
+          <a href="/settings/booking" className="font-semibold text-[#04B08C] underline-offset-2 hover:underline">
+            add availability rules
+          </a>
+          .
+        </div>
+      )}
+
+      {/* ── Top-level toast (DST gap, unscoped errors) ── */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900"
+        >
+          {toast}
+        </div>
+      )}
+
       {/* ── Out-of-window banner ── */}
       {fetchWindow && dayKeys.length > 0 && (() => {
         // Build noon-UTC instants for the first/last displayed days,
@@ -276,8 +421,75 @@ export function CalendarView({
           timezone={timezone}
           selectedId={selectedConsultationId}
           onSelect={onSelectConsultation}
+          openHoursByDay={openHoursByDay}
+          onReschedule={handleDropReschedule}
         />
       )}
+
+      {/* ── Reschedule confirmation modal ── */}
+      <DialogPrimitive.Root
+        open={pendingMove !== null}
+        onOpenChange={(open) => {
+          // Don't close mid-submit — the user could miss the result
+          // of an in-flight reschedule and end up looking at stale UI.
+          if (!open && !rescheduleSubmitting) {
+            setPendingMove(null)
+            setRescheduleError(null)
+          }
+        }}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
+          <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[#0B2027]/10 bg-white p-5 shadow-xl">
+            <DialogPrimitive.Title className="text-[16px] font-semibold text-[#14241D]">Move appointment?</DialogPrimitive.Title>
+            <DialogPrimitive.Description className="sr-only">
+              Confirm rescheduling the consultation to the new time.
+            </DialogPrimitive.Description>
+            {pendingMove && (
+              <div className="mt-3 space-y-3 text-[13px] text-[#4A5A60]">
+                <p>
+                  Move{' '}
+                  <strong className="text-[#14241D]">
+                    {[pendingMove.consultation.contact?.first_name, pendingMove.consultation.contact?.last_name].filter(Boolean).join(' ') || 'this patient'}
+                  </strong>
+                  {' '}from{' '}
+                  <strong className="text-[#14241D]">
+                    {new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(pendingMove.oldScheduledAt))}
+                  </strong>
+                  {' '}to{' '}
+                  <strong className="text-[#14241D]">
+                    {new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(pendingMove.newScheduledAt))}
+                  </strong>
+                  ?
+                </p>
+                <p className="text-[12px] text-[#7E8C90]">
+                  The patient won't be notified automatically — text or call them after if needed.
+                </p>
+                {rescheduleError && (
+                  <p className="rounded-md border border-red-200 bg-red-50 px-2.5 py-2 text-[12px] text-red-700">{rescheduleError}</p>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setPendingMove(null); setRescheduleError(null) }}
+                    disabled={rescheduleSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={confirmReschedule}
+                    disabled={rescheduleSubmitting}
+                  >
+                    {rescheduleSubmitting ? 'Moving…' : 'Move appointment'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   )
 }

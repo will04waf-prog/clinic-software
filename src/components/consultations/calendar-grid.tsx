@@ -34,6 +34,15 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import {
+  DndContext,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
 import {
   bucketByClinicDay,
@@ -41,6 +50,7 @@ import {
   dayKeyInTz,
 } from '@/lib/calendar/groupByDay'
 import { layoutLanes, type LaneItem } from '@/lib/calendar/layoutLanes'
+import type { MinuteInterval } from '@/lib/calendar/openHoursForDay'
 import type { Consultation } from '@/types'
 
 export const DAY_START_HOUR = 7   // 7am
@@ -56,7 +66,28 @@ export interface CalendarGridProps {
   /** Optional id of the consultation currently selected (highlighted). */
   selectedId?: string | null
   onSelect?: (consultationId: string) => void
+  /**
+   * W7: clinic-local "open hours" intervals per day key. Rendered as
+   * faint background shading behind the hour grid so the owner can
+   * visually orient. Days missing from the map render with no
+   * shading (treated as closed for shading purposes — honest about
+   * unconfigured rules).
+   */
+  openHoursByDay?: Map<string, MinuteInterval[]>
+  /**
+   * W7: drag-to-reschedule. Fires when a draggable tile is released
+   * over a day column. The handler is expected to show a
+   * confirmation modal before calling the reschedule API; we don't
+   * mutate optimistically here because the user might dismiss.
+   *
+   * dayKey is YYYY-MM-DD clinic-local. minuteOfDay is the drop
+   * position snapped to 15-min increments, clamped to the visible
+   * 7am-9pm band.
+   */
+  onReschedule?: (consultationId: string, dayKey: string, minuteOfDay: number) => void
 }
+
+const SNAP_MINUTES = 15
 
 // ── Tile colors keyed by status ──
 function tileClassesForStatus(status: Consultation['status']): string {
@@ -120,13 +151,51 @@ function useNowMinutes(timezone: string): { minutes: number; dayKey: string } {
   }
 }
 
+// Drag eligibility — only active, future, owner-actionable rows.
+function isDraggable(c: Consultation): boolean {
+  if (c.status !== 'scheduled' && c.status !== 'confirmed') return false
+  return new Date(c.scheduled_at).getTime() > Date.now()
+}
+
 export function CalendarGrid({
   consultations,
   dayKeys,
   timezone,
   selectedId,
   onSelect,
+  openHoursByDay,
+  onReschedule,
 }: CalendarGridProps) {
+  // Pointer sensor — drag won't trigger until 6px of movement, so a
+  // bare click on a tile still opens the detail sheet.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    if (!onReschedule) return
+    const { active, over, delta, activatorEvent } = event
+    if (!over) return
+    // over.id encodes the target day key as `day:YYYY-MM-DD`.
+    const overId = String(over.id)
+    if (!overId.startsWith('day:')) return
+    const dayKey = overId.slice(4)
+    // Use VIEWPORT (clientY) coords, not page coords. over.rect.top
+    // returned by @dnd-kit is in viewport coords; mixing with pageY
+    // would silently break by window.scrollY pixels on any scrolled
+    // page. delta.y is itself a viewport delta.
+    const activator = activatorEvent as { clientY?: number } | undefined
+    const clientY = activator?.clientY
+    if (typeof clientY !== 'number') return
+    const dropClientY = clientY + delta.y
+    const rect = over.rect
+    const relY = dropClientY - rect.top
+    const ratio = Math.max(0, Math.min(1, relY / rect.height))
+    const rawMin = ratio * (DAY_END_HOUR - DAY_START_HOUR) * 60
+    const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES
+    const absoluteMinute = DAY_START_HOUR * 60 + snapped
+    onReschedule(String(active.id), dayKey, absoluteMinute)
+  }
   // ── Split rows up-front. Canceled/rescheduled don't compete for
   // lane space; they render as a small side indicator. ──
   const { active, canceled } = useMemo(() => {
@@ -186,6 +255,7 @@ export function CalendarGrid({
   const gridTemplate = `60px repeat(${dayKeys.length}, minmax(0, 1fr))`
 
   return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="rounded-xl border border-[#0B2027]/10 bg-white">
       {/* ── Header row ── */}
       <div
@@ -273,14 +343,27 @@ export function CalendarGrid({
           )
 
           return (
-            <div
-              key={`col-${dk}`}
-              className="relative col-span-1 border-l border-[#0B2027]/5"
-              style={{
-                gridColumn: colIdx + 2,
-                gridRow: `1 / ${DAY_END_HOUR - DAY_START_HOUR + 1}`,
-              }}
-            >
+            <DayColumn key={`col-${dk}`} dayKey={dk} colIdx={colIdx}>
+              {/* W7: Open-hours background fills — faint mint when the
+                  clinic is open. Rendered BEFORE the hour grid lines
+                  so the lines are still visible across the shading.
+                  Clamped to the visible 7am-9pm band. */}
+              {(openHoursByDay?.get(dk) ?? []).map((iv, i) => {
+                const cs = Math.max(iv.startMin, DAY_START_HOUR * 60)
+                const ce = Math.min(iv.endMin,   DAY_END_HOUR   * 60)
+                if (ce <= cs) return null
+                const top    = ((cs - DAY_START_HOUR * 60) / TOTAL_MINUTES) * 100
+                const height = ((ce - cs) / TOTAL_MINUTES) * 100
+                return (
+                  <div
+                    key={`open-${dk}-${i}`}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-0 right-0 bg-[#02C39A]/[0.07]"
+                    style={{ top: `${top}%`, height: `${height}%` }}
+                  />
+                )
+              })}
+
               {/* Faint hour grid lines */}
               {hourLabels.map(({ hour }) => (
                 <div
@@ -328,22 +411,17 @@ export function CalendarGrid({
                 const serviceName = c.service?.name || c.procedure_discussed?.[0] || c.type || 'Consult'
                 const srLabel = `${STATUS_LABEL_FOR_SR[c.status] ?? 'Scheduled'}: ${contactName}, ${serviceName}, ${tileTimeFmt.format(new Date(c.scheduled_at))}`
                 return (
-                  <button
+                  <DraggableTile
                     key={c.id}
-                    type="button"
+                    consultation={c}
+                    topPct={topPct}
+                    heightPct={heightPct}
+                    leftPct={leftPct}
+                    widthPct={widthPct}
+                    tileClasses={cn(tileClasses, !c.provider_id && 'border-dashed')}
+                    isSelected={isSelected}
+                    srLabel={srLabel}
                     onClick={() => onSelect?.(c.id)}
-                    aria-label={srLabel}
-                    className={cn(
-                      'absolute overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] leading-tight shadow-sm transition hover:z-10 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#04B08C] focus-visible:outline-offset-[-2px]',
-                      tileClasses,
-                      isSelected && 'ring-2 ring-inset ring-[#04B08C] z-10',
-                    )}
-                    style={{
-                      top:    `${topPct}%`,
-                      height: `${Math.max(heightPct, 3)}%`,
-                      left:   `calc(${leftPct}% + 2px)`,
-                      width:  `calc(${widthPct}% - 4px)`,
-                    }}
                   >
                     <div className="truncate font-semibold">
                       {tileTimeFmt.format(new Date(c.scheduled_at))} · {contactName}
@@ -351,7 +429,7 @@ export function CalendarGrid({
                     <div className="truncate text-[10px] opacity-80">
                       {serviceName}
                     </div>
-                  </button>
+                  </DraggableTile>
                 )
               })}
 
@@ -393,10 +471,107 @@ export function CalendarGrid({
                   <span className="ml-0 h-[2px] flex-1 bg-[#04B08C]" />
                 </div>
               )}
-            </div>
+            </DayColumn>
           )
         })}
       </div>
+    </div>
+    </DndContext>
+  )
+}
+
+// ── Draggable tile sub-component ──
+// useDraggable must be called inside a component — can't go inline
+// in a .map(). DraggableTile owns the hook + the visual feedback
+// (transform, opacity-while-dragging). When the consultation isn't
+// drag-eligible (hold, completed, no_show, canceled, or in the past)
+// the hook is `disabled`, listeners are no-ops, and the tile reverts
+// to a plain click target.
+function DraggableTile({
+  consultation,
+  topPct,
+  heightPct,
+  leftPct,
+  widthPct,
+  tileClasses,
+  isSelected,
+  srLabel,
+  onClick,
+  children,
+}: {
+  consultation: Consultation
+  topPct: number
+  heightPct: number
+  leftPct: number
+  widthPct: number
+  tileClasses: string
+  isSelected: boolean
+  srLabel: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  const disabled = !isDraggable(consultation)
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: consultation.id,
+    disabled,
+  })
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      onClick={onClick}
+      aria-label={srLabel}
+      className={cn(
+        'absolute overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] leading-tight shadow-sm transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#04B08C] focus-visible:outline-offset-[-2px]',
+        tileClasses,
+        isSelected && 'ring-2 ring-inset ring-[#04B08C]',
+        isDragging ? 'z-50 opacity-60 cursor-grabbing' : 'hover:z-10',
+        !disabled && !isDragging && 'cursor-grab',
+      )}
+      style={{
+        top:    `${topPct}%`,
+        height: `${Math.max(heightPct, 3)}%`,
+        left:   `calc(${leftPct}% + 2px)`,
+        width:  `calc(${widthPct}% - 4px)`,
+        transform: transform
+          ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+          : undefined,
+      }}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ── Droppable day column wrapper ──
+// useDroppable similarly must be inside a component. DayColumn just
+// adds the drop ref + a faint highlight while a drag is hovering.
+function DayColumn({
+  dayKey,
+  colIdx,
+  children,
+}: {
+  dayKey: string
+  colIdx: number
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `day:${dayKey}` })
+  return (
+    <div
+      ref={setNodeRef}
+      key={`col-${dayKey}`}
+      className={cn(
+        'relative col-span-1 border-l border-[#0B2027]/5',
+        isOver && 'bg-[#02C39A]/[0.04] outline outline-2 -outline-offset-2 outline-[#02C39A]/40',
+      )}
+      style={{
+        gridColumn: colIdx + 2,
+        gridRow: `1 / ${DAY_END_HOUR - DAY_START_HOUR + 1}`,
+      }}
+    >
+      {children}
     </div>
   )
 }
