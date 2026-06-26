@@ -25,6 +25,7 @@ import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { CallAgentSettingsCard } from '@/components/settings/call-agent/call-agent-settings-card'
+import { ClinicAddressCard, type ClinicAddressInitial } from '@/components/settings/call-agent/clinic-address-card'
 
 export default async function CallAgentSettingsPage() {
   const supabase = await createClient()
@@ -34,10 +35,30 @@ export default async function CallAgentSettingsPage() {
   // Owner-only — defense in depth (the API also enforces this).
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, organization_id')
     .eq('id', user.id)
     .single()
   if (profile?.role !== 'owner') redirect('/settings')
+
+  // Load existing clinic-address values so the form can hydrate. The
+  // server action does its own owner check on save, so a null org id
+  // here would have been caught by the role guard above.
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('address_line1, address_line2, city, region, postal_code, country_code, google_place_id, directions_notes')
+    .eq('id', profile.organization_id as string)
+    .single()
+
+  const initialAddress: ClinicAddressInitial = {
+    address_line1:    org?.address_line1    ?? null,
+    address_line2:    org?.address_line2    ?? null,
+    city:             org?.city             ?? null,
+    region:           org?.region           ?? null,
+    postal_code:      org?.postal_code      ?? null,
+    country_code:     org?.country_code     ?? null,
+    google_place_id:  org?.google_place_id  ?? null,
+    directions_notes: org?.directions_notes ?? null,
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -55,6 +76,7 @@ export default async function CallAgentSettingsPage() {
         </Link>
 
         <CallAgentSettingsCard />
+        <ClinicAddressCard initial={initialAddress} />
       </div>
     </div>
   )

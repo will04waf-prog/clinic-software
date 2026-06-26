@@ -66,12 +66,19 @@ const VOICE_ID       = process.env.VAPI_VOICE_ID       ?? 'alloy'
 // differently for URL terseness — keep this map in sync if you
 // rename either side.
 const ROUTE_BY_TOOL: Record<string, string> = {
-  get_context:            'context',
-  lookup_availability:    'availability',
-  lookup_my_appointments: 'my-appointments',
-  cancel_appointment:     'cancel-appointment',
-  create_hold:            'hold',
-  confirm_booking:        'confirm',
+  get_context:             'context',
+  find_service:            'find-service',
+  lookup_availability:     'availability',
+  lookup_my_appointments:  'my-appointments',
+  cancel_appointment:      'cancel-appointment',
+  create_hold:             'hold',
+  confirm_booking:         'confirm',
+  give_directions:         'give-directions',
+  send_link_sms:           'send-link-sms',
+  take_message:            'take-message',
+  transfer_to_human:       'transfer-to-human',
+  pre_visit_instructions:  'pre-visit-instructions',
+  post_call_summary_email: 'post-call-summary-email',
 }
 
 async function main() {

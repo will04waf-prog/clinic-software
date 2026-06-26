@@ -139,11 +139,210 @@ export const TOOL_CONFIRM_BOOKING: VapiTool = {
   },
 }
 
+export const TOOL_FIND_SERVICE: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'find_service',
+    description:
+      "Fuzzy-match what the caller said they want ('lip filler', 'tox', 'baby botox', 'laser for spots') to one or more services in this clinic's catalog. Use BEFORE calling lookup_availability or create_hold so you pick the right service_id instead of guessing from the catalog dump. Returns up to N ranked candidates with a confidence score and short description. If best_match_id is set, you may proceed straight to lookup_availability with that id; otherwise read the candidate names back and ask which one they mean. If matches is empty (reason: 'no_confident_match' or 'empty_query'), apologize and ask the caller to describe what they want a different way.",
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: "The raw phrase the caller said. Server normalizes it. Max 200 chars.",
+        },
+        max_results: {
+          type: 'integer',
+          description: 'Cap on candidates returned. Defaults to 3, max 5.',
+          minimum: 1,
+          maximum: 5,
+        },
+      },
+      required: ['query'],
+    },
+  },
+}
+
+export const TOOL_GIVE_DIRECTIONS: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'give_directions',
+    description:
+      "Returns the clinic's spoken street address and Google/Apple Maps deep links so Layla can read directions aloud. Pair with send_link_sms (link_kind='directions') when the caller wants a tap-to-open map. Returns ok:false with error='no_address_configured' if the org has not set an address — in that case fall back to handing off to the front desk.",
+    parameters: {
+      type: 'object',
+      properties: {
+        include_parking_notes: {
+          type: 'boolean',
+          description:
+            "Defaults true. When true and the org has directions_notes set (e.g. 'free parking in the rear lot'), the spoken response appends them.",
+        },
+      },
+      required: [],
+    },
+  },
+}
+
+export const TOOL_SEND_LINK_SMS: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'send_link_sms',
+    description:
+      "Mid-call: text the caller a one-tap link. Use when the caller agrees to be texted a booking page, a self-serve manage/reschedule link for an existing appointment, the new-patient intake form, or directions to the clinic. ALWAYS verbally confirm first ('want me to text it to you?') and only set consent_confirmed=true once they say yes. The destination is the caller's own number — you cannot text anyone else. Returns { sent: true } on success, or { sent: false, reason } when blocked.",
+    parameters: {
+      type: 'object',
+      properties: {
+        link_kind: {
+          type: 'string',
+          enum: ['booking', 'manage', 'intake', 'directions'],
+          description:
+            "Which canonical link to send. 'booking' → public booking page (optionally narrowed by service_slug). 'manage' → self-reschedule/cancel link for an existing consultation (requires consultation_id from a prior lookup_my_appointments call). 'intake' → the clinic's new-patient form. 'directions' → Google Maps deep link to the clinic.",
+        },
+        consent_confirmed: {
+          type: 'boolean',
+          description:
+            'Must be true. Set ONLY after the caller verbally agrees to receive the text.',
+        },
+        consultation_id: {
+          type: 'string',
+          description:
+            "UUID of the consultation to manage. Required when link_kind='manage'. Use the value from a prior lookup_my_appointments result.",
+        },
+        service_slug: {
+          type: 'string',
+          description:
+            "Optional. When link_kind='booking', narrows the link to a specific service. Silently dropped if it doesn't match.",
+        },
+      },
+      required: ['link_kind', 'consent_confirmed'],
+    },
+  },
+}
+
+export const TOOL_TAKE_MESSAGE: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'take_message',
+    description:
+      'Take a message from the caller for the clinic owner to follow up on async. Use this when the caller has a request you cannot fully resolve in the call OR when the caller explicitly asks to leave a message. Before invoking, you MUST: (1) collect the caller_name, (2) collect the message_text and READ IT BACK verbatim for confirmation, (3) ask their callback preference, (4) judge urgency. The caller phone is captured automatically from the call envelope — do not ask for it.',
+    parameters: {
+      type: 'object',
+      properties: {
+        caller_name: {
+          type: 'string',
+          description: "The caller's name as they said it. Max 120 chars.",
+          maxLength: 120,
+        },
+        message_text: {
+          type: 'string',
+          description: "The message body in the caller's own words. Read back verbatim before invoking. Max 2000 chars.",
+          maxLength: 2000,
+        },
+        callback_preference: {
+          type: 'string',
+          enum: ['call', 'text', 'either'],
+          description: "How the caller prefers to be reached back. Default 'either' if not stated.",
+        },
+        urgency: {
+          type: 'string',
+          enum: ['normal', 'urgent'],
+          description: "Use 'urgent' only when the caller explicitly says so or for time-sensitive clinical concerns.",
+        },
+      },
+      required: ['caller_name', 'message_text'],
+    },
+  },
+}
+
+export const TOOL_TRANSFER_TO_HUMAN: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'transfer_to_human',
+    description:
+      "Hand the call to a human at the clinic. Call this ONLY when you cannot help: clinical/medical questions, complaints, billing disputes, explicit ask for a human, or anything outside booking/availability/cancellation/messages. Do NOT use it just because the caller sounds frustrated — try once to resolve first. The destination phone is read server-side from the clinic's configured fallback. If the server returns transferred:false with reason:'fallback_unavailable', immediately call take_message instead.",
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          enum: ['clinical_question','complaint','billing_dispute','staff_request','caller_requested_human','other'],
+          description: 'Why you are handing off. Surfaced to the receiving human and logged for owner triage.',
+        },
+        caller_name: {
+          type: 'string',
+          description: "Caller's name if collected. Optional. Max 80 chars.",
+        },
+        summary: {
+          type: 'string',
+          description: 'One-sentence, non-clinical summary of what the caller wants. Do NOT include medical details. Max 280 chars.',
+        },
+      },
+      required: ['reason'],
+    },
+  },
+}
+
+export const TOOL_PRE_VISIT_INSTRUCTIONS: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'pre_visit_instructions',
+    description:
+      "Return the owner-authored pre-visit prep text for a service. Call this AFTER a booking is confirmed, or when the caller asks 'is there anything I need to do beforehand?'. Read the returned `instructions` aloud verbatim. If `has_instructions` is false, tell the caller there's no special prep needed.",
+    parameters: {
+      type: 'object',
+      properties: {
+        service_id: {
+          type: 'string',
+          description: 'UUID of the service (from find_service or get_context).',
+        },
+      },
+      required: ['service_id'],
+    },
+  },
+}
+
+export const TOOL_POST_CALL_SUMMARY_EMAIL: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'post_call_summary_email',
+    description:
+      "Call at the END of every call to log a structured disposition + PHI-free summary and email the owner. Use the closed-enum disposition. summary_text is generic prose for the in-app log — DO NOT include phone numbers, specific dates, or PHI; the server will strip them.",
+    parameters: {
+      type: 'object',
+      properties: {
+        disposition: {
+          type: 'string',
+          enum: ['booked','rescheduled','canceled','info_only','message_taken','transferred','abandoned','escalation_needed'],
+          description: 'How the call resolved.',
+        },
+        summary_text: {
+          type: 'string',
+          maxLength: 280,
+          description: 'One-line generic prose summary. ≤280 chars. NEVER emailed; persisted in-app only.',
+        },
+        contact_resolved: {
+          type: 'boolean',
+          description: 'true if the caller matched an existing contact record.',
+        },
+      },
+      required: ['disposition','summary_text','contact_resolved'],
+    },
+  },
+}
+
 export const ALL_TOOLS: VapiTool[] = [
   TOOL_GET_CONTEXT,
+  TOOL_FIND_SERVICE,
   TOOL_LOOKUP_AVAILABILITY,
   TOOL_LOOKUP_MY_APPOINTMENTS,
   TOOL_CANCEL_APPOINTMENT,
   TOOL_CREATE_HOLD,
   TOOL_CONFIRM_BOOKING,
+  TOOL_GIVE_DIRECTIONS,
+  TOOL_SEND_LINK_SMS,
+  TOOL_TAKE_MESSAGE,
+  TOOL_TRANSFER_TO_HUMAN,
+  TOOL_PRE_VISIT_INSTRUCTIONS,
+  TOOL_POST_CALL_SUMMARY_EMAIL,
 ]
