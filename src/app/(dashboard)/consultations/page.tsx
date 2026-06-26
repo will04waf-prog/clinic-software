@@ -86,7 +86,7 @@ export default function ConsultationsPage() {
       const res  = await fetch(url, { cache: 'no-store' })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || `HTTP ${res.status}`)
+        throw new Error(j.message ?? j.error ?? `HTTP ${res.status}`)
       }
       const json = await res.json()
       // /api/consultations returns either bare array (legacy) or

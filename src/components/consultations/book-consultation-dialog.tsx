@@ -71,7 +71,7 @@ export function BookConsultationDialog({ contactId, onSuccess }: BookConsultatio
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error ?? 'Failed to book consultation')
+        throw new Error(data.message ?? data.error ?? 'Failed to book consultation')
       }
 
       reset()

@@ -127,7 +127,7 @@ export function AiAutoSendCard() {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error ?? 'Save failed')
+        throw new Error(j.message ?? j.error ?? 'Save failed')
       }
       // Re-fetch to refresh eligibility (turning master ON can flip per-class verdicts).
       await load()

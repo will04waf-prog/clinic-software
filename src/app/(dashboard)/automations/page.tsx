@@ -71,14 +71,14 @@ export default function AutomationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (!res.ok) { const j = await res.json(); throw new Error(j.error ?? 'Failed to save') }
+      if (!res.ok) { const j = await res.json(); throw new Error(j.message ?? j.error ?? 'Failed to save') }
     } else if (editing) {
       const res = await fetch(`/api/automations/${editing.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (!res.ok) { const j = await res.json(); throw new Error(j.error ?? 'Failed to save') }
+      if (!res.ok) { const j = await res.json(); throw new Error(j.message ?? j.error ?? 'Failed to save') }
     }
     closeEditor()
     load()
@@ -93,7 +93,7 @@ export default function AutomationsPage() {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error ?? `HTTP ${res.status}`)
+        throw new Error(j.message ?? j.error ?? `HTTP ${res.status}`)
       }
       load()
     } catch (err: any) {
@@ -107,7 +107,7 @@ export default function AutomationsPage() {
       const res = await fetch(`/api/automations/${id}`, { method: 'DELETE' })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error ?? `HTTP ${res.status}`)
+        throw new Error(j.message ?? j.error ?? `HTTP ${res.status}`)
       }
       load()
     } catch (err: any) {

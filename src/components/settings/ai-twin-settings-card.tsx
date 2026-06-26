@@ -60,7 +60,7 @@ export function AiTwinSettingsCard({ initial }: { initial: AiTwinSettings }) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to save')
+        throw new Error(j.message ?? j.error ?? 'Failed to save')
       }
       const j = await res.json().catch(() => ({}))
       if (j.settings) setSettings(j.settings)

@@ -57,7 +57,7 @@ export function SmsConsentToggle({ contactId, smsConsent, optedOutSms }: Props) 
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error ?? `HTTP ${res.status}`)
+        throw new Error(data.message ?? data.error ?? `HTTP ${res.status}`)
       }
       onDone()
       router.refresh()

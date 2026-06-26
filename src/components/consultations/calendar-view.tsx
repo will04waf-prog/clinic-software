@@ -225,7 +225,7 @@ export function CalendarView({
         const j = await res.json().catch(() => ({}))
         // 409 from EXCLUDE constraint = slot taken.
         if (res.status === 409) throw new Error('That slot was just taken. Please pick another time.')
-        throw new Error(j.error || j.message || `HTTP ${res.status}`)
+        throw new Error(j.message ?? j.error ?? `HTTP ${res.status}`)
       }
       setPendingMove(null)
       onMutated?.()

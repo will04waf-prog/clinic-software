@@ -66,7 +66,7 @@ export function AddLeadDialog({ onSuccess }: AddLeadDialogProps) {
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error ?? 'Failed to create lead')
+        throw new Error(data.message ?? data.error ?? 'Failed to create lead')
       }
       reset()
       setSelectedProcedures([])

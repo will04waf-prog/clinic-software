@@ -83,7 +83,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to save')
+        throw new Error(j.message ?? j.error ?? 'Failed to save')
       }
       setSaved(true)
     } catch (err: any) {
