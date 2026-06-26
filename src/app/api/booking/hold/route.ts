@@ -207,7 +207,11 @@ export async function POST(req: NextRequest) {
       booked_via:         'public_page',
       hold_token:         holdToken,
       held_until:         heldUntil,
-      notes:              input.notes && input.notes.length > 0 ? input.notes : null,
+      // consultations table uses pre_consult_notes (context BEFORE the
+      // visit) and post_consult_notes — there is no flat `notes` column.
+      // The "anything we should know" field at booking time is
+      // pre-consult context by definition.
+      pre_consult_notes:  input.notes && input.notes.length > 0 ? input.notes : null,
     })
     .select('id')
     .single()
