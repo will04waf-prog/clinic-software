@@ -44,6 +44,18 @@ export async function POST(req: Request) {
   const argsFromE164 = typeof tc.arguments.from_e164 === 'string' ? tc.arguments.from_e164 : undefined
   const toE164   = normalizePhone(argsToE164   ?? tc.toE164   ?? '')
   const fromE164 = normalizePhone(argsFromE164 ?? tc.fromE164 ?? '')
+  // Diagnostic: capture WHICH payload field actually populated. We
+  // log only the digit-suffix (last 4) — never the full caller ID —
+  // and stamp the call_sid so an operator can correlate to a real
+  // call without seeing PII. Remove once the payload shape is locked.
+  console.log('[voice/tool/my-appointments] envelope', {
+    callSid:    tc.callSid,
+    toolFromE164_present: Boolean(tc.fromE164),
+    toolFromE164_tail:    tc.fromE164?.slice(-4),
+    argsFromE164_present: Boolean(argsFromE164),
+    normalized_from_tail: fromE164?.slice(-4),
+    toE164_tail:          toE164?.slice(-4),
+  })
   if (!toE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

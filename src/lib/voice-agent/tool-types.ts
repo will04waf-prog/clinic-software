@@ -62,6 +62,26 @@ export type ToolCallResult = ToolCallResultOk | ToolCallResultError
  * request (Vapi batches but we don't use that), so we return the
  * first element.
  */
+// Vapi has shifted these fields around dashboard versions:
+//   - phoneNumber.number = the receiving (clinic) number → toE164
+//   - customer.number    = the caller's number          → fromE164
+// Older payloads put them under `b.call.*`; newer payloads put them
+// under `b.message.*` as siblings of `call`; some put them at the
+// envelope root. Walk all three so we don't silently lose the
+// caller-id whenever Vapi rearranges the schema.
+function pickPhone(b: Record<string, any>, key: 'phoneNumber' | 'customer'): string | undefined {
+  const candidates = [
+    b?.call?.[key]?.number,
+    b?.message?.call?.[key]?.number,
+    b?.message?.[key]?.number,
+    b?.[key]?.number,
+  ]
+  for (const v of candidates) {
+    if (typeof v === 'string' && v.length > 0) return v
+  }
+  return undefined
+}
+
 export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | null {
   if (!body || typeof body !== 'object') return null
   const b = body as Record<string, any>
@@ -82,9 +102,9 @@ export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | nul
       toolCallId: String(tc.id),
       name:       String(tc.function.name ?? ''),
       arguments:  args,
-      callSid:    b.call?.id ? String(b.call.id) : undefined,
-      toE164:     b.call?.phoneNumber?.number ? String(b.call.phoneNumber.number) : undefined,
-      fromE164:   b.call?.customer?.number     ? String(b.call.customer.number)     : undefined,
+      callSid:    b.call?.id ?? b.message?.call?.id ? String(b.call?.id ?? b.message?.call?.id) : undefined,
+      toE164:     pickPhone(b, 'phoneNumber'),
+      fromE164:   pickPhone(b, 'customer'),
     }
   }
 
@@ -96,8 +116,8 @@ export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | nul
       name:       String(fc.name ?? ''),
       arguments:  (fc.parameters && typeof fc.parameters === 'object') ? fc.parameters as Record<string, unknown> : {},
       callSid:    b.call?.id ? String(b.call.id) : undefined,
-      toE164:     b.call?.phoneNumber?.number ? String(b.call.phoneNumber.number) : undefined,
-      fromE164:   b.call?.customer?.number     ? String(b.call.customer.number)     : undefined,
+      toE164:     pickPhone(b, 'phoneNumber'),
+      fromE164:   pickPhone(b, 'customer'),
     }
   }
 
