@@ -6,6 +6,7 @@ import { sendTrialReminders } from '@/lib/trial-reminders'
 import { processEnrollmentJobs } from '@/lib/enrollment-jobs'
 import { expireDrafts } from '@/lib/expire-drafts'
 import { expireBookingHolds } from '@/lib/booking/expire-holds'
+import { expireInvitations } from '@/lib/expire-invitations'
 
 // Called by an external cron (e.g. Vercel Cron, GitHub Actions, cron-job.org)
 // Protect with a shared secret in the Authorization header.
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [, , , , enrollmentResult, draftsResult, holdsResult] = await Promise.all([
+    const [, , , , enrollmentResult, draftsResult, holdsResult, invitesResult] = await Promise.all([
       processDueSteps(),
       sendConsultationReminders(),
       expireTrials(),
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
       processEnrollmentJobs(),
       expireDrafts(),
       expireBookingHolds(),
+      expireInvitations(),
     ])
     return NextResponse.json({
       ok: true,
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
       enrollment_jobs: enrollmentResult,
       drafts_expired: draftsResult.expired,
       holds_expired: holdsResult.expired,
+      invitations_expired: invitesResult.expired,
     })
   } catch (err: any) {
     console.error('[cron] error:', err.message)

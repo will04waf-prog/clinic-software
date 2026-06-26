@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   ClipboardList,
   Sparkles,
+  UserCog,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/ui/logo-mark'
@@ -47,7 +48,13 @@ const NAV_ITEMS = [
  * forest text. The bottom action buttons (Super Admin, Sign Out) live in
  * the forest zone with cream text.
  */
-export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
+export function Sidebar({
+  isSuperAdmin = false,
+  isOwner = false,
+}: {
+  isSuperAdmin?: boolean
+  isOwner?: boolean
+}) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -97,6 +104,21 @@ export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
 
       {/* Bottom actions — same cream bg, forest text */}
       <div className="border-t border-[#14241d]/10 p-3 space-y-0.5">
+        {isOwner && (
+          <Link
+            href="/settings/team"
+            prefetch
+            className={cn(
+              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 active:scale-[0.98]',
+              pathname.startsWith('/settings/team')
+                ? 'bg-[#02C39A]/15 text-[#14241d]'
+                : 'text-[#14241d]/75 hover:bg-[#14241d]/[0.06] hover:text-[#14241d]',
+            )}
+          >
+            <UserCog className={cn('h-4 w-4', pathname.startsWith('/settings/team') ? 'text-[#02C39A]' : 'text-[#14241d]/55')} />
+            Team
+          </Link>
+        )}
         {isSuperAdmin && (
           <Link
             href="/admin"

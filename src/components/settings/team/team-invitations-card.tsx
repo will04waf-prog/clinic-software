@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Mail, Plus, X } from 'lucide-react'
+import { Mail, Plus, X, Send } from 'lucide-react'
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card'
@@ -48,14 +48,32 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError]   = useState<string | null>(null)
 
+  // W9 seat indicator. Loaded alongside the invitations so the
+  // header can show "3 of 5 seats used" and the Invite button can
+  // pre-render a locked state when at cap.
+  const [seats, setSeats] = useState<{
+    tier: string
+    cap: number | 'unlimited'
+    used: number
+    active: number
+    pending: number
+  } | null>(null)
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/org/team/invitations', { cache: 'no-store' })
-      if (!res.ok) throw new Error('Could not load invitations')
-      const j = await res.json()
+      const [invRes, seatsRes] = await Promise.all([
+        fetch('/api/org/team/invitations', { cache: 'no-store' }),
+        fetch('/api/org/team/seats',       { cache: 'no-store' }),
+      ])
+      if (!invRes.ok) throw new Error('Could not load invitations')
+      const j = await invRes.json()
       setInvitations(Array.isArray(j.invitations) ? j.invitations : [])
+      if (seatsRes.ok) {
+        const s = await seatsRes.json()
+        setSeats(s)
+      }
     } catch (err: any) {
       setError(err?.message ?? 'Could not load invitations')
     } finally {
@@ -63,6 +81,9 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
     }
   }, [])
   useEffect(() => { load() }, [load])
+
+  const atCap =
+    seats !== null && seats.cap !== 'unlimited' && seats.used >= seats.cap
 
   function openInviteDialog() {
     setEmail('')
@@ -98,6 +119,19 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
     }
   }
 
+  async function resend(id: string) {
+    try {
+      const res = await fetch(`/api/org/team/invitations/${id}/resend`, { method: 'POST' })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.message ?? j.error ?? 'Could not re-send')
+      }
+      await load()
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not re-send')
+    }
+  }
+
   async function revoke(id: string) {
     if (!confirm('Revoke this invitation? The link in their email will stop working.')) return
     try {
@@ -116,14 +150,32 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-brand-600" />
-            Invitations
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-brand-600" />
+              Invitations
+            </CardTitle>
+            {seats && (
+              <p className="mt-1 text-[11.5px] text-gray-500">
+                {seats.used} of {seats.cap === 'unlimited' ? '∞' : seats.cap} seats used
+                {atCap && seats.cap !== 'unlimited' && (
+                  <span className="ml-1.5 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                    At cap
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={openInviteDialog}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+            disabled={atCap}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+              atCap
+                ? 'cursor-not-allowed bg-gray-200 text-gray-400'
+                : 'bg-brand-600 text-white hover:bg-brand-700'
+            }`}
+            title={atCap ? 'You are at your seat cap — upgrade or deactivate a teammate to invite' : undefined}
           >
             <Plus className="h-3.5 w-3.5" />
             Invite teammate
@@ -157,6 +209,15 @@ export function TeamInvitationsCard({ currentUserId }: { currentUserId: string }
                     Expires {new Date(inv.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => resend(inv.id)}
+                  className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                  aria-label="Re-send email"
+                  title="Re-send invitation email"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </button>
                 <button
                   type="button"
                   onClick={() => revoke(inv.id)}

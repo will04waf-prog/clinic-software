@@ -26,6 +26,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { requireSeatAvailable } from '@/lib/billing/seats'
 import { z } from 'zod'
 
 const acceptSchema = z.object({
@@ -85,6 +86,23 @@ export async function POST(req: NextRequest) {
   // below either (a) leaves accepted_at set with no usable side
   // effects (harmless dead row — the owner can re-invite) or
   // (b) rolls back the auth.users row we just created.
+
+  // ── 1b. Accept-time seat re-check (W9). ──
+  // Owner could have downgraded (trial→Starter) between invite and
+  // accept, leaving the org over-seated. Or a parallel accept could
+  // have consumed the last slot. We re-check using requireSeatAvailable
+  // — at this point the invitation is no longer pending (claim just
+  // flipped accepted_at), so the count reflects active+remaining-pending.
+  // If we're over cap, roll back the claim and return the same locked
+  // shape the UI already knows how to render.
+  const seats = await requireSeatAvailable(supabaseAdmin, claimed.organization_id)
+  if (!seats.ok) {
+    await supabaseAdmin
+      .from('team_invitations')
+      .update({ accepted_at: null })
+      .eq('id', claimed.id)
+    return seats.response
+  }
 
   // ── 2. Create the auth user. ──
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({

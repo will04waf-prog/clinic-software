@@ -6,6 +6,13 @@ export type BillingPeriod = 'monthly' | 'annual'
 
 export interface TierLimits {
   maxContacts: number              // Number.POSITIVE_INFINITY for unlimited
+  /** Phase 4 W9. Total active "seats" the org may have — counts both
+   * active profiles AND pending invitations so an owner can't issue
+   * N invites past cap. Number.POSITIVE_INFINITY for unlimited.
+   * Starter: 2 (owner + 1 staff for solo-practitioner clinics).
+   * Pro:     5 (owner + 4 staff for a typical small med spa).
+   * Scale:   unlimited. */
+  seatCap:                   number
   allowsAutomationSequences: boolean   // sequence engine for follow-up campaigns
   allowsAutomatedReminders:  boolean   // cron-driven 24h/2h consultation reminders
   allowsBulkImport:          boolean
@@ -32,6 +39,7 @@ export const TIER_DISPLAY_NAMES: Record<TierId, string> = {
 export const TIER_LIMITS: Record<TierId, TierLimits> = {
   starter: {
     maxContacts:               500,
+    seatCap:                   2,
     allowsAutomationSequences: false,
     allowsAutomatedReminders:  false,
     allowsBulkImport:          false,
@@ -40,6 +48,7 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
   },
   professional: {
     maxContacts:               2500,
+    seatCap:                   5,
     allowsAutomationSequences: true,
     allowsAutomatedReminders:  true,
     allowsBulkImport:          true,
@@ -48,6 +57,7 @@ export const TIER_LIMITS: Record<TierId, TierLimits> = {
   },
   scale: {
     maxContacts:               Number.POSITIVE_INFINITY,
+    seatCap:                   Number.POSITIVE_INFINITY,
     allowsAutomationSequences: true,
     allowsAutomatedReminders:  true,
     allowsBulkImport:          true,

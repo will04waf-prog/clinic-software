@@ -26,6 +26,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireRole, isDenied, OWNER_ONLY } from '@/lib/auth/roles'
+import { requireSeatAvailable } from '@/lib/billing/seats'
 import { sendEmail } from '@/lib/resend'
 import { buildInvitationEmail } from '@/lib/email/invitation-template'
 
@@ -68,6 +69,13 @@ export async function POST(req: NextRequest) {
   const gate = await requireRole(supabase, user.id, OWNER_ONLY)
   if (isDenied(gate)) return gate.response
   const orgId = gate.orgId
+
+  // W9 seat-cap gate. Counts active profiles + pending invitations
+  // so an owner can't issue N invites past cap. Returns the same 402
+  // LockedBody shape as requireCapability so the UI's UpgradeCardLocked
+  // works without changes.
+  const seats = await requireSeatAvailable(supabase, orgId)
+  if (!seats.ok) return seats.response
 
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
