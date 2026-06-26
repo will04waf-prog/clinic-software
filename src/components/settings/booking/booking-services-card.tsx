@@ -247,10 +247,16 @@ export function BookingServicesCard() {
         </div>
       </CardHeader>
       <CardContent className="text-sm">
+        {/* Render errors as a banner above the list, NOT in place of
+            it — a transient 403 (e.g. staff hitting DELETE) would
+            otherwise wipe the entire visible list. */}
+        {error && (
+          <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         {loading ? (
           <p className="text-gray-400">Loading…</p>
-        ) : error ? (
-          <p className="text-red-600">{error}</p>
         ) : (() => {
           const visibleServices = showInactive ? services : services.filter((s) => s.is_active)
           const inactiveCount = services.filter((s) => !s.is_active).length

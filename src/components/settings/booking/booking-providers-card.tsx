@@ -215,10 +215,17 @@ export function BookingProvidersCard() {
         </div>
       </CardHeader>
       <CardContent className="text-sm">
+        {/* Render errors as a banner above the list, NOT in place of
+            it. A transient 403 (e.g. staff hitting DELETE) would
+            otherwise wipe the entire visible list and make the
+            provider look like it had been deleted. */}
+        {error && (
+          <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         {loading ? (
           <p className="text-gray-400">Loading…</p>
-        ) : error ? (
-          <p className="text-red-600">{error}</p>
         ) : (() => {
           // Hide soft-deleted providers from the visible list unless
           // the toggle below is on. Count them separately so the user
