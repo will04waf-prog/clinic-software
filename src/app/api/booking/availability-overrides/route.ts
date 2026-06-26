@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { requireRole, isDenied, OWNER_ADMIN, OWNER_ADMIN_STAFF } from '@/lib/auth/roles'
 
-const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 const HHMM_RE = /^([01][0-9]|2[0-3]):[0-5][0-9]$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -29,15 +29,10 @@ export async function GET(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  const orgId = profile.organization_id
   const { searchParams } = new URL(req.url)
   const from = searchParams.get('from')
   const to = searchParams.get('to')
@@ -64,17 +59,9 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can change availability.' }, { status: 403 })
-  }
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
@@ -87,7 +74,6 @@ export async function POST(req: NextRequest) {
   }
 
   const { providerId, kind, date, startTime, endTime, reason } = parsed.data
-  const orgId = profile.organization_id
 
   if (providerId) {
     const { data: provider } = await supabase
@@ -129,23 +115,13 @@ export async function DELETE(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can change availability.' }, { status: 403 })
-  }
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id query param is required' }, { status: 400 })
-
-  const orgId = profile.organization_id
 
   const { data: existing } = await supabase
     .from('availability_overrides')

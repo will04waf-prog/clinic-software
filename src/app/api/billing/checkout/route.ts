@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import { priceIdForTier, type TierId, type BillingPeriod } from '@/lib/billing/tiers'
+import { requireRole, isDenied, OWNER_ONLY } from '@/lib/auth/roles'
 
 const VALID_TIERS:   readonly TierId[]        = ['starter', 'professional', 'scale']
 const VALID_PERIODS: readonly BillingPeriod[] = ['monthly', 'annual']
@@ -10,6 +11,10 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const gate = await requireRole(supabase, user.id, OWNER_ONLY)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   const body = await req.json().catch(() => null) as { tier?: unknown; period?: unknown } | null
   const tier   = body?.tier
@@ -20,15 +25,19 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, organization_id, organization:organizations(id, plan_status, stripe_customer_id, stripe_subscription_id)')
+    .select('email')
     .eq('id', user.id)
     .single()
 
-  if (!profile?.organization_id) {
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, plan_status, stripe_customer_id, stripe_subscription_id')
+    .eq('id', orgId)
+    .single()
+
+  if (!org) {
     return NextResponse.json({ error: 'No organization found' }, { status: 404 })
   }
-
-  const org = profile.organization as any
 
   // Already active → should use portal, not start a new checkout
   if (org.stripe_subscription_id && org.plan_status === 'active') {
@@ -44,7 +53,7 @@ export async function POST(req: NextRequest) {
       payment_method_types: ['card'],
       ...(org.stripe_customer_id
         ? { customer: org.stripe_customer_id }
-        : { customer_email: profile.email ?? undefined }),
+        : { customer_email: profile?.email ?? undefined }),
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
         organization_id: org.id,

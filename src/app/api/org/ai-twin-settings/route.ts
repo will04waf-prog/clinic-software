@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 import { z } from 'zod'
 
 // HH:MM with 24-hour clock. Accepts either null or a valid time-of-day
@@ -30,12 +31,8 @@ export async function PATCH(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(gate)) return gate.response
 
   const body = await request.json().catch(() => null)
   const parsed = AiTwinSettingsSchema.safeParse(body)
@@ -68,7 +65,7 @@ export async function PATCH(request: Request) {
   const { error } = await supabase
     .from('organizations')
     .update(update)
-    .eq('id', profile.organization_id)
+    .eq('id', gate.orgId)
 
   if (error) {
     console.error('[ai-twin-settings] update error:', error)

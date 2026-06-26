@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { requireCapability } from '@/lib/billing/require-tier'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 
 /**
  * GET   /api/org/voice-examples — list all voice examples for the
@@ -52,14 +53,11 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  const roleGate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(roleGate)) return roleGate.response
+  const orgId = roleGate.orgId
 
-  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  const gate = await requireCapability(supabase, orgId, 'allowsVoiceTraining')
   if (!gate.ok) return gate.response
 
   let rawBody: unknown
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
   const { count } = await supabase
     .from('voice_examples')
     .select('id', { count: 'exact', head: true })
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgId)
   if ((count ?? 0) >= MAX_EXAMPLES_PER_ORG) {
     return NextResponse.json({
       error: 'limit_reached',
@@ -85,7 +83,7 @@ export async function POST(request: NextRequest) {
   const { data: inserted, error: insErr } = await supabase
     .from('voice_examples')
     .insert({
-      organization_id: profile.organization_id,
+      organization_id: orgId,
       class:           parsed.data.class,
       label:           parsed.data.label ?? null,
       body:            parsed.data.body,

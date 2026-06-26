@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, isDenied, OWNER_ADMIN_STAFF } from '@/lib/auth/roles'
 import { z } from 'zod'
-
-const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 
 const createProviderSchema = z.object({
   display_name:      z.string().trim().min(1).max(120),
@@ -92,17 +91,9 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can manage providers.' }, { status: 403 })
-  }
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgIdForGate = gate.orgId
 
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
@@ -115,7 +106,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { service_ids, ...fields } = parsed.data
-  const orgId = profile.organization_id
+  const orgId = orgIdForGate
 
   // If profile_id provided, ensure it belongs to this org.
   if (fields.profile_id) {

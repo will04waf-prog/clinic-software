@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
 import { ServicesCard } from '@/components/settings/services-card'
 import { BookingSettingsLinkCard } from '@/components/settings/booking-settings-link-card'
+import { TeamSettingsLinkCard } from '@/components/settings/team-settings-link-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
@@ -77,6 +78,11 @@ export default async function SettingsPage() {
             here is the intake-form taxonomy; bookable services + providers
             + availability live on the booking sub-page. */}
         <BookingSettingsLinkCard />
+
+        {/* W8: Team management is owner-only — surface the link card
+            only when the current user is the org owner. /settings/team
+            also hard-redirects non-owners (defense in depth). */}
+        {profile?.role === 'owner' && <TeamSettingsLinkCard />}
 
         <SmsSettingsCard initial={{
           sms_enabled:               org?.sms_enabled               ?? false,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { requireCapability } from '@/lib/billing/require-tier'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 import {
   checkAutoSendEligibility,
   AUTO_SEND_BANNED_PHRASE_LOOKBACK_DAYS,
@@ -49,8 +50,6 @@ const PatchSchema = z.object({
     .optional(),
   shadow_mode: z.boolean().optional(),
 })
-
-const ADMIN_ROLES = new Set(['owner', 'admin'])
 
 interface PerClassStatus {
   class: VoiceExampleClass
@@ -283,21 +282,14 @@ export async function PATCH(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  const gate = await requireCapability(supabase, profile.organization_id, 'allowsAutonomousSend')
-  if (!gate.ok) return gate.response
-
   // Autonomous send goes to patients without further human review —
   // restrict toggle changes to admin-class roles.
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'forbidden', message: 'Only owners or admins can change autonomous-send settings.' }, { status: 403 })
-  }
+  const roleGate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(roleGate)) return roleGate.response
+  const orgId = roleGate.orgId
+
+  const capGate = await requireCapability(supabase, orgId, 'allowsAutonomousSend')
+  if (!capGate.ok) return capGate.response
 
   let rawBody: unknown
   try { rawBody = await request.json() } catch {
@@ -329,12 +321,12 @@ export async function PATCH(request: NextRequest) {
   const { error: updErr } = await supabase
     .from('organizations')
     .update(update)
-    .eq('id', profile.organization_id)
+    .eq('id', orgId)
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
 
   // Audit trail: every toggle change is an admin action.
   await supabase.from('activity_log').insert({
-    organization_id: profile.organization_id,
+    organization_id: orgId,
     action: 'ai_twin_auto_send_settings_changed',
     metadata: {
       ...update,

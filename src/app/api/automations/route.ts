@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { checkFeatureAccess } from '@/lib/billing/enforce-tier'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 import { z } from 'zod'
 
 const StepSchema = z.object({
@@ -49,8 +50,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const orgId = await getOrgId(supabase)
-  if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   const body = await request.json()
   const parsed = CreateSchema.safeParse(body)

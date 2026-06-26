@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, isDenied, OWNER_ADMIN, OWNER_ADMIN_STAFF } from '@/lib/auth/roles'
 import { z } from 'zod'
-
-const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 
@@ -20,15 +19,6 @@ const patchServiceSchema = z.object({
   provider_ids:         z.array(z.string().uuid()).optional(),
 }).strict()
 
-async function resolveOrg(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', userId)
-    .single()
-  return data
-}
-
 // ─── GET /api/booking/services/[id] ───────────────────────────
 export async function GET(
   _req: NextRequest,
@@ -40,10 +30,9 @@ export async function GET(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const profile = await resolveOrg(supabase, user.id)
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  const orgId = profile.organization_id
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   const { data: service, error } = await supabase
     .from('services')
@@ -93,14 +82,9 @@ export async function PATCH(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const profile = await resolveOrg(supabase, user.id)
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can manage services.' }, { status: 403 })
-  }
-
-  const orgId = profile.organization_id
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   const { data: existing } = await supabase
     .from('services')
@@ -206,14 +190,9 @@ export async function DELETE(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const profile = await resolveOrg(supabase, user.id)
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can manage services.' }, { status: 403 })
-  }
-
-  const orgId = profile.organization_id
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   const { error } = await supabase
     .from('services')

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, isDenied, OWNER_ADMIN_STAFF } from '@/lib/auth/roles'
 import { z } from 'zod'
-
-const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 
 // Hex color (#RGB or #RRGGBB) — same shape we accept elsewhere.
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
@@ -96,17 +95,9 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can manage services.' }, { status: 403 })
-  }
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
@@ -119,7 +110,6 @@ export async function POST(req: NextRequest) {
   }
 
   const { provider_ids, ...fields } = parsed.data
-  const orgId = profile.organization_id
 
   const { data: service, error: insertError } = await supabase
     .from('services')

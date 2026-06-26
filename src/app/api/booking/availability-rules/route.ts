@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { requireRole, isDenied, OWNER_ADMIN_STAFF } from '@/lib/auth/roles'
 
-const ADMIN_ROLES = new Set(['owner', 'admin', 'staff'])
 const HHMM_RE = /^([01][0-9]|2[0-3]):[0-5][0-9]$/
 
 const ruleSchema = z.object({
@@ -26,15 +26,10 @@ export async function GET(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  const orgId = profile.organization_id
   const { searchParams } = new URL(req.url)
   const providerId = searchParams.get('providerId')
 
@@ -61,17 +56,9 @@ export async function PUT(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-
-  if (!ADMIN_ROLES.has((profile.role as string) ?? '')) {
-    return NextResponse.json({ error: 'Only owners or admins can change availability.' }, { status: 403 })
-  }
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN_STAFF)
+  if (isDenied(gate)) return gate.response
+  const orgId = gate.orgId
 
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
@@ -84,7 +71,6 @@ export async function PUT(req: NextRequest) {
   }
 
   const { providerId, rules } = parsed.data
-  const orgId = profile.organization_id
 
   // Confirm provider belongs to this org.
   const { data: provider } = await supabase

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 
 /**
  * GET  /api/booking/org-settings  — current booking_enabled flag + slug
@@ -46,12 +47,8 @@ export async function PATCH(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(gate)) return gate.response
 
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
@@ -65,7 +62,7 @@ export async function PATCH(req: NextRequest) {
   const { error } = await supabase
     .from('organizations')
     .update({ booking_enabled: parsed.data.booking_enabled })
-    .eq('id', profile.organization_id)
+    .eq('id', gate.orgId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, booking_enabled: parsed.data.booking_enabled })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireCapability } from '@/lib/billing/require-tier'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 
 /**
  * DELETE /api/org/voice-examples/[id] — remove one example.
@@ -17,14 +18,11 @@ export async function DELETE(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  const roleGate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(roleGate)) return roleGate.response
+  const orgId = roleGate.orgId
 
-  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  const gate = await requireCapability(supabase, orgId, 'allowsVoiceTraining')
   if (!gate.ok) return gate.response
 
   const { data: existing } = await supabase
@@ -33,7 +31,7 @@ export async function DELETE(
     .eq('id', id)
     .single()
   if (!existing) return NextResponse.json({ error: 'Example not found' }, { status: 404 })
-  if (existing.organization_id !== profile.organization_id) {
+  if (existing.organization_id !== orgId) {
     return NextResponse.json({ error: 'Example not found' }, { status: 404 })
   }
 

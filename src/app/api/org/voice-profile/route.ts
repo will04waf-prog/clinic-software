@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireCapability } from '@/lib/billing/require-tier'
+import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 import {
   VoiceProfileSchema,
   readVoiceProfile,
@@ -50,14 +51,11 @@ export async function PATCH(request: NextRequest) {
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+  const roleGate = await requireRole(supabase, user.id, OWNER_ADMIN)
+  if (isDenied(roleGate)) return roleGate.response
+  const orgId = roleGate.orgId
 
-  const gate = await requireCapability(supabase, profile.organization_id, 'allowsVoiceTraining')
+  const gate = await requireCapability(supabase, orgId, 'allowsVoiceTraining')
   if (!gate.ok) return gate.response
 
   let rawBody: unknown
@@ -79,7 +77,7 @@ export async function PATCH(request: NextRequest) {
   const { data: existing } = await supabase
     .from('organizations')
     .select('ai_twin_voice_profile')
-    .eq('id', profile.organization_id)
+    .eq('id', orgId)
     .single()
 
   const current = readVoiceProfile(existing?.ai_twin_voice_profile)
@@ -88,7 +86,7 @@ export async function PATCH(request: NextRequest) {
   const { error: updErr } = await supabase
     .from('organizations')
     .update({ ai_twin_voice_profile: merged })
-    .eq('id', profile.organization_id)
+    .eq('id', orgId)
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
 
   return NextResponse.json({ profile: readVoiceProfile(merged) })
