@@ -196,7 +196,7 @@ export function AvailabilityOverridesCard({ timezone }: AvailabilityOverridesCar
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to save')
+        throw new Error(j.message || j.error || 'Failed to save')
       }
       setOpen(false)
       await load()
@@ -216,7 +216,7 @@ export function AvailabilityOverridesCard({ timezone }: AvailabilityOverridesCar
       )
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to remove override')
+        throw new Error(j.message || j.error || 'Failed to remove override')
       }
       await load()
     } catch (err) {

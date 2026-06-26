@@ -127,7 +127,7 @@ export function AvailabilityPreviewCard({ timezone }: Props) {
         })
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
-          throw new Error(j.error || 'Failed to load availability')
+          throw new Error(j.message || j.error || 'Failed to load availability')
         }
         const json = await res.json()
         setSlots(Array.isArray(json.slots) ? json.slots : [])

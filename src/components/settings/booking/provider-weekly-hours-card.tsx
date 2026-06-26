@@ -223,7 +223,7 @@ export function ProviderWeeklyHoursCard({ timezone }: Props) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to save')
+        throw new Error(j.message || j.error || 'Failed to save')
       }
       setSaved(true)
       setDirty(false)

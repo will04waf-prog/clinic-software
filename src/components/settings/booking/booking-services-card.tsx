@@ -192,7 +192,7 @@ export function BookingServicesCard() {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to save')
+        throw new Error(j.message || j.error || 'Failed to save')
       }
       setOpen(false)
       await load()
@@ -209,7 +209,7 @@ export function BookingServicesCard() {
       const res = await fetch(`/api/booking/services/${id}`, { method: 'DELETE' })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to remove service')
+        throw new Error(j.message || j.error || 'Failed to remove service')
       }
       await load()
     } catch (err) {

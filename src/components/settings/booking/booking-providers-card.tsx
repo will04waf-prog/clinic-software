@@ -159,7 +159,7 @@ export function BookingProvidersCard() {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to save')
+        throw new Error(j.message || j.error || 'Failed to save')
       }
       setOpen(false)
       await load()
@@ -176,7 +176,7 @@ export function BookingProvidersCard() {
       const res = await fetch(`/api/booking/providers/${id}`, { method: 'DELETE' })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Failed to remove provider')
+        throw new Error(j.message || j.error || 'Failed to remove provider')
       }
       await load()
     } catch (err) {

@@ -63,7 +63,7 @@ export function BookingMasterToggleCard() {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || 'Save failed')
+        throw new Error(j.message || j.error || 'Save failed')
       }
     } catch (err: unknown) {
       // Revert + surface the error so the toggle never lies about state.
