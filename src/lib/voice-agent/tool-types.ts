@@ -31,6 +31,12 @@ export interface NormalizedToolCall {
   callSid?: string
   /** The Twilio call's `to` number, used to resolve the org. */
   toE164?: string
+  /** The caller's number (Twilio `from`). Used by tools that look up
+   *  the caller as an existing contact (e.g. lookup_my_appointments).
+   *  Caller ID isn't strong identity proof, but for an existing
+   *  patient calling from their own phone it's the same signal a
+   *  human receptionist uses ("is this Sarah?"). */
+  fromE164?: string
 }
 
 export interface ToolCallResultOk {
@@ -78,6 +84,7 @@ export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | nul
       arguments:  args,
       callSid:    b.call?.id ? String(b.call.id) : undefined,
       toE164:     b.call?.phoneNumber?.number ? String(b.call.phoneNumber.number) : undefined,
+      fromE164:   b.call?.customer?.number     ? String(b.call.customer.number)     : undefined,
     }
   }
 
@@ -90,6 +97,7 @@ export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | nul
       arguments:  (fc.parameters && typeof fc.parameters === 'object') ? fc.parameters as Record<string, unknown> : {},
       callSid:    b.call?.id ? String(b.call.id) : undefined,
       toE164:     b.call?.phoneNumber?.number ? String(b.call.phoneNumber.number) : undefined,
+      fromE164:   b.call?.customer?.number     ? String(b.call.customer.number)     : undefined,
     }
   }
 

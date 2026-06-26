@@ -89,6 +89,20 @@ export const TOOL_CREATE_HOLD: VapiTool = {
   },
 }
 
+export const TOOL_LOOKUP_MY_APPOINTMENTS: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'lookup_my_appointments',
+    description:
+      "Look up the caller's own upcoming appointments using their caller ID. Use this when the caller asks \"do I have an appointment\" / \"when is my visit\" / \"is my booking confirmed.\" Takes no arguments — the caller's phone comes from the call envelope. Returns { found, appointments[] } with spoken time strings to read back, or { found: false, reason } if no match.",
+    parameters: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
+}
+
 export const TOOL_CONFIRM_BOOKING: VapiTool = {
   type: 'function',
   function: {
@@ -109,6 +123,7 @@ export const TOOL_CONFIRM_BOOKING: VapiTool = {
 export const ALL_TOOLS: VapiTool[] = [
   TOOL_GET_CONTEXT,
   TOOL_LOOKUP_AVAILABILITY,
+  TOOL_LOOKUP_MY_APPOINTMENTS,
   TOOL_CREATE_HOLD,
   TOOL_CONFIRM_BOOKING,
 ]
