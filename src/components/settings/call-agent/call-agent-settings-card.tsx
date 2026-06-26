@@ -197,40 +197,17 @@ export function CallAgentSettingsCard() {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="fallback">Fallback number</Label>
-            <Input
-              id="fallback"
-              type="tel"
-              placeholder="+15551234567"
-              value={config.call_agent_fallback_e164 ?? ''}
-              disabled={saving}
-              onChange={(e) => {
-                const v = e.target.value.trim()
-                patch({ call_agent_fallback_e164: v.length === 0 ? null : v })
-              }}
-            />
-            <p className="text-xs text-gray-500">
-              E.164 format. Where calls are bridged when the agent declines (safety triggers) or when mode is "Off" or "After hours" during business hours.
-            </p>
-          </div>
+          <FallbackInput
+            value={config.call_agent_fallback_e164}
+            disabled={saving}
+            onCommit={(v) => patch({ call_agent_fallback_e164: v })}
+          />
 
-          <div className="space-y-1.5">
-            <Label htmlFor="greeting">Custom greeting</Label>
-            <Input
-              id="greeting"
-              placeholder="e.g. Thanks for calling Maria Clinic"
-              value={config.call_agent_greeting ?? ''}
-              disabled={saving}
-              onChange={(e) => {
-                const v = e.target.value
-                patch({ call_agent_greeting: v.length === 0 ? null : v })
-              }}
-            />
-            <p className="text-xs text-gray-500">
-              Leave blank to use the clinic name. The agent's required AI disclosure + recording-consent lines are appended automatically.
-            </p>
-          </div>
+          <GreetingInput
+            value={config.call_agent_greeting}
+            disabled={saving}
+            onCommit={(v) => patch({ call_agent_greeting: v })}
+          />
 
           {error && (
             <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>
@@ -238,6 +215,70 @@ export function CallAgentSettingsCard() {
         </CardContent>
       </Card>
     </>
+  )
+}
+
+// Text inputs commit on blur (or Enter), not on every keystroke. The
+// previous version fired patch() per character + disabled the input
+// while the request was in flight — typing more than one digit was
+// impossible because the second char hit a disabled input.
+function FallbackInput({
+  value, disabled, onCommit,
+}: { value: string | null; disabled: boolean; onCommit: (v: string | null) => void }) {
+  const [draft, setDraft] = useState(value ?? '')
+  useEffect(() => { setDraft(value ?? '') }, [value])
+  const commit = () => {
+    const trimmed = draft.trim()
+    const next = trimmed.length === 0 ? null : trimmed
+    if (next === (value ?? null)) return
+    onCommit(next)
+  }
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="fallback">Fallback number</Label>
+      <Input
+        id="fallback"
+        type="tel"
+        placeholder="+15551234567"
+        value={draft}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+      />
+      <p className="text-xs text-gray-500">
+        E.164 format. Where calls bridge when the agent declines (safety triggers) or when mode is &quot;Off&quot; / &quot;After hours&quot; during business hours. Saves when you click away or press Enter.
+      </p>
+    </div>
+  )
+}
+
+function GreetingInput({
+  value, disabled, onCommit,
+}: { value: string | null; disabled: boolean; onCommit: (v: string | null) => void }) {
+  const [draft, setDraft] = useState(value ?? '')
+  useEffect(() => { setDraft(value ?? '') }, [value])
+  const commit = () => {
+    const next = draft.length === 0 ? null : draft
+    if (next === (value ?? null)) return
+    onCommit(next)
+  }
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="greeting">Custom greeting</Label>
+      <Input
+        id="greeting"
+        placeholder="e.g. Thanks for calling Maria Clinic"
+        value={draft}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+      />
+      <p className="text-xs text-gray-500">
+        Leave blank to use the clinic name. The agent&apos;s required AI disclosure + recording-consent lines are appended automatically. Saves when you click away or press Enter.
+      </p>
+    </div>
   )
 }
 

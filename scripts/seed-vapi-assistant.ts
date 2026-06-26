@@ -70,6 +70,7 @@ const ROUTE_BY_TOOL: Record<string, string> = {
   find_service:            'find-service',
   lookup_availability:     'availability',
   lookup_my_appointments:  'my-appointments',
+  reschedule_appointment:  'reschedule-appointment',
   cancel_appointment:      'cancel-appointment',
   create_hold:             'hold',
   confirm_booking:         'confirm',

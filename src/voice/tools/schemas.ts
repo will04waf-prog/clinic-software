@@ -94,11 +94,43 @@ export const TOOL_LOOKUP_MY_APPOINTMENTS: VapiTool = {
   function: {
     name: 'lookup_my_appointments',
     description:
-      "Look up the caller's own upcoming appointments using their caller ID. Use this when the caller asks \"do I have an appointment\" / \"when is my visit\" / \"is my booking confirmed.\" Takes no arguments — the caller's phone comes from the call envelope. Returns { found, appointments[] } with spoken time strings to read back, or { found: false, reason } if no match.",
+      "Look up upcoming appointments. By default uses the caller's caller ID — call with no args first. If found:false comes back, ask the caller which number they booked from, then call again with phone_number set to that number. Returns { found, appointments[] } with spoken time strings, or { found: false, reason }.",
     parameters: {
       type: 'object',
-      properties: {},
+      properties: {
+        phone_number: {
+          type: 'string',
+          description: "Optional. E.164 phone number to look up appointments by (e.g. '+15551234567'). Use this when the caller says they booked from a DIFFERENT number than the one they're calling from. Leave empty on the first call so we try the caller's own number first.",
+        },
+      },
       required: [],
+    },
+  },
+}
+
+export const TOOL_RESCHEDULE_APPOINTMENT: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'reschedule_appointment',
+    description:
+      "Reschedule one of the caller's existing appointments to a new slot. Use AFTER lookup_my_appointments returned the consultation AND lookup_availability gave you a target slot AND the caller confirmed the swap. The route re-verifies caller ownership and refuses if the new slot is already taken (rescheduled:false, reason:'slot_taken' — offer another slot).",
+    parameters: {
+      type: 'object',
+      properties: {
+        consultation_id: {
+          type: 'string',
+          description: 'consultation_id from a prior lookup_my_appointments result.',
+        },
+        new_slot_start_utc: {
+          type: 'string',
+          description: 'ISO 8601 UTC start time of the new slot, from lookup_availability.slots[*].start_utc.',
+        },
+        new_provider_id: {
+          type: 'string',
+          description: 'Optional provider id from lookup_availability.slots[*].provider_id. If omitted, the existing provider is kept.',
+        },
+      },
+      required: ['consultation_id', 'new_slot_start_utc'],
     },
   },
 }
@@ -336,6 +368,7 @@ export const ALL_TOOLS: VapiTool[] = [
   TOOL_FIND_SERVICE,
   TOOL_LOOKUP_AVAILABILITY,
   TOOL_LOOKUP_MY_APPOINTMENTS,
+  TOOL_RESCHEDULE_APPOINTMENT,
   TOOL_CANCEL_APPOINTMENT,
   TOOL_CREATE_HOLD,
   TOOL_CONFIRM_BOOKING,

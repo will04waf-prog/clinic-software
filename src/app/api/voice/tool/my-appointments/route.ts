@@ -41,9 +41,16 @@ export async function POST(req: Request) {
   // /tool/context). Production calls populate these from the call
   // envelope automatically.
   const argsToE164   = typeof tc.arguments.to_e164   === 'string' ? tc.arguments.to_e164   : undefined
-  const argsFromE164 = typeof tc.arguments.from_e164 === 'string' ? tc.arguments.from_e164 : undefined
-  const toE164   = normalizePhone(argsToE164   ?? tc.toE164   ?? '')
-  const fromE164 = normalizePhone(argsFromE164 ?? tc.fromE164 ?? '')
+  // Accept either `phone_number` (the prompt-facing arg Layla uses
+  // when the caller dictates a different number than their caller ID)
+  // OR `from_e164` (legacy dashboard-test arg). Either takes priority
+  // over the call envelope so a caller can find their booking when
+  // calling from someone else's phone.
+  const argsPhone =
+    (typeof tc.arguments.phone_number === 'string' ? tc.arguments.phone_number : undefined) ??
+    (typeof tc.arguments.from_e164     === 'string' ? tc.arguments.from_e164     : undefined)
+  const toE164   = normalizePhone(argsToE164 ?? tc.toE164   ?? '')
+  const fromE164 = normalizePhone(argsPhone  ?? tc.fromE164 ?? '')
   // Diagnostic: capture WHICH payload field actually populated. We
   // log only the digit-suffix (last 4) — never the full caller ID —
   // and stamp the call_sid so an operator can correlate to a real
@@ -52,7 +59,7 @@ export async function POST(req: Request) {
     callSid:    tc.callSid,
     toolFromE164_present: Boolean(tc.fromE164),
     toolFromE164_tail:    tc.fromE164?.slice(-4),
-    argsFromE164_present: Boolean(argsFromE164),
+    argsPhone_present:    Boolean(argsPhone),
     normalized_from_tail: fromE164?.slice(-4),
     toE164_tail:          toE164?.slice(-4),
   })
