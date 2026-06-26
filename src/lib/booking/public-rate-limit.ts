@@ -89,3 +89,18 @@ export const CONFIRM_LIMIT: RateLimitConfig = {
   limit: 20,
   windowMs: 60 * 60 * 1000, // 20 confirms per hour per IP
 }
+
+// Phase 4 W5: /manage/[token] reschedule + cancel routes. Tighter
+// than hold/confirm because a real patient only needs a handful of
+// reschedules — abuse is the most plausible explanation for bursts.
+export const RESCHEDULE_LIMIT: RateLimitConfig = {
+  scope: 'reschedule',
+  limit: 10,
+  windowMs: 60 * 60 * 1000, // 10 reschedules per hour per IP
+}
+
+export const CANCEL_LIMIT: RateLimitConfig = {
+  scope: 'cancel',
+  limit: 5,
+  windowMs: 60 * 60 * 1000, // 5 cancels per hour per IP
+}

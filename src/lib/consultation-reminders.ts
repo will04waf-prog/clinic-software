@@ -164,6 +164,26 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
     return
   }
 
+  // ── W5: freshness re-check ──
+  // The cron SELECTed this row some ms ago. A /api/booking/reschedule
+  // request (or /cancel) could have landed in between, leaving the
+  // in-memory snapshot pointing at a stale scheduled_at — we'd text
+  // the patient about the old slot AND clobber the reset flag. Re-read
+  // status + scheduled_at right before composing the message. Skip if
+  // the row was canceled or moved out of the reminder window.
+  const { data: fresh } = await supabaseAdmin
+    .from('consultations')
+    .select('status, scheduled_at')
+    .eq('id', consultation.id)
+    .maybeSingle()
+  if (!fresh) return
+  if (!['scheduled', 'confirmed'].includes(fresh.status)) return
+  if (fresh.scheduled_at !== consultation.scheduled_at) {
+    // Was rescheduled mid-tick. Let the next tick re-evaluate against
+    // the new scheduled_at; do not send a reminder for the OLD time.
+    return
+  }
+
   // ── SMS ───────────────────────────────────────────────────────
   await sendConsultationSms({
     type,
@@ -247,11 +267,19 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
   // path; SMS already ran above and has its own dedup via sms_log.
   if (!emailSucceeded) return
 
+  // ── W5 CAS: flip the flag ONLY if scheduled_at + the flag itself
+  // are still what we saw at SELECT time. If a reschedule landed
+  // between the freshness re-check and here (vanishingly rare, but
+  // possible), we don't want to claim the new scheduled_at was
+  // reminded — we just texted the old time. The 0-row outcome lets
+  // the next tick re-evaluate the row against its new state.
   const flag = type === 'reminder_24h' ? 'reminder_24h_sent' : 'reminder_2h_sent'
   await supabaseAdmin
     .from('consultations')
     .update({ [flag]: true })
     .eq('id', consultation.id)
+    .eq('scheduled_at', consultation.scheduled_at)
+    .eq(flag, false)
 }
 
 /**
@@ -263,6 +291,7 @@ export async function sendConsultationSms({
   org,
   contact,
   consultation,
+  manageUrl,
 }: {
   type: SmsMessageType
   org: {
@@ -284,6 +313,13 @@ export async function sendConsultationSms({
     sms_consent?: boolean
   }
   consultation: { id: string; organization_id: string; scheduled_at: string }
+  /**
+   * Phase 4 W5: public-booking confirmations pass a /manage/[token]
+   * URL; the template's {{manage_url}} placeholder expands to
+   * "Manage: <url> ". Manual-booking + reminder paths leave it
+   * undefined, and the placeholder collapses to "".
+   */
+  manageUrl?: string | null
 }): Promise<void> {
   const logBase = {
     organization_id: consultation.organization_id,
@@ -329,7 +365,7 @@ export async function sendConsultationSms({
     return
   }
 
-  const body = renderSmsForConsultation(type, org, contact, consultation.scheduled_at)
+  const body = renderSmsForConsultation(type, org, contact, consultation.scheduled_at, manageUrl)
 
   try {
     const result = await sendSMS(contact.phone, body)

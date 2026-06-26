@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── Standard auth routes ───────────────────────────────────
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/pricing', '/privacy', '/terms', '/sms-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book']
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/pricing', '/privacy', '/terms', '/sms-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage']
   const isPublic = publicRoutes.some((r) => pathname.startsWith(r))
 
   if (!user && !isPublic && pathname !== '/') {

@@ -4,6 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { consume, ipFor, CONFIRM_LIMIT } from '@/lib/booking/public-rate-limit'
 import { sendConsultationSms } from '@/lib/consultation-reminders'
 import { notifyOwnerOfBooking } from '@/lib/booking/owner-notification'
+import { signManageToken } from '@/lib/booking/manage-token'
+import { enqueueEnrollment } from '@/lib/enrollment-jobs'
 
 /**
  * POST /api/booking/confirm — Phase 4 W2.
@@ -101,11 +103,13 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // ── W4: close the booking loop ─────────────────────────────────
-  // Patient gets a confirmation SMS; owner gets an email. Both run
+  // ── W4/W5: close the booking loop ──────────────────────────────
+  // Patient gets a confirmation SMS containing a /manage/[token] link
+  // (W5 — self-reschedule/cancel); owner gets an email; the org's
+  // "consultation_booked" automations are enqueued. All three run
   // via `after()` so the serverless runtime keeps the function alive
   // until they finish — a bare detached promise would be guillotined
-  // when the response flushes, silently dropping the SMS/email. The
+  // when the response flushes, silently dropping the work. The
   // patient already sees "you're booked" client-side, so we never
   // want to block the 200 on Twilio/Resend latency either.
   //
@@ -114,12 +118,25 @@ export async function POST(req: NextRequest) {
   // winning request — the loser's UPDATE returns null and we 410
   // above before reaching here.
   //
-  // DEFERRED to W5: enqueueEnrollment({triggerType:'consultation_booked'})
-  // — the manual-booking path at /api/consultations/route.ts fires
-  // this, but the public path intentionally does not yet. Owners with
-  // configured "consultation_booked" automations will NOT see them
-  // fire for public bookings until this is wired. Tracked as a known
-  // asymmetry; revisit alongside reschedule/cancel in W5.
+  // Generate the manage token ONCE here, synchronously, so all three
+  // detached tasks share the same value (and so token generation —
+  // which can throw if MANAGE_TOKEN_SECRET is unset — surfaces before
+  // we return 200; a missing secret in prod is a configuration bug
+  // worth seeing in logs).
+  let manageUrl: string | null = null
+  try {
+    const token = signManageToken(data.id)
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net').replace(/\/$/, '')
+    manageUrl = `${appUrl}/manage/${token}`
+  } catch (err) {
+    // Don't fail the booking on a missing secret — the patient still
+    // gets a 200 and the dashboard still sees the row. The SMS just
+    // ships without a manage link, and a log line surfaces the
+    // misconfiguration. Falls back gracefully because manage_url is
+    // an optional template placeholder.
+    console.error('[public-booking manage token] failed to sign:', err instanceof Error ? err.message : 'unknown')
+  }
+
   after(async () => {
     try {
       const [{ data: orgSms }, { data: contactSms }] = await Promise.all([
@@ -155,6 +172,7 @@ export async function POST(req: NextRequest) {
           organization_id: data.organization_id,
           scheduled_at: data.scheduled_at,
         },
+        manageUrl,
       })
     } catch {
       // Scrub: never log raw err here — public path could surface PHI
@@ -173,6 +191,24 @@ export async function POST(req: NextRequest) {
       })
     } catch {
       console.error('[public-booking owner notification] failed')
+    }
+  })
+
+  // ── W5: automation parity with manual bookings ──
+  // /api/consultations/route.ts:166-181 enqueues this trigger when
+  // staff create a booking. Public bookings now get the same: any
+  // "consultation_booked" sequence the org configured fires for both
+  // creation paths.
+  after(async () => {
+    try {
+      await enqueueEnrollment({
+        contactId:      data.contact_id,
+        organizationId: data.organization_id,
+        triggerType:    'consultation_booked',
+      })
+    } catch {
+      // enqueueEnrollment already logs internally; swallow here so a
+      // queue hiccup doesn't surface a console.error twice.
     }
   })
 
