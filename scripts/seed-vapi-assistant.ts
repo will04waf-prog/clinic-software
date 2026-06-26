@@ -33,10 +33,19 @@
  * something else — list at https://docs.vapi.ai/voice/providers.
  */
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { config as loadEnv } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 import { ALL_TOOLS } from '../src/voice/tools/schemas'
+
+// Next.js loads .env.local automatically in the app; standalone
+// tsx scripts don't. Pull it in here so an invocation from the
+// repo root just works.
+for (const path of ['.env.local', '.env']) {
+  const full = resolve(process.cwd(), path)
+  if (existsSync(full)) loadEnv({ path: full })
+}
 
 const VAPI_API_KEY        = process.env.VAPI_API_KEY
 const VAPI_WEBHOOK_SECRET = process.env.VAPI_WEBHOOK_SECRET
