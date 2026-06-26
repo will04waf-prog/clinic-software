@@ -162,9 +162,17 @@ export interface Consultation {
   reminder_2h_sent: boolean
   created_at: string
   updated_at: string
+  // W1 booking columns. Nullable for legacy manual rows pre-W1.
+  provider_id?: string | null
+  service_id?: string | null
+  end_at?: string | null
+  held_until?: string | null
+  booked_via?: 'manual' | 'public_page' | 'ai_twin' | 'api' | null
   // Joined fields
   contact?: Contact
   assignee?: Profile
+  provider?: { id: string; display_name: string; photo_url?: string | null } | null
+  service?: { id: string; name: string; color?: string | null; duration_min: number } | null
 }
 
 export interface AutomationSequence {

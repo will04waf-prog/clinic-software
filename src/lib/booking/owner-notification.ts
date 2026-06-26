@@ -119,7 +119,10 @@ export async function notifyOwnerOfBooking(args: NotifyOwnerArgs): Promise<void>
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
 
-  const consultationsUrl = `${PUBLIC_APP_URL}/consultations`
+  // Deep-link to the calendar view directly so the owner lands on the
+  // grid (W6) rather than the legacy list — they're tapping a "new
+  // booking" email and visual context for the time slot is the point.
+  const consultationsUrl = `${PUBLIC_APP_URL}/consultations?view=calendar`
   const html = wrapEmailHtml(
     [
       BODY_BY_KIND[kind],

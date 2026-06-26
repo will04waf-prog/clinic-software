@@ -40,7 +40,7 @@ export function ScheduleRail({ schedule, dateLabel }: Props) {
           {dateLabel} · {consultCount} consult{consultCount === 1 ? '' : 's'}
         </span>
         <Link
-          href="/consultations"
+          href="/consultations?view=calendar"
           className="ml-auto inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#026B78] hover:text-[#028090]"
         >
           Open calendar

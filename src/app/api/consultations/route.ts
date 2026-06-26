@@ -43,6 +43,14 @@ export async function GET(req: NextRequest) {
   const from   = searchParams.get('from')
   const to     = searchParams.get('to')
 
+  // W6 calendar view fetches a known [from, to] window — raise the
+  // ceiling within that window so a busy multi-provider clinic isn't
+  // silently clipped at 200. The list view stays well under this cap
+  // because it scopes to the last 90 days. If both bounds are absent
+  // we keep the conservative cap to protect the dashboard fetch.
+  const windowed = !!(from && to)
+  const rowCap = windowed ? 500 : 200
+
   let query = supabase
     .from('consultations')
     .select(`
@@ -61,11 +69,19 @@ export async function GET(req: NextRequest) {
       reminder_2h_sent,
       created_at,
       updated_at,
+      provider_id,
+      service_id,
+      end_at,
+      held_until,
+      booked_via,
       contact:contacts ( id, first_name, last_name, email, phone ),
-      assignee:profiles ( full_name )
+      assignee:profiles ( full_name ),
+      provider:providers ( id, display_name, photo_url ),
+      service:services ( id, name, color, duration_min )
     `)
     .eq('organization_id', profile.organization_id)
     .order('scheduled_at', { ascending: true })
+    .limit(rowCap)
 
   if (status) query = query.eq('status', status)
   if (from)   query = query.gte('scheduled_at', from)
@@ -74,6 +90,25 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // W6: the calendar grid needs the clinic's timezone to bucket
+  // consults into day columns DST-safely. Surface it alongside the
+  // row data so the page doesn't need a second fetch. The legacy
+  // shape (a bare array) is still supported for back-compat — the
+  // wrapper kicks in only when the caller asks for it via
+  // ?include=organization.
+  const include = searchParams.get('include')
+  if (include === 'organization') {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('timezone')
+      .eq('id', profile.organization_id)
+      .maybeSingle()
+    return NextResponse.json({
+      consultations: data ?? [],
+      organization: { timezone: org?.timezone ?? null },
+    })
+  }
 
   return NextResponse.json(data ?? [])
 }
