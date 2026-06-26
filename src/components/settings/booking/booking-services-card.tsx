@@ -77,6 +77,10 @@ export function BookingServicesCard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // "Delete" is a soft-delete (sets is_active=false) — hide inactive
+  // rows by default so delete reads as expected. See parallel comment
+  // in booking-providers-card.tsx.
+  const [showInactive, setShowInactive] = useState(false)
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<DraftService>(EMPTY_DRAFT)
@@ -247,19 +251,28 @@ export function BookingServicesCard() {
           <p className="text-gray-400">Loading…</p>
         ) : error ? (
           <p className="text-red-600">{error}</p>
-        ) : services.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
-            <p className="text-sm font-medium text-gray-700">No services yet</p>
-            <p className="mt-1 text-xs text-gray-500">
-              Add the appointments patients can book — like "Botox consult — 30 min".
-            </p>
-          </div>
-        ) : (
+        ) : (() => {
+          const visibleServices = showInactive ? services : services.filter((s) => s.is_active)
+          const inactiveCount = services.filter((s) => !s.is_active).length
+          if (visibleServices.length === 0 && inactiveCount === 0) {
+            return (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
+                <p className="text-sm font-medium text-gray-700">No services yet</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Add the appointments patients can book — like "Botox consult — 30 min".
+                </p>
+              </div>
+            )
+          }
+          return (
+            <>
           <ul className="space-y-2">
-            {services.map((s) => (
+            {visibleServices.map((s) => (
               <li
                 key={s.id}
-                className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3"
+                className={`flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3 ${
+                  s.is_active ? '' : 'opacity-60'
+                }`}
               >
                 <div
                   className="mt-1 h-3 w-3 shrink-0 rounded-full"
@@ -321,7 +334,20 @@ export function BookingServicesCard() {
               </li>
             ))}
           </ul>
-        )}
+          {inactiveCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowInactive((v) => !v)}
+              className="mt-3 text-xs font-medium text-gray-500 hover:text-gray-700"
+            >
+              {showInactive
+                ? `Hide ${inactiveCount} inactive`
+                : `+${inactiveCount} inactive — show`}
+            </button>
+          )}
+            </>
+          )
+        })()}
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>

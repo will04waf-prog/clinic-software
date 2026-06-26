@@ -64,6 +64,12 @@ export function BookingProvidersCard() {
   const [draft, setDraft] = useState<DraftProvider>(EMPTY_DRAFT)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  // "Delete" is a soft-delete (sets is_active=false to preserve
+  // history on consultations that referenced this provider). The
+  // default view hides inactive rows so "delete" reads as expected;
+  // toggling this brings the inactive ones back so an accidental
+  // delete can be reactivated by editing.
+  const [showInactive, setShowInactive] = useState(false)
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
@@ -213,20 +219,36 @@ export function BookingProvidersCard() {
           <p className="text-gray-400">Loading…</p>
         ) : error ? (
           <p className="text-red-600">{error}</p>
-        ) : providers.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
-            <p className="text-sm font-medium text-gray-700">No providers yet</p>
-            <p className="mt-1 text-xs text-gray-500">
-              Add the people who perform consultations or services so patients
-              can book with them.
-            </p>
-          </div>
-        ) : (
+        ) : (() => {
+          // Hide soft-deleted providers from the visible list unless
+          // the toggle below is on. Count them separately so the user
+          // can recover one if they removed it by accident.
+          const visibleProviders = showInactive
+            ? providers
+            : providers.filter((p) => p.is_active)
+          const inactiveCount = providers.filter((p) => !p.is_active).length
+
+          if (visibleProviders.length === 0 && inactiveCount === 0) {
+            return (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
+                <p className="text-sm font-medium text-gray-700">No providers yet</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Add the people who perform consultations or services so patients
+                  can book with them.
+                </p>
+              </div>
+            )
+          }
+
+          return (
+            <>
           <ul className="space-y-2">
-            {providers.map((p) => (
+            {visibleProviders.map((p) => (
               <li
                 key={p.id}
-                className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3"
+                className={`flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3 ${
+                  p.is_active ? '' : 'opacity-60'
+                }`}
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-50 text-brand-600">
                   {p.photo_url ? (
@@ -292,7 +314,21 @@ export function BookingProvidersCard() {
               </li>
             ))}
           </ul>
-        )}
+
+          {inactiveCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowInactive((v) => !v)}
+              className="mt-3 text-xs font-medium text-gray-500 hover:text-gray-700"
+            >
+              {showInactive
+                ? `Hide ${inactiveCount} inactive`
+                : `+${inactiveCount} inactive — show`}
+            </button>
+          )}
+            </>
+          )
+        })()}
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
