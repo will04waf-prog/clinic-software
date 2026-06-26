@@ -115,11 +115,21 @@ export function AvailabilityOverridesCard({ timezone }: AvailabilityOverridesCar
       if (!pRes.ok) throw new Error('Failed to load providers')
       const oJson = await oRes.json()
       const pJson = await pRes.json()
-      const list: Override[] = Array.isArray(oJson.overrides) ? oJson.overrides : []
-      list.sort((a, b) => a.date.localeCompare(b.date))
-      setOverrides(list)
+      // The overrides endpoint returns a bare array; the providers
+      // endpoint returns { providers: [...] }. Be tolerant of both
+      // shapes for either source so a future API tweak doesn't
+      // silently empty the list again (which was the W7 "save doesn't
+      // stick" report — the data was saving, just not rendering).
+      const oList: Override[] = Array.isArray(oJson)
+        ? oJson
+        : (Array.isArray(oJson?.overrides) ? oJson.overrides : [])
+      oList.sort((a, b) => a.date.localeCompare(b.date))
+      setOverrides(oList)
+      const pList = Array.isArray(pJson)
+        ? pJson
+        : (Array.isArray(pJson?.providers) ? pJson.providers : [])
       setProviders(
-        (Array.isArray(pJson.providers) ? pJson.providers : []).map((p: any) => ({
+        pList.map((p: any) => ({
           id: p.id,
           display_name: p.display_name,
         })),

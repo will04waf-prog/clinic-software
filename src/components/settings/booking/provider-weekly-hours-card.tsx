@@ -102,7 +102,13 @@ export function ProviderWeeklyHoursCard({ timezone }: Props) {
       )
       if (!res.ok) throw new Error('Failed to load weekly hours')
       const json = await res.json()
-      const fetched: Rule[] = (Array.isArray(json.rules) ? json.rules : []).map((r: any) => ({
+      // Tolerate both shapes: bare array (what the API actually
+      // returns) AND { rules: [...] }. See the parallel fix in
+      // availability-overrides-card.tsx.
+      const arr = Array.isArray(json)
+        ? json
+        : (Array.isArray(json?.rules) ? json.rules : [])
+      const fetched: Rule[] = arr.map((r: any) => ({
         weekday: Number(r.weekday),
         startTime: String(r.start_time ?? r.startTime ?? '').slice(0, 5),
         endTime: String(r.end_time ?? r.endTime ?? '').slice(0, 5),
