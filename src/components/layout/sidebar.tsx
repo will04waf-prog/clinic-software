@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Sparkles,
   UserCog,
+  Voicemail,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/ui/logo-mark'
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: '/import-contacts',      label: 'Import Contacts',  icon: Upload },
   { href: '/pipeline',             label: 'Pipeline',         icon: Kanban },
   { href: '/consultations',        label: 'Consultations',    icon: CalendarCheck },
+  { href: '/voice-messages',       label: 'Voice messages',   icon: Voicemail },
   { href: '/automations',          label: 'Automations',      icon: Zap },
   // AI Twin operational surfaces. /ai-drafts/review is the daily
   // inbox of pending + resolved AI drafts (every tier uses it

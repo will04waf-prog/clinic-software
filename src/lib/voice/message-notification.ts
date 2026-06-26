@@ -79,11 +79,7 @@ export async function notifyOwnerOfVoiceMessage(
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
 
-  // Deep-link to the voice inbox. We don't have a dedicated route
-  // yet (W2 ships the data; UI lands later), so link to the
-  // dashboard inbox surface — owners will land on a sensible
-  // default even if the deep link 404s for now.
-  const inboxUrl = `${PUBLIC_APP_URL}/inbox`
+  const inboxUrl = `${PUBLIC_APP_URL}/voice-messages`
 
   const subject = urgency === 'urgent'
     ? `URGENT: new message at ${orgName}`
