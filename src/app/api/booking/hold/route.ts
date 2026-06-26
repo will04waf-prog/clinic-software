@@ -122,20 +122,38 @@ export async function POST(req: NextRequest) {
   }
   const durationMin = serviceRes.data.duration_min as number
 
-  // ── Dedup contact by normalized phone within the org. ──
+  // ── Dedup contact by phone OR email within the org. ──
   // Abandoned holds leave a contact row behind on purpose (the clinic
   // gets a real lead either way). Reusing an existing contact prevents
-  // duplicate rows for the same person across multiple booking attempts.
-  const phoneKey = normalizePhoneForDedup(input.phone)
+  // duplicate rows for the same person across multiple booking attempts,
+  // AND avoids tripping the contacts_org_email_unique index (which is
+  // case-insensitive on email AND filtered on deleted_at IS NULL +
+  // email IS NOT NULL). Phone takes priority — it's the channel we use
+  // for SMS confirmation and reminders.
+  const phoneKey   = normalizePhoneForDedup(input.phone)
+  const emailKey   = (input.email ?? '').trim().toLowerCase()
   let contactId: string | null = null
+
   if (phoneKey.length >= 7) {
     const { data: existing } = await supabaseAdmin
       .from('contacts')
       .select('id')
       .eq('organization_id', orgId)
       .eq('phone', input.phone)
+      .is('deleted_at', null)
       .maybeSingle()
     if (existing) contactId = existing.id as string
+  }
+
+  if (!contactId && emailKey.length > 0) {
+    const { data: existingByEmail } = await supabaseAdmin
+      .from('contacts')
+      .select('id')
+      .eq('organization_id', orgId)
+      .ilike('email', emailKey)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (existingByEmail) contactId = existingByEmail.id as string
   }
 
   if (!contactId) {
