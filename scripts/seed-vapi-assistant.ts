@@ -69,6 +69,7 @@ const ROUTE_BY_TOOL: Record<string, string> = {
   get_context:            'context',
   lookup_availability:    'availability',
   lookup_my_appointments: 'my-appointments',
+  cancel_appointment:     'cancel-appointment',
   create_hold:            'hold',
   confirm_booking:        'confirm',
 }

@@ -103,6 +103,25 @@ export const TOOL_LOOKUP_MY_APPOINTMENTS: VapiTool = {
   },
 }
 
+export const TOOL_CANCEL_APPOINTMENT: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'cancel_appointment',
+    description:
+      "Cancel one of the caller's upcoming appointments. Use ONLY after lookup_my_appointments returned a match AND the caller explicitly confirmed which one to cancel (read the date/time back to them first). The consultation_id MUST come from a prior lookup_my_appointments result — never guess. The route re-verifies the consultation belongs to the caller (caller-ID-gated), so a wrong id is safe-fail.",
+    parameters: {
+      type: 'object',
+      properties: {
+        consultation_id: {
+          type: 'string',
+          description: 'consultation_id from a prior lookup_my_appointments.appointments[*] entry.',
+        },
+      },
+      required: ['consultation_id'],
+    },
+  },
+}
+
 export const TOOL_CONFIRM_BOOKING: VapiTool = {
   type: 'function',
   function: {
@@ -124,6 +143,7 @@ export const ALL_TOOLS: VapiTool[] = [
   TOOL_GET_CONTEXT,
   TOOL_LOOKUP_AVAILABILITY,
   TOOL_LOOKUP_MY_APPOINTMENTS,
+  TOOL_CANCEL_APPOINTMENT,
   TOOL_CREATE_HOLD,
   TOOL_CONFIRM_BOOKING,
 ]
