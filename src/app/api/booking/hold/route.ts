@@ -177,11 +177,18 @@ export async function POST(req: NextRequest) {
     }
     contactId = newContact.id as string
   } else {
-    // Update consent + last contact info if reusing a contact.
+    // Reusing an existing contact. Refresh consent timestamps AND
+    // overwrite phone with what the patient typed — they're telling
+    // us their current number, and our stored value may be stale
+    // (e.g. the contact was created as a walk-in months ago with a
+    // family member's phone). The phone we use for the confirmation
+    // SMS should match what the patient just submitted, not whatever
+    // we had on file.
     await supabaseAdmin
       .from('contacts')
       .update({
-        sms_consent: true,
+        phone:          input.phone,
+        sms_consent:    true,
         sms_consent_at: new Date().toISOString(),
       })
       .eq('id', contactId)
