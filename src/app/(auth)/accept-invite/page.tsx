@@ -21,7 +21,7 @@
  * visitor can reach this page.
  */
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,36 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { LogoMark } from '@/components/ui/logo-mark'
 
+// Next 16 requires a Suspense boundary around any client component
+// that calls useSearchParams during static prerender. Without it,
+// `next build` fails the route with "Error occurred prerendering."
+// The default export wraps the real form (which calls
+// useSearchParams) in <Suspense>; the fallback is the same loading
+// chrome the form would render anyway.
 export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={<AcceptInviteShell />}>
+      <AcceptInviteForm />
+    </Suspense>
+  )
+}
+
+function AcceptInviteShell() {
+  return (
+    <div className="flex min-h-full flex-col items-center justify-center bg-[#F5EFE1] px-4 py-12">
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <LogoMark size="xl" standalone />
+      </div>
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Loading invitation…</CardTitle>
+        </CardHeader>
+      </Card>
+    </div>
+  )
+}
+
+function AcceptInviteForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token') ?? ''
