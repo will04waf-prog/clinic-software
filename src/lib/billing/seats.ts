@@ -111,6 +111,21 @@ export async function requireSeatAvailable(
   supabase: SupabaseClient,
   orgId: string,
 ): Promise<SeatResult> {
+  // Super-admin bypass — mirrors requireCapability. The platform
+  // owner / support engineers should be able to invite teammates
+  // into any org regardless of seat caps.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .single()
+    if (profile?.is_super_admin) {
+      return { ok: true, tier: 'scale', used: 0, cap: Number.POSITIVE_INFINITY }
+    }
+  }
+
   const eff = await fetchOrgTier(supabase, orgId)
   if (!eff) {
     const body: SeatLockedBody = {

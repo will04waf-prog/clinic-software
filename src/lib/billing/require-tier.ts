@@ -20,7 +20,7 @@ import {
   fetchOrgTier,
   hasCapability,
 } from '@/lib/billing/org-tier'
-import { type TierId, type TierLimits } from '@/lib/billing/tiers'
+import { TIER_LIMITS, type TierId, type TierLimits } from '@/lib/billing/tiers'
 
 export type CapabilityKey = 'allowsVoiceTraining' | 'allowsAutonomousSend' | 'allowsCallAgent'
 
@@ -87,6 +87,29 @@ export async function requireCapability(
   orgId:    string,
   key:      CapabilityKey,
 ): Promise<RequireResult> {
+  // ── Super-admin bypass. ──
+  // The platform owner (and any future support engineers with
+  // is_super_admin=true on their profile) need to access every
+  // feature for testing + cross-tenant support without being
+  // tier-gated. The bypass intentionally does NOT change the
+  // org's effective tier — downstream code that surfaces "you're
+  // on Pro" still says Pro; only the feature gate is bypassed.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .single()
+    if (profile?.is_super_admin) {
+      // Return Scale limits so any code that reads `gate.limits`
+      // doesn't accidentally get a downgraded view. tier reports
+      // 'scale' for the same reason — super-admin acting in any
+      // org behaves like a Scale customer.
+      return { ok: true, tier: 'scale', limits: TIER_LIMITS.scale }
+    }
+  }
+
   const eff = await fetchOrgTier(supabase, orgId)
 
   if (!eff) {
@@ -107,3 +130,4 @@ export async function requireCapability(
 
   return { ok: true, tier: eff.tier, limits: eff.limits }
 }
+
