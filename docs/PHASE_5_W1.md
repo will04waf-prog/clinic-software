@@ -21,58 +21,39 @@ a one-time manual config per clinic.
 
 ### 1. Create the Vapi assistant
 
-The system prompt + tool schemas live in `src/voice/prompts/receptionist.md`
-and `src/voice/tools/schemas.ts`. Pushing them to Vapi:
+There's a one-shot script that reads `src/voice/prompts/receptionist.md`,
+loads the tool schemas from `src/voice/tools/schemas.ts`, posts the
+assistant config to Vapi, and writes the returned id back to
+`organizations.call_agent_assistant_id` automatically.
 
-```typescript
-import { readFileSync } from 'fs'
-import { ALL_TOOLS } from '@/voice/tools/schemas'
+```bash
+# From the repo root, with .env.local populated:
+#   VAPI_API_KEY=...                  (private API key)
+#   VAPI_WEBHOOK_SECRET=...           (any 32+ char random string;
+#                                      set the same value in Vapi
+#                                      dashboard → Server URL → Secret)
+#   NEXT_PUBLIC_SUPABASE_URL=...
+#   SUPABASE_SERVICE_ROLE_KEY=...
+#   NEXT_PUBLIC_APP_URL=https://tarhunna.net
+#
+# Optional voice override (defaults to a neutral Cartesia voice):
+#   VAPI_VOICE_PROVIDER=cartesia
+#   VAPI_VOICE_ID=sonic-english-female-warm
 
-const prompt = readFileSync('src/voice/prompts/receptionist.md', 'utf-8')
-
-const res = await fetch('https://api.vapi.ai/assistant', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${process.env.VAPI_API_KEY}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    name: '<clinic name> receptionist',
-    model: {
-      provider: 'openai',
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'system', content: prompt }],
-      tools: ALL_TOOLS.map(t => ({
-        ...t,
-        server: {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/voice/tool/${shortName(t.function.name)}`,
-          secret: process.env.VAPI_WEBHOOK_SECRET,
-        },
-      })),
-    },
-    voice: { provider: 'cartesia', voiceId: '<pick one neutral voice>' },
-    firstMessage: '', // intentionally blank — Twilio plays our disclosure opener first
-    serverUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/vapi/call-end`,
-    serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET,
-  }),
-})
-const { id: assistantId } = await res.json()
+npx tsx scripts/seed-vapi-assistant.ts <org-id>
 ```
 
-`shortName` maps:
-- `get_context`         → `context`
-- `lookup_availability` → `availability`
-- `create_hold`         → `hold`
-- `confirm_booking`     → `confirm`
+On success you'll see:
 
-Save the returned `assistantId` to
-`organizations.call_agent_assistant_id`:
-
-```sql
-update organizations
-set call_agent_assistant_id = '<assistantId>'
-where id = '<org_id>';
 ```
+[seed-vapi] Created assistant <uuid>
+[seed-vapi] Saved call_agent_assistant_id on the org.
+[seed-vapi] Done. Visit /settings/call-agent on the dashboard to finish setup.
+```
+
+Re-running on the same org creates a fresh assistant and overwrites
+the saved id. Old Vapi assistants stay in your account — clean them
+up via the Vapi dashboard if you don't want stale ones around.
 
 ### 2. Point the Twilio number at our webhook
 
