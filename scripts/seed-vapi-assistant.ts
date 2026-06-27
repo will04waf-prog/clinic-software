@@ -80,6 +80,8 @@ const ROUTE_BY_TOOL: Record<string, string> = {
   transfer_to_human:       'transfer-to-human',
   pre_visit_instructions:  'pre-visit-instructions',
   post_call_summary_email: 'post-call-summary-email',
+  lookup_faq:              'lookup-faq',
+  confirm_appointment:     'confirm-appointment',
 }
 
 async function main() {

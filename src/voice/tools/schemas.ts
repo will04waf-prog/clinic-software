@@ -378,6 +378,45 @@ export const TOOL_POST_CALL_SUMMARY_EMAIL: VapiTool = {
   },
 }
 
+export const TOOL_CONFIRM_APPOINTMENT: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'confirm_appointment',
+    description:
+      "Used by the outbound reminder bot to mark a 'scheduled' consultation as 'confirmed' after the patient verbally agrees they're still coming. DIFFERENT from confirm_booking — that one finalizes a NEW booking from a hold; this one promotes an EXISTING scheduled appointment to confirmed status without changing its slot. The consultation_id MUST come from the call metadata that the cron injected at outbound-call time; never accept one from the caller's free-form speech. The route re-verifies the consultation belongs to the called patient via caller-ID match, so a stale or forged id is safe-fail. On success returns { confirmed: true }. On failure returns { confirmed: false, reason } where reason is one of: 'caller_not_recognized' (caller-id doesn't map to a contact in our records — apologize and end the call), 'ambiguous_caller_id' (more than one contact shares this number — defer to take_message), 'not_confirmable_or_not_yours' (consultation_id doesn't belong to this caller or is already in a non-confirmable state like canceled/completed — apologize and offer take_message), 'update_failed' (DB issue — apologize).",
+    parameters: {
+      type: 'object',
+      properties: {
+        consultation_id: {
+          type: 'string',
+          description: 'consultation_id from the outbound call metadata that the reminder cron injected. Required.',
+        },
+      },
+      required: ['consultation_id'],
+    },
+  },
+}
+
+export const TOOL_LOOKUP_FAQ: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'lookup_faq',
+    description:
+      "Fuzzy-match a caller's question against the clinic's owner-authored FAQ corpus and return up to 2 candidate answers with confidence scores. Use this for the long tail of policy / payment / insurance / sister-clinic / gift-card / cancellation-policy questions Layla doesn't otherwise know — PREFER the dedicated tools first: hours/services from get_context, per-service prep from pre_visit_instructions, address/parking from give_directions. Returns { matches: [{ id, question, answer, score }] } and an optional `reason` ('no_confident_match' | 'no_faqs_configured' | 'lookup_failed') when matches is empty. On a high-score match, read the `answer` field VERBATIM — it's owner-authored. On no_confident_match or no_faqs_configured, fall back to take_message rather than improvising.",
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: "The caller's question in their own words. Server normalizes it. Max 200 chars.",
+          maxLength: 200,
+        },
+      },
+      required: ['query'],
+    },
+  },
+}
+
 export const ALL_TOOLS: VapiTool[] = [
   TOOL_GET_CONTEXT,
   TOOL_FIND_SERVICE,
@@ -393,4 +432,6 @@ export const ALL_TOOLS: VapiTool[] = [
   TOOL_TRANSFER_TO_HUMAN,
   TOOL_PRE_VISIT_INSTRUCTIONS,
   TOOL_POST_CALL_SUMMARY_EMAIL,
+  TOOL_LOOKUP_FAQ,
+  TOOL_CONFIRM_APPOINTMENT,
 ]

@@ -1,10 +1,12 @@
 'use client'
 
 import { useTransition } from 'react'
+import Link from 'next/link'
 import { Phone, MessageCircle, AlertTriangle, Check, Undo2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { markResolved, reopenMessage } from '@/app/(dashboard)/voice-messages/actions'
+import { ReplyForm } from '@/components/voice-messages/reply-form'
 
 interface VoiceMessage {
   id:                  string
@@ -18,7 +20,10 @@ interface VoiceMessage {
   created_at:          string
 }
 
-export function VoiceMessageCard({ message }: { message: VoiceMessage }) {
+// Phase 5 W2: orgName is required so the inline ReplyForm can show
+// the prefix the patient will see ("{org_name}: <body>"). Passed
+// down from the page once per render rather than re-fetched per card.
+export function VoiceMessageCard({ message, orgName }: { message: VoiceMessage; orgName: string }) {
   const [pending, startTransition] = useTransition()
   const isOpen = message.status === 'open'
   const urgent = message.urgency === 'urgent'
@@ -52,7 +57,19 @@ export function VoiceMessageCard({ message }: { message: VoiceMessage }) {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              <a href={`tel:${message.caller_phone ?? ''}`} className="hover:text-[#02C39A]">{phoneDisplay}</a> · {when}
+              <a href={`tel:${message.caller_phone ?? ''}`} className="hover:text-[#02C39A]">{phoneDisplay}</a> ·{' '}
+              {message.call_sid ? (
+                // Deep-link the timestamp to the full call detail page so
+                // the owner can hear the recording and read the transcript
+                // that produced this voicemail. The page is owner-scoped
+                // and org-scoped by the call_sid lookup, matching the
+                // voicemail page's own auth model.
+                <Link href={`/calls/${encodeURIComponent(message.call_sid)}`} className="underline decoration-dotted hover:text-[#02C39A]">
+                  {when}
+                </Link>
+              ) : (
+                when
+              )}
             </p>
           </div>
           {isOpen ? (
@@ -83,6 +100,18 @@ export function VoiceMessageCard({ message }: { message: VoiceMessage }) {
         <div className="text-[11px] text-gray-500 flex items-center gap-1.5">
           {callPref}
         </div>
+
+        {/* Inline reply composer — open voicemails only, and only when
+            we have a number to text. The form sends the SMS and flips
+            the voicemail to 'resolved' in one action, so on success
+            this whole card disappears via revalidatePath. */}
+        {isOpen && message.caller_phone && (
+          <ReplyForm
+            messageId={message.id}
+            callerPhone={message.caller_phone}
+            orgName={orgName}
+          />
+        )}
       </CardContent>
     </Card>
   )

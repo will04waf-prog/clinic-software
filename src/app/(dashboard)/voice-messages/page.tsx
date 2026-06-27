@@ -18,6 +18,15 @@ export default async function VoiceMessagesPage() {
     .single()
   if (profile?.role !== 'owner') redirect('/dashboard')
 
+  // Org name flows into each card so the inline ReplyForm can show
+  // the prefix the patient will see in the outbound SMS body.
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('name')
+    .eq('id', profile.organization_id as string)
+    .single()
+  const orgName = org?.name ?? 'Your clinic'
+
   const { data: messages } = await supabase
     .from('voice_messages')
     .select('id, caller_name, caller_phone, message_text, urgency, callback_preference, status, call_sid, created_at')
@@ -70,6 +79,7 @@ export default async function VoiceMessagesPage() {
                 <VoiceMessageCard
                   key={m.id}
                   message={m}
+                  orgName={orgName}
                 />
               ))}
             </div>
@@ -86,6 +96,7 @@ export default async function VoiceMessagesPage() {
                 <VoiceMessageCard
                   key={m.id}
                   message={m}
+                  orgName={orgName}
                 />
               ))}
             </div>

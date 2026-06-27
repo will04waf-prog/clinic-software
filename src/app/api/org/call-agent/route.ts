@@ -37,6 +37,21 @@ const patchSchema = z.object({
   call_agent_business_hours:    businessHoursSchema,
   call_agent_greeting:          z.string().max(300).nullable().optional(),
   call_agent_baa_attested:      z.boolean().optional(),
+  // Phase 5 W2 outbound AI reminder toggles. lead_hours is clamped
+  // here to match the DB CHECK (2..72) so a malformed PATCH 400s at
+  // the API layer instead of surfacing as an opaque Postgres
+  // constraint violation. Enabling the toggle does NOT require the
+  // BAA gate independently — call_agent_enabled already enforces
+  // it, and an org cannot turn voice_reminder_enabled on without
+  // call_agent_enabled being on too (the UI keeps the reminder
+  // toggle disabled until the agent is live).
+  voice_reminder_enabled:       z.boolean().optional(),
+  voice_reminder_lead_hours:    z.number().int().min(2).max(72).optional(),
+  // TCPA: setting this to true stamps voice_reminder_consent_attested_at
+  // with now(); false clears it. Independent of BAA (different legal
+  // surface — robocall consent is §227(b)(1)(A); HIPAA BAA is a
+  // separate contract with Vapi).
+  voice_reminder_consent_attested: z.boolean().optional(),
 }).strict()
 
 export async function GET() {
@@ -57,7 +72,10 @@ export async function GET() {
       call_agent_enabled, call_agent_mode, call_agent_fallback_e164,
       call_agent_business_hours, call_agent_greeting,
       call_agent_assistant_id, call_agent_voice_id,
-      call_agent_baa_attested_at
+      call_agent_baa_attested_at,
+      voice_reminder_enabled, voice_reminder_lead_hours,
+      voice_reminder_consent_attested_at,
+      call_agent_reminder_assistant_id
     `)
     .eq('id', gate.orgId)
     .single()
@@ -72,6 +90,10 @@ export async function GET() {
     call_agent_assistant_id:   org?.call_agent_assistant_id   ?? null,
     call_agent_voice_id:       org?.call_agent_voice_id       ?? null,
     call_agent_baa_attested_at: org?.call_agent_baa_attested_at ?? null,
+    voice_reminder_enabled:    org?.voice_reminder_enabled    ?? false,
+    voice_reminder_lead_hours: org?.voice_reminder_lead_hours ?? 24,
+    voice_reminder_consent_attested_at: org?.voice_reminder_consent_attested_at ?? null,
+    call_agent_reminder_assistant_id: org?.call_agent_reminder_assistant_id ?? null,
   })
 }
 
@@ -109,6 +131,39 @@ export async function PATCH(req: NextRequest) {
     dbUpdates.call_agent_baa_attested_at = updates.call_agent_baa_attested
       ? new Date().toISOString()
       : null
+  }
+  if ('voice_reminder_enabled'    in updates) dbUpdates.voice_reminder_enabled    = updates.voice_reminder_enabled
+  if ('voice_reminder_lead_hours' in updates) dbUpdates.voice_reminder_lead_hours = updates.voice_reminder_lead_hours
+  if ('voice_reminder_consent_attested' in updates) {
+    dbUpdates.voice_reminder_consent_attested_at = updates.voice_reminder_consent_attested
+      ? new Date().toISOString()
+      : null
+  }
+
+  // TCPA gate. voice_reminder_enabled cannot be flipped true unless
+  // the post-write state shows voice_reminder_consent_attested_at IS
+  // NOT NULL. Mirrors the BAA gate above.
+  if (updates.voice_reminder_enabled === true) {
+    let willHaveConsent: boolean
+    if ('voice_reminder_consent_attested' in updates) {
+      willHaveConsent = updates.voice_reminder_consent_attested === true
+    } else {
+      const { data: cur } = await supabase
+        .from('organizations')
+        .select('voice_reminder_consent_attested_at')
+        .eq('id', gate.orgId)
+        .single()
+      willHaveConsent = cur?.voice_reminder_consent_attested_at != null
+    }
+    if (!willHaveConsent) {
+      return NextResponse.json(
+        {
+          error: 'voice_consent_required',
+          message: 'You must attest that you have prior express consent from your patients for automated reminder calls before enabling this feature.',
+        },
+        { status: 409 },
+      )
+    }
   }
 
   // ── BAA gate. ──

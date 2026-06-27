@@ -7,6 +7,7 @@ import { ServicesCard } from '@/components/settings/services-card'
 import { BookingSettingsLinkCard } from '@/components/settings/booking-settings-link-card'
 import { TeamSettingsLinkCard } from '@/components/settings/team-settings-link-card'
 import { CallAgentLinkCard } from '@/components/settings/call-agent-link-card'
+import { FaqsLinkCard } from '@/components/settings/faqs-link-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
@@ -90,6 +91,14 @@ export default async function SettingsPage() {
             UpgradeCardLocked, so all roles below owner are hidden
             and non-Scale Scale owners see the upgrade card on click. */}
         {profile?.role === 'owner' && <CallAgentLinkCard />}
+
+        {/* P5 W2: Custom FAQ corpus that backs Layla's lookup_faq
+            voice tool. Owner-only at the link layer; the page also
+            hard-redirects non-owners. Not tier-gated — the corpus
+            can be pre-authored on any plan, but the voice tool that
+            reads it only fires when the (Scale-only) call agent is
+            on. */}
+        {profile?.role === 'owner' && <FaqsLinkCard />}
 
         <SmsSettingsCard initial={{
           sms_enabled:               org?.sms_enabled               ?? false,

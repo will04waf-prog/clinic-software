@@ -123,5 +123,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'persist_failed' }, { status: 500 })
   }
 
+  // Phase 5 W2: outbound reminder call lifecycle close-out. When the
+  // reminder cron places a call it stamps metadata.consultation_id;
+  // here we map Vapi's end-of-call disposition (which the assistant
+  // typically signals via the post_call_summary_email tool, but is
+  // also derivable from endedReason for the no-engagement cases)
+  // onto consultations.voice_reminder_status. The CAS clause
+  // .eq('voice_reminder_status','sent') makes this idempotent —
+  // a retried webhook can only ever flip 'sent' once.
+  const consultationId = typeof call.metadata?.consultation_id === 'string'
+    ? call.metadata.consultation_id
+    : null
+  if (consultationId) {
+    const summaryDisposition = (msg.analysis?.structuredData as Record<string, unknown> | undefined)?.disposition
+    const reminderStatus =
+      summaryDisposition === 'booked' || summaryDisposition === 'info_only' ? 'confirmed' :
+      summaryDisposition === 'rescheduled'                                  ? 'rescheduled' :
+      summaryDisposition === 'canceled'                                     ? 'canceled' :
+      summaryDisposition === 'message_taken'                                ? 'declined' :
+      summaryDisposition === 'abandoned'                                    ? 'no_answer' :
+      // Fall back to mapping Vapi's endedReason for the cases where
+      // post_call_summary_email never fired (caller hung up before
+      // the model could call it).
+      mapOutcome(call.endedReason) === 'voicemail'                          ? 'voicemail' :
+      mapOutcome(call.endedReason) === 'agent_error'                        ? 'no_answer' :
+      'confirmed'
+
+    const { error: rmErr } = await supabaseAdmin
+      .from('consultations')
+      .update({ voice_reminder_status: reminderStatus })
+      .eq('id', consultationId)
+      .eq('voice_reminder_status', 'sent')
+    if (rmErr) {
+      console.error('[vapi/call-end] voice_reminder_status patch failed:', rmErr.message)
+    }
+  }
+
   return NextResponse.json({ ok: true, ...result })
 }

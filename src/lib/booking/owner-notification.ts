@@ -27,7 +27,7 @@ import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 const PUBLIC_APP_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://tarhunna.net'
 
-export type OwnerNotificationKind = 'new' | 'rescheduled' | 'canceled'
+export type OwnerNotificationKind = 'new' | 'rescheduled' | 'canceled' | 'confirmed'
 
 export interface NotifyOwnerArgs {
   organizationId: string
@@ -46,18 +46,24 @@ const ACTION_BY_KIND: Record<OwnerNotificationKind, string> = {
   new:         'owner_notified_booking',
   rescheduled: 'owner_notified_reschedule',
   canceled:    'owner_notified_cancel',
+  confirmed:   'owner_notified_confirm',
 }
 
 const SUBJECT_BY_KIND: Record<OwnerNotificationKind, (orgName: string) => string> = {
   new:         (n) => `New booking at ${n}`,
   rescheduled: (n) => `Booking rescheduled at ${n}`,
   canceled:    (n) => `Booking canceled at ${n}`,
+  confirmed:   (n) => `Appointment confirmed at ${n}`,
 }
 
 const BODY_BY_KIND: Record<OwnerNotificationKind, string> = {
   new:         'You just got a new booking through your public booking page.',
   rescheduled: 'A patient just rescheduled their appointment through your booking page.',
   canceled:    'A patient just canceled their appointment through your booking page.',
+  // 'confirmed' is fired by the outbound reminder-call flow when the
+  // patient verbally confirms they're still coming. PHI-free copy —
+  // mirrors the rest of this file.
+  confirmed:   'A patient just confirmed their upcoming appointment on the AI reminder call.',
 }
 
 /**

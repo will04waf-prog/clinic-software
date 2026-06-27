@@ -28,6 +28,15 @@ interface CallAgentConfig {
   call_agent_greeting:        string | null
   call_agent_assistant_id:    string | null
   call_agent_baa_attested_at: string | null
+  // Phase 5 W2 outbound reminder calls. The reminder cron is a no-
+  // op on this org until call_agent_reminder_assistant_id is
+  // populated (by scripts/seed-vapi-reminder-assistant.ts) AND
+  // voice_reminder_enabled is true AND voice_reminder_consent_attested_at
+  // is set — the UI surfaces each so the owner can see what's missing.
+  voice_reminder_enabled:               boolean
+  voice_reminder_lead_hours:            number
+  voice_reminder_consent_attested_at:   string | null
+  call_agent_reminder_assistant_id:     string | null
 }
 
 export function CallAgentSettingsCard() {
@@ -63,6 +72,9 @@ export function CallAgentSettingsCard() {
     call_agent_fallback_e164: string | null
     call_agent_greeting: string | null
     call_agent_baa_attested: boolean
+    voice_reminder_enabled: boolean
+    voice_reminder_lead_hours: number
+    voice_reminder_consent_attested: boolean
   }>) {
     setSaving(true)
     setError(null)
@@ -214,7 +226,111 @@ export function CallAgentSettingsCard() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Phase 5 W2 — outbound AI reminder calls ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Reminder calls</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {/* TCPA voice-consent attestation. Distinct from the BAA above
+              — robocall consent is §227(b)(1)(A); HIPAA is a separate
+              contract. The toggle below is disabled until this is on. */}
+          <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3">
+            <input
+              id="voice-consent-attest"
+              type="checkbox"
+              checked={config.voice_reminder_consent_attested_at != null}
+              disabled={saving}
+              onChange={(e) => patch({ voice_reminder_consent_attested: e.target.checked })}
+              className="mt-0.5 h-4 w-4"
+            />
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="voice-consent-attest" className="font-medium text-gray-900">
+                Prior express consent on file for automated reminder calls
+              </Label>
+              <p className="mt-0.5 text-xs text-gray-500">
+                You attest that every patient who will receive an automated reminder call has given prior express consent (typically at intake — a signed form or a clear opt-in checkbox covering automated voice communications). TCPA §227(b)(1)(A) — separate from SMS STOP and from the HIPAA BAA above.
+              </p>
+              {config.voice_reminder_consent_attested_at && (
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Attested {new Date(config.voice_reminder_consent_attested_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <ToggleRow
+            checked={config.voice_reminder_enabled}
+            // Four preconditions: agent must be live, BAA on file,
+            // reminder bot provisioned, and voice consent attested.
+            disabled={
+              !config.call_agent_enabled ||
+              !baaAttested ||
+              !config.call_agent_reminder_assistant_id ||
+              config.voice_reminder_consent_attested_at == null ||
+              saving
+            }
+            onChange={(v) => patch({ voice_reminder_enabled: v })}
+            label="Send AI reminder calls"
+            help={
+              !config.call_agent_enabled
+                ? 'Turn the inbound call agent on first.'
+                : !config.call_agent_reminder_assistant_id
+                  ? 'Reminder bot not yet provisioned — run scripts/seed-vapi-reminder-assistant.ts <org-id> from the server.'
+                  : config.voice_reminder_consent_attested_at == null
+                    ? 'Attest prior express consent above before turning this on.'
+                    : 'The reminder bot calls each patient ahead of their appointment to confirm. Patients can reschedule or cancel live, or ask for a callback. Calls run on an hourly cron; the lead time below sets how far in advance.'
+            }
+          />
+
+          <LeadHoursSelect
+            value={config.voice_reminder_lead_hours}
+            disabled={!config.voice_reminder_enabled || saving}
+            onCommit={(v) => patch({ voice_reminder_lead_hours: v })}
+          />
+        </CardContent>
+      </Card>
     </>
+  )
+}
+
+// Lead-time selector. The DB CHECK clamps to [2,72]; we surface a
+// curated set of "common" durations rather than a free number input
+// so an operator can't accidentally set a value that conflicts with
+// the cron's ±30min half-window math (e.g. lead_hours=1 would have
+// the window straddle "now").
+function LeadHoursSelect({
+  value, disabled, onCommit,
+}: { value: number; disabled: boolean; onCommit: (v: number) => void }) {
+  const OPTIONS: { hours: number; label: string }[] = [
+    { hours: 4,  label: '4 hours before' },
+    { hours: 8,  label: '8 hours before' },
+    { hours: 24, label: '24 hours before (recommended)' },
+    { hours: 48, label: '48 hours before' },
+    { hours: 72, label: '72 hours before' },
+  ]
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="lead-hours">Call this far in advance</Label>
+      <select
+        id="lead-hours"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => {
+          const next = Number(e.target.value)
+          if (Number.isFinite(next) && next !== value) onCommit(next)
+        }}
+        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 disabled:opacity-50 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+      >
+        {OPTIONS.map((o) => (
+          <option key={o.hours} value={o.hours}>{o.label}</option>
+        ))}
+      </select>
+      <p className="text-xs text-gray-500">
+        The reminder cron runs hourly and picks up consultations whose start time falls in a one-hour window around this lead time. Patients who don&apos;t pick up are marked &quot;no answer&quot; — they still get the regular SMS reminder if you have that enabled.
+      </p>
+    </div>
   )
 }
 
