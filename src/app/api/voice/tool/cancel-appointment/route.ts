@@ -146,7 +146,7 @@ export async function POST(req: Request) {
       consultation_id:  updated.id,
       was_scheduled_at: updated.scheduled_at,
       call_sid:         tc.callSid ?? null,
-      from_e164:        fromE164,
+      from_e164_tail:   (fromE164 ?? '').slice(-4),
     },
   })
 
@@ -169,7 +169,23 @@ export async function POST(req: Request) {
         !isTwilioConfigured()
       ) return
       const firstName = contactSms.first_name || 'there'
-      const text = `Hi ${firstName}, your appointment with ${org.name} has been canceled. Reply STOP to opt out.`
+      // Include the canceled time + service so a patient with multiple
+      // appointments isn't confused about which one this refers to,
+      // and so the SMS itself doubles as a notice-of-cancellation
+      // record. Format in the clinic timezone.
+      const tz = org.timezone || 'America/New_York'
+      const when = updated.scheduled_at
+        ? new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            weekday: 'long',
+            month:   'long',
+            day:     'numeric',
+            hour:    'numeric',
+            minute:  '2-digit',
+            hour12:  true,
+          }).format(new Date(updated.scheduled_at))
+        : 'your upcoming visit'
+      const text = `Hi ${firstName}, your ${when} appointment with ${org.name} has been canceled. Reply STOP to opt out.`
       try {
         const result = await sendSMS(contactSms.phone, text)
         await supabaseAdmin.from('sms_log').insert({

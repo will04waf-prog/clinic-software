@@ -112,5 +112,16 @@ export async function POST(req: Request) {
     followupSummary: msg.summary ?? null,
   })
 
+  // If the insert genuinely failed (DB blip, transient outage), return
+  // 5xx so Vapi retries on its own backoff. The previous behavior was
+  // 200 ok:true even on failure, silently dropping the transcript +
+  // recording url forever. persistCallLog returns inserted:false also
+  // for the legitimate idempotent-skip case (call_sid already exists)
+  // — distinguish via the callLogId field: a successful skip has the
+  // existing row's id, a true failure has none.
+  if (!result.inserted && !result.callLogId) {
+    return NextResponse.json({ ok: false, error: 'persist_failed' }, { status: 500 })
+  }
+
   return NextResponse.json({ ok: true, ...result })
 }

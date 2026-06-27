@@ -128,7 +128,7 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
     // catch it here before Twilio.
     supabaseAdmin
       .from('organizations')
-      .select('ai_twin_voice_profile, ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_auto_send_rollout_pct, ai_twin_auto_send_shadow_mode, plan, plan_status, trial_ends_at')
+      .select('ai_twin_voice_profile, ai_twin_auto_send_enabled, ai_twin_auto_send_classes, ai_twin_auto_send_rollout_pct, ai_twin_auto_send_shadow_mode, plan, plan_status, trial_ends_at, sms_enabled')
       .eq('id', args.organizationId)
       .single(),
   ])
@@ -136,6 +136,11 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
   // Fresh master-toggle check.
   if (orgRes.data?.ai_twin_auto_send_enabled !== true) {
     return { ok: false, reason_code: 'org_master_disabled', reason: 'Master toggle flipped off mid-flight.' }
+  }
+  // Org-wide SMS kill switch. Even if the AI Twin master toggle is on,
+  // a flipped sms_enabled means no outbound from any path.
+  if (orgRes.data?.sms_enabled === false) {
+    return { ok: false, reason_code: 'org_sms_disabled', reason: 'SMS is disabled for the org.' }
   }
   const freshAllowlist = ((orgRes.data?.ai_twin_auto_send_classes as string[] | null) ?? [])
   if (!freshAllowlist.includes(args.messageClass)) {

@@ -137,7 +137,28 @@ export async function POST(req: Request) {
   // for non-canceled rows will fail this UPDATE if the target slot
   // overlaps another active booking — Postgres surfaces it as a
   // unique-violation we map to slot_taken.
-  const providerForUpdate = newProviderId ?? existing.provider_id
+  // Validate newProviderId belongs to this org before plumbing it
+  // into the UPDATE. Without this check, the LLM could be coaxed into
+  // passing any UUID (cross-tenant or non-existent) and Postgres
+  // would happily write it as a foreign-key violation OR — worse if
+  // the FK isn't enforced — a dangling reference.
+  let providerForUpdate = existing.provider_id
+  if (newProviderId) {
+    const { data: validProvider } = await supabaseAdmin
+      .from('providers')
+      .select('id')
+      .eq('id', newProviderId)
+      .eq('organization_id', org.id)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (!validProvider) {
+      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+        ok: true,
+        output: { rescheduled: false, reason: 'invalid_provider' },
+      }))
+    }
+    providerForUpdate = newProviderId
+  }
   const nowIso = new Date().toISOString()
   const { data: updated, error: updErr } = await supabaseAdmin
     .from('consultations')
@@ -179,7 +200,7 @@ export async function POST(req: Request) {
       previous_scheduled: existing.scheduled_at,
       new_scheduled:      updated.scheduled_at,
       call_sid:           tc.callSid ?? null,
-      from_e164:          fromE164,
+      from_e164_tail:     (fromE164 ?? '').slice(-4),
     },
   })
 

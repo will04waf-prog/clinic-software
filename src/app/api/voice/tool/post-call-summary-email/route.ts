@@ -49,23 +49,7 @@ const SUMMARY_MAX_CHARS = 280
 
 // Phone-number-shaped runs: 7+ consecutive digit groups separated by
 // at most one of (space, dash, dot, paren). Catches "555-123-4567",
-// "(555) 123 4567", "5551234567", "+1 555 123 4567". Conservative —
-// will eat the occasional benign long number, which is the desired
-// trade-off for a defense-in-depth PHI strip.
-const PHONE_RE = /(?:\+?\d[\s().-]?){7,}\d/g
-
-// US date shapes: M/D/YY, MM/DD/YYYY, M-D-YY, MM-DD-YYYY. We also
-// strip ISO YYYY-MM-DD because that's the format the LLM would
-// most easily echo from a tool result.
-const US_DATE_RE = /\b(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{4}-\d{1,2}-\d{1,2})\b/g
-
-function sanitizeSummary(input: string): string {
-  return input
-    .slice(0, SUMMARY_MAX_CHARS)
-    .replace(PHONE_RE, '[redacted]')
-    .replace(US_DATE_RE, '[redacted]')
-    .trim()
-}
+import { sanitizeSummary } from '@/lib/voice-agent/sanitize-summary'
 
 export async function POST(req: Request) {
   if (!verifyVapiSignature(req)) {

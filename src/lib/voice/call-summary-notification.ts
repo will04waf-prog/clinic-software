@@ -16,9 +16,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
-
-const PUBLIC_APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://tarhunna.net'
+import { getAppUrl } from '@/lib/voice-agent/app-url'
 
 export type CallDisposition =
   | 'booked'
@@ -84,7 +82,7 @@ export async function notifyOwnerOfCallSummary(
   // Deep link to the transcript view by call_sid. The page may 404
   // until the transcript UI lands — owners still get the URL on
   // record and can pivot to the calls/inbox surface manually.
-  const transcriptUrl = `${PUBLIC_APP_URL}/calls/${encodeURIComponent(args.callSid)}`
+  const transcriptUrl = `${getAppUrl()}/calls/${encodeURIComponent(args.callSid)}`
 
   // PHI-free, single-line copy. The disposition is a closed enum so
   // no free-form text can leak through this surface.

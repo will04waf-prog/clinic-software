@@ -20,10 +20,10 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { getAppUrl } from '@/lib/voice-agent/app-url'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { normalizePhone } from '@/lib/validators'
 
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net').replace(/\/$/, '')
 
 export async function POST(req: Request) {
   if (!verifyVapiSignature(req)) {
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
   // keeps the rate-limit + race-safe insert behavior intact — the
   // EXCLUDE constraint on the consultations table handles
   // double-bookings transparently.
-  const holdRes = await fetch(`${APP_URL}/api/booking/hold`, {
+  const holdRes = await fetch(`${getAppUrl()}/api/booking/hold`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

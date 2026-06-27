@@ -59,6 +59,10 @@ export type EligibilityReasonCode =
   // checkAutoSendEligibility itself never returns this code; it is
   // produced by the upstream tier check in auto-send.ts.
   | 'tier_disallowed'
+  // Surfaced when organizations.sms_enabled is false — the org-wide
+  // master SMS kill switch. Same lifecycle note as tier_disallowed:
+  // produced by the upstream gate in auto-send.ts.
+  | 'org_sms_disabled'
 
 export interface EligibilityResult {
   eligible: boolean

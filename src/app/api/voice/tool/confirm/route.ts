@@ -16,9 +16,9 @@
 
 import { NextResponse } from 'next/server'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { getAppUrl } from '@/lib/voice-agent/app-url'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net').replace(/\/$/, '')
 
 export async function POST(req: Request) {
   if (!verifyVapiSignature(req)) {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }))
   }
 
-  const res = await fetch(`${APP_URL}/api/booking/confirm`, {
+  const res = await fetch(`${getAppUrl()}/api/booking/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

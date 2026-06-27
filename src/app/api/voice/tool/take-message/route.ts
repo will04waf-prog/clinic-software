@@ -159,6 +159,26 @@ export async function POST(req: Request) {
     }
   }
 
+  // ── Idempotency: Vapi sometimes retries tool calls within the same
+  // call_sid. Without a dedupe check the patient ends up with N copies
+  // of their voicemail and the owner gets N notification emails.
+  if (tc.callSid) {
+    const { data: existing } = await supabaseAdmin
+      .from('voice_messages')
+      .select('id')
+      .eq('organization_id', org.id)
+      .eq('call_sid', tc.callSid)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (existing) {
+      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+        ok: true,
+        output: { saved: true, voice_message_id: existing.id, deduped: true },
+      }))
+    }
+  }
+
   // ── Persist the message. ──
   const { data: inserted, error: insertErr } = await supabaseAdmin
     .from('voice_messages')

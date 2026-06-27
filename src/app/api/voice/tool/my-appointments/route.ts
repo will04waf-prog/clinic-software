@@ -105,7 +105,7 @@ export async function POST(req: Request) {
   }
 
   const nowIso = new Date().toISOString()
-  const { data: consultations } = await supabaseAdmin
+  const { data: consultations, error: consultErr } = await supabaseAdmin
     .from('consultations')
     .select('id, scheduled_at, status, services!consultations_service_id_fkey(name)')
     .eq('organization_id', org.id)
@@ -115,6 +115,17 @@ export async function POST(req: Request) {
     .order('scheduled_at', { ascending: true })
     .limit(2)
 
+  // Distinguish a DB error from a legitimate "no upcoming" — the
+  // earlier code coalesced both into reason:'no_upcoming', telling
+  // the caller they had no appointment when really the lookup
+  // failed.
+  if (consultErr) {
+    console.error('[voice/my-appointments] consultations lookup failed', consultErr.message)
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { found: false, reason: 'lookup_failed' },
+    }))
+  }
   if (!consultations || consultations.length === 0) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: true,

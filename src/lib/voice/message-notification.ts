@@ -19,8 +19,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 
-const PUBLIC_APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://tarhunna.net'
+import { getAppUrl } from '@/lib/voice-agent/app-url'
 
 export interface NotifyOwnerOfVoiceMessageArgs {
   organizationId: string
@@ -79,7 +78,7 @@ export async function notifyOwnerOfVoiceMessage(
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
 
-  const inboxUrl = `${PUBLIC_APP_URL}/voice-messages`
+  const inboxUrl = `${getAppUrl()}/voice-messages`
 
   const subject = urgency === 'urgent'
     ? `URGENT: new message at ${orgName}`

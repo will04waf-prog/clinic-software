@@ -110,7 +110,10 @@ export async function POST(req: Request) {
       // guardrail), so this is for context only.
       price_cents:  s.price_cents,
     })),
-    fallback_e164: org.call_agent_fallback_e164,
+    // Owner's personal fallback cell stays server-side. transfer-to-human
+    // reads it via its own server-side org lookup; the LLM only needs
+    // to know whether transfer is possible, not the actual number.
+    transfer_available: Boolean(org.call_agent_fallback_e164),
   }
   return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, { ok: true, output }))
 }

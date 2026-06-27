@@ -33,6 +33,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
 import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
+import { sanitizeSummary } from '@/lib/voice-agent/sanitize-summary'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { normalizePhone } from '@/lib/validators'
 
@@ -76,8 +77,12 @@ export async function POST(req: Request) {
     : null
 
   const summaryRaw = tc.arguments.summary
+  // The LLM is prompt-instructed to keep `summary` non-clinical and
+  // PHI-free, but a single-turn injection from the caller can override
+  // that. Strip phone numbers + dates the same way
+  // post_call_summary_email does.
   const summary = typeof summaryRaw === 'string'
-    ? summaryRaw.trim().slice(0, SUMMARY_MAX)
+    ? sanitizeSummary(summaryRaw.trim(), SUMMARY_MAX)
     : null
 
   // ── Resolve org from the call envelope (dashboard test args
@@ -118,7 +123,16 @@ export async function POST(req: Request) {
   const fallback = (org.call_agent_fallback_e164 ?? '').trim() || null
   const tz = org.timezone || 'America/New_York'
   const businessHours = org.call_agent_business_hours
-  const businessHoursConfigured = !!businessHours && typeof businessHours === 'object'
+  // An empty {} (or an object whose every weekday key is empty) is
+  // semantically "not configured" — treat it the same as null so we
+  // don't silently lock the clinic out of transfers. The previous
+  // `!!businessHours && typeof === 'object'` accepted {} as
+  // "configured", which meant isWithinBusinessHours always returned
+  // false and every transfer downgraded to take_message.
+  const businessHoursConfigured =
+    !!businessHours &&
+    typeof businessHours === 'object' &&
+    Object.values(businessHours).some(v => Array.isArray(v) && v.length > 0)
   const insideHours = businessHoursConfigured
     ? isWithinBusinessHours(new Date(), businessHours, tz)
     : true

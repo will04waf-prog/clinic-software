@@ -64,10 +64,12 @@ export async function persistCallLog(input: PersistCallInput): Promise<{ inserte
 
   // Auto-create on first touch — same pattern as inbound SMS, just
   // with source='inbound_voice' so the analytics can tell where the
-  // lead came from. The receptionist flow MAY have already created
-  // a contact via /tool/hold; the call_logs row links to that contact
-  // (which the contact-resolve loop above would find via phone match).
-  if (!contactId) {
+  // lead came from. ONLY when we have a clean 10-digit number: an
+  // anonymous / blocked caller (last10 < 10 digits, e.g. "anonymous"
+  // or empty) used to create a junk contact with a malformed phone
+  // that no future caller could ever match against, polluting the
+  // pipeline with one row per blocked call.
+  if (!contactId && last10.length === 10) {
     const { data: defaultStage } = await supabaseAdmin
       .from('pipeline_stages')
       .select('id')

@@ -47,12 +47,12 @@
 import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { getAppUrl } from '@/lib/voice-agent/app-url'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { normalizePhone } from '@/lib/validators'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { signManageToken } from '@/lib/booking/manage-token'
 
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net').replace(/\/$/, '')
 
 const LINK_KINDS = ['booking', 'manage', 'intake', 'directions'] as const
 type LinkKind = (typeof LINK_KINDS)[number]
@@ -243,6 +243,29 @@ export async function POST(req: Request) {
       error: 'caller_opted_out_sms',
     }))
   }
+  // Cross-archive opt-out check: when an active-contact match misses
+  // (unknown caller OR caller whose contact was archived after they
+  // STOP'd), still consult the base contacts table for an opt-out
+  // record on this phone. Otherwise STOP-then-re-call could be used
+  // to bypass the opt-out by getting Layla to text the caller again.
+  if (!contact && last10.length === 10) {
+    const { data: archivedOptOut } = await supabaseAdmin
+      .from('contacts')
+      .select('id, opted_out_sms, phone')
+      .eq('organization_id', org.id)
+      .eq('opted_out_sms', true)
+      .ilike('phone', `%${last10}`)
+      .limit(5)
+    const optedOut = (archivedOptOut ?? []).some(
+      c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
+    )
+    if (optedOut) {
+      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+        ok: false,
+        error: 'caller_opted_out_sms',
+      }))
+    }
+  }
 
   // ── Build the URL for this kind ─────────────────────────────────
   let url: string | null = null
@@ -255,7 +278,7 @@ export async function POST(req: Request) {
         error: 'org_missing_booking_slug',
       }))
     }
-    let bookingUrl = `${APP_URL}/book/${org.slug}`
+    let bookingUrl = `${getAppUrl()}/book/${org.slug}`
     if (serviceSlug) {
       // Validate the service belongs to this org and is publicly
       // bookable. Silently drop the qs if not — the LLM may guess
@@ -319,7 +342,7 @@ export async function POST(req: Request) {
         error: 'manage_token_unavailable',
       }))
     }
-    url = `${APP_URL}/manage/${token}`
+    url = `${getAppUrl()}/manage/${token}`
     bodyCopy = `${org.name ?? 'Your clinic'}: manage your appointment ${url} Reply STOP to opt out.`
   } else if (linkKind === 'intake') {
     const raw = typeof org.intake_form_url === 'string' ? org.intake_form_url.trim() : ''

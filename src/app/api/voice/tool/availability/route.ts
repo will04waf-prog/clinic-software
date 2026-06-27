@@ -39,6 +39,11 @@ export async function POST(req: Request) {
   const serviceHintArg = typeof tc.arguments.service === 'string'
     ? tc.arguments.service
     : null
+  // Prefer service_id (the UUID find_service returns) over the
+  // free-form name. Lets the LLM book the exact service it matched.
+  const serviceIdArg = typeof tc.arguments.service_id === 'string' && tc.arguments.service_id.length > 0
+    ? tc.arguments.service_id
+    : null
 
   if (!toE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
@@ -63,11 +68,25 @@ export async function POST(req: Request) {
   // fetchSlotsForTwin returns up to MAX_SLOTS_RETURNED (=2). Reuses
   // booking_enabled + slug + active providers + buffers + window
   // logic from the SMS twin — single source of truth.
-  const suggestion = await fetchSlotsForTwin({
-    organizationId: org.id,
-    serviceHint:    serviceHintArg,
-    messageClass:   'faq',
-  })
+  let suggestion
+  try {
+    suggestion = await fetchSlotsForTwin({
+      organizationId: org.id,
+      serviceId:      serviceIdArg,
+      serviceHint:    serviceHintArg,
+      messageClass:   'faq',
+    })
+  } catch (err: unknown) {
+    // Slot lookup failures should land the caller in a graceful "we
+    // can't reach our schedule" state, not an HTTP 500 that Vapi
+    // re-tries or surfaces as an LLM error. Bubbling here means
+    // the agent says nothing for 5+ seconds, then hangs up.
+    console.error('[voice/tool/availability] fetchSlotsForTwin threw', err)
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { kind: 'none', reason: 'lookup_failed' },
+    }))
+  }
 
   if (suggestion.kind === 'none') {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {

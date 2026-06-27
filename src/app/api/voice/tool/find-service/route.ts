@@ -204,12 +204,21 @@ export async function POST(req: Request) {
   // Same filter set the /context route uses — keep them in sync so the
   // LLM never sees a service through find_service that it couldn't
   // book through hold/availability.
-  const { data: services } = await supabaseAdmin
+  const { data: services, error: servicesErr } = await supabaseAdmin
     .from('services')
     .select('id, name, description, duration_min')
     .eq('organization_id', org.id)
     .eq('is_active', true)
     .eq('is_bookable_online', true)
+  if (servicesErr) {
+    // Surface a distinct soft-fail reason — DB blip should not look
+    // like "we don't offer that service" to the caller.
+    console.error('[voice/find-service] services lookup failed', servicesErr.message)
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { matches: [], reason: 'lookup_failed' },
+    }))
+  }
 
   const normalizedQuery = normalizeText(safeQuery)
   const queryTokens     = tokenize(normalizedQuery)

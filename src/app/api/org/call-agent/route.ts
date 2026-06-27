@@ -112,20 +112,26 @@ export async function PATCH(req: NextRequest) {
   }
 
   // ── BAA gate. ──
-  // If the caller is trying to flip call_agent_enabled to true,
-  // verify either (a) the same payload also attests the BAA, or
-  // (b) baa_attested_at is already set on the row.
+  // Check the FINAL state after this PATCH lands, not the current row
+  // state. Without that, a single request {enabled:true, baa_attested:
+  // false} would: pass the gate (DB row currently attested), then run
+  // the UPDATE which clears attested_at AND sets enabled=true,
+  // leaving the row in an unattestation-bypass state.
   if (updates.call_agent_enabled === true) {
-    const willHaveBaa =
-      updates.call_agent_baa_attested === true ||
-      (await (async () => {
-        const { data: cur } = await supabase
-          .from('organizations')
-          .select('call_agent_baa_attested_at')
-          .eq('id', gate.orgId)
-          .single()
-        return cur?.call_agent_baa_attested_at != null
-      })())
+    let willHaveBaa: boolean
+    if ('call_agent_baa_attested' in updates) {
+      // Same payload sets attested explicitly — use that value as the
+      // post-write truth.
+      willHaveBaa = updates.call_agent_baa_attested === true
+    } else {
+      // Payload doesn't touch attested — fall back to current DB state.
+      const { data: cur } = await supabase
+        .from('organizations')
+        .select('call_agent_baa_attested_at')
+        .eq('id', gate.orgId)
+        .single()
+      willHaveBaa = cur?.call_agent_baa_attested_at != null
+    }
     if (!willHaveBaa) {
       return NextResponse.json(
         {

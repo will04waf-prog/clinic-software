@@ -49,16 +49,20 @@ export const TOOL_LOOKUP_AVAILABILITY: VapiTool = {
   function: {
     name: 'lookup_availability',
     description:
-      'Find 1-2 open appointment slots for a service. Use the service name the caller said (e.g. "botox"). Returns spoken strings you can read aloud verbatim and a booking_url to text the caller if they prefer self-serve.',
+      'Find 1-2 open appointment slots for a service. ALWAYS pass `service_id` (the UUID from a prior find_service.best_match_id or get_context.services[*].id) — that guarantees we book the right service. `service` (free-form name) is accepted only as a last-resort fallback when no id is known. Returns spoken strings + a booking_url.',
     parameters: {
       type: 'object',
       properties: {
+        service_id: {
+          type: 'string',
+          description: 'UUID of the service from find_service.best_match_id or get_context.services[*].id. Prefer this over `service` name.',
+        },
         service: {
           type: 'string',
-          description: 'Service name the caller asked about (free-form; resolved against the catalog from get_context).',
+          description: 'Free-form service name fallback when service_id is unknown. Resolved against the catalog by name.',
         },
       },
-      required: ['service'],
+      required: [],
     },
   },
 }

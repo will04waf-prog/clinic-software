@@ -255,7 +255,12 @@ function escapeRegex(s: string): string {
  * plus the footer the human can't edit.
  */
 export function disclosureFooter(clinicName: string): string {
-  return `\n— AI-assisted, reviewed by ${clinicName}`
+  // TCPA: every outbound transactional SMS must carry STOP. The
+  // disclosure footer was the only auto-attached suffix on AI-
+  // authored sends, so it's the right place to bundle STOP — making
+  // every AI-authored send TCPA-compliant by default. Non-AI sends
+  // get the same suffix appended separately in the route layer.
+  return `\nReply STOP to opt out. — AI-assisted, reviewed by ${clinicName}`
 }
 
 // ─── Prompts ───────────────────────────────────────────────
