@@ -47,18 +47,10 @@ export async function notifyOwnerOfVoiceMessage(
   const urgency: 'normal' | 'urgent' = args.urgency ?? 'normal'
   const action = 'owner_notified_voice_message'
 
-  // ── Durable dedupe per voice_message_id. ──
-  const { data: priorNotice } = await supabaseAdmin
-    .from('activity_log')
-    .select('id')
-    .eq('organization_id', args.organizationId)
-    .eq('action', action)
-    .contains('metadata', { voice_message_id: args.voiceMessageId })
-    .limit(1)
-    .maybeSingle()
-  if (priorNotice) return
-
-  // ── Owner + org name lookup, same shape as booking owner-notify. ──
+  // ── Owner + org name lookup, same shape as booking owner-notify.
+  // We resolve identity BEFORE claiming the dedupe row so that a
+  // missing owner email doesn't leave behind a phantom "notified"
+  // row that suppresses a future retry once the profile is fixed. ──
   const [{ data: owner }, { data: org }] = await Promise.all([
     supabaseAdmin
       .from('profiles')
@@ -77,6 +69,33 @@ export async function notifyOwnerOfVoiceMessage(
 
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
+
+  // ── Race-safe dedupe: INSERT the claim ticket FIRST, only send
+  // the email if the insert succeeds. The partial UNIQUE index
+  // activity_log_voice_message_notify_uniq (migration
+  // 20260712110000_call_summary_dedupe_uniq) on (organization_id,
+  // metadata->>'voice_message_id') WHERE
+  // action='owner_notified_voice_message' is what makes this atomic
+  // — Postgres raises 23505 on the loser, we treat that as "someone
+  // else won, no-op." Replaces the older SELECT-then-INSERT which
+  // had a check-then-act race between two retried take_message
+  // invocations or take_message + the persist-call retry path. ──
+  const { error: claimErr } = await supabaseAdmin.from('activity_log').insert({
+    organization_id: args.organizationId,
+    action,
+    metadata: {
+      voice_message_id: args.voiceMessageId,
+      urgency,
+    },
+  })
+  if (claimErr) {
+    // 23505 = unique_violation = another concurrent invocation
+    // already claimed this (org, voice_message_id). That's the
+    // happy path for dedupe — silently no-op.
+    if (claimErr.code === '23505') return
+    console.error('[voice-message-notification] dedupe claim insert failed', claimErr.message)
+    return
+  }
 
   const inboxUrl = `${getAppUrl()}/voice-messages`
 
@@ -98,21 +117,12 @@ export async function notifyOwnerOfVoiceMessage(
       to: owner.email,
       subject,
       html,
-      // Keyed on voice_message_id so each distinct message gets a
-      // unique idempotencyKey within Resend's 24h dedup window.
+      // Belt-and-suspenders alongside the DB-level claim row above:
+      // keyed on voice_message_id so a within-24h retry post-claim
+      // still dedupes at Resend's transport layer.
       idempotencyKey: `voice_message_notify:${args.voiceMessageId}`,
     })
   } catch {
     console.error('[voice-message-notification] resend send failed')
-    return
   }
-
-  await supabaseAdmin.from('activity_log').insert({
-    organization_id: args.organizationId,
-    action,
-    metadata: {
-      voice_message_id: args.voiceMessageId,
-      urgency,
-    },
-  })
 }

@@ -32,10 +32,42 @@
  *     we additionally require stored contact.sms_consent=true.
  *     `consent_confirmed` from the LLM is logged for audit but does
  *     NOT substitute for the stored consent flag on PHI links.
- *   - Per-(kind, from_e164_tail) rate-limit: refuse if an identical
- *     send happened in the last 60s. Stops a runaway LLM from
- *     spamming the caller's pocket. Check is done via activity_log
- *     `.contains('metadata', {...})` lookup.
+ *
+ * RATE-LIMIT MODEL — DB-as-primitive, no TOCTOU:
+ *   - Phase 5 W2 sweep-3 moved the rate-limit from a SELECT-then-
+ *     INSERT pattern (which two concurrent tool calls could both
+ *     pass) to a UNIQUE partial index on
+ *     activity_log (org_id, metadata->>link_kind,
+ *                    metadata->>from_e164_tail,
+ *                    date_trunc('minute', created_at))
+ *     WHERE action='voice_link_sent'.
+ *     See migration 20260712100000_voice_link_sent_uniq.sql.
+ *   - The INSERT itself IS the rate-limit primitive. We insert the
+ *     sentinel BEFORE calling Twilio: a second concurrent INSERT
+ *     gets 23505 (unique_violation) and the route maps that to
+ *     reason='rate_limited'. No window.
+ *   - If Twilio then fails, we DELETE the sentinel synchronously
+ *     before returning so a legitimate retry isn't blocked for the
+ *     remainder of the minute by our own failed attempt.
+ *   - If the INSERT raises any error OTHER than 23505 (e.g. DB
+ *     unavailable), we surface ok:false sms_provider_unavailable
+ *     and refuse to send — we'd rather drop the message than send
+ *     unrated.
+ *
+ * RETURN-SHAPE CONTRACT:
+ *   Business-logic "won't send" outcomes use {ok:true, output:{
+ *     sent:false, reason:<closed enum, see WontSendReason>}}.
+ *   This includes rate_limited, all the gate-stack outcomes, and the
+ *   per-link-kind config failures. The receptionist prompt scripts
+ *   the spoken response for each reason; keeping ok:true keeps the
+ *   LLM from treating these as transport errors and retrying.
+ *   ok:false is reserved for genuine infra/payload failures:
+ *   invalid_signature (401), unrecognized_payload_shape (400),
+ *   bad arg shape (link_kind missing, consent_confirmed != true,
+ *   non-uuid consultation_id), missing call envelope, org not
+ *   mapped, voice-agent not enabled, sentinel DB write failure
+ *   (sms_provider_unavailable), and Twilio send failure
+ *   (sms_send_failed).
  *
  * sms_log gets a row for every outcome (sent | failed | skipped)
  * via supabaseAdmin (RLS bypass). message_type='confirmation' —
@@ -57,12 +89,33 @@ import { signManageToken } from '@/lib/booking/manage-token'
 const LINK_KINDS = ['booking', 'manage', 'intake', 'directions'] as const
 type LinkKind = (typeof LINK_KINDS)[number]
 
+/**
+ * Closed enum of "won't send" reasons surfaced via
+ * {ok:true, output:{sent:false, reason}}. Kept in lockstep with the
+ * receptionist prompt's per-reason spoken response and with the
+ * description on TOOL_SEND_LINK_SMS in src/voice/tools/schemas.ts.
+ * Adding a value here means updating both.
+ */
+type WontSendReason =
+  | 'rate_limited'
+  | 'caller_not_recognized'
+  | 'consultation_not_manageable'
+  | 'caller_opted_out_sms'
+  | 'sms_consent_missing_on_contact'
+  | 'sms_not_enabled'
+  | 'sms_transactional_disabled'
+  | 'sms_provider_not_configured'
+  | 'no_address_configured'
+  | 'no_intake_form_configured'
+  | 'manage_token_unavailable'
+  | 'org_missing_booking_slug'
+  | 'body_too_long'
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SLUG_RE = /^[a-z0-9-]{1,80}$/i
 const URL_RE  = /^https?:\/\/[^\s]{4,500}$/i
 
 const MAX_BODY_LEN  = 320 // 2x standard SMS segment — keep tight to discourage carrier multi-segment fragmentation.
-const RATE_LIMIT_MS = 60_000
 
 function isLinkKind(v: unknown): v is LinkKind {
   return typeof v === 'string' && (LINK_KINDS as readonly string[]).includes(v)
@@ -70,6 +123,19 @@ function isLinkKind(v: unknown): v is LinkKind {
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
+/**
+ * Postgres unique_violation. supabase-js surfaces this on
+ * { error: { code: '23505' } } when a unique index rejects an insert.
+ */
+function isUniqueViolation(err: unknown): boolean {
+  return Boolean(
+    err
+    && typeof err === 'object'
+    && 'code' in err
+    && (err as { code?: unknown }).code === '23505',
+  )
 }
 
 export async function POST(req: Request) {
@@ -84,6 +150,10 @@ export async function POST(req: Request) {
   }
 
   // ── Argument validation ─────────────────────────────────────────
+  // These are payload-shape errors, NOT business-logic outcomes:
+  // a well-behaved LLM with the published schema should never trip
+  // them. We surface ok:false so a misbehaving LLM gets a hard
+  // signal instead of a soft "{sent:false}" it might happily ignore.
   const args = tc.arguments
   const linkKind = args.link_kind
   if (!isLinkKind(linkKind)) {
@@ -98,7 +168,9 @@ export async function POST(req: Request) {
     // The LLM is required to ask "want me to text it to you?" before
     // calling this tool. Refusing here is defense-in-depth — owner
     // policy could still require this even if the gate stack would
-    // otherwise let the send through.
+    // otherwise let the send through. Treated as a payload error
+    // (ok:false) so the LLM cannot misread it as a "blocked but
+    // recoverable" reason.
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
       error: 'consent_confirmed must be true — verbally confirm the caller wants the text first',
@@ -113,6 +185,11 @@ export async function POST(req: Request) {
     }))
   }
   if (linkKind === 'manage' && !consultationId) {
+    // The schema now expresses this as allOf+if/then (Vapi rejects
+    // the call before it reaches us). Keep the server check as
+    // defense-in-depth — older Vapi clients may not honor conditional
+    // requireds, and the PHI-bearing path must never trust the
+    // validator alone.
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
       error: 'consultation_id is required for link_kind=manage',
@@ -163,6 +240,14 @@ export async function POST(req: Request) {
   }
   const fromTail = fromE164.slice(-4)
 
+  // Small helper to keep the won't-send envelope identical across
+  // all the gate-stack branches below.
+  const wontSend = (reason: WontSendReason, extra: Record<string, unknown> = {}) =>
+    NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { sent: false, reason, link_kind: linkKind, ...extra },
+    }))
+
   // ── Resolve org + gate ──────────────────────────────────────────
   const { data: org } = await supabaseAdmin
     .from('organizations')
@@ -172,6 +257,10 @@ export async function POST(req: Request) {
     .eq('twilio_phone_number', toE164)
     .maybeSingle()
   if (!org) {
+    // Org-not-mapped is an infra/config failure (the route was hit
+    // for a Twilio DID we don't own). Surface ok:false so this is
+    // alertable rather than blending into the "blocked but
+    // recoverable" stream.
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
       error: 'No clinic mapped to this number',
@@ -184,43 +273,17 @@ export async function POST(req: Request) {
     }))
   }
   if (!org.sms_enabled) {
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: false,
-      error: 'sms_not_enabled',
-    }))
+    return wontSend('sms_not_enabled')
   }
   if (org.sms_confirmation_enabled === false) {
     // Reuses the confirmation toggle as the master "transactional SMS
     // off" switch — same convention as booking/cancel + voice/cancel
     // (no separate per-link toggle, audit disambiguation lives in
     // activity_log).
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: false,
-      error: 'sms_transactional_disabled',
-    }))
+    return wontSend('sms_transactional_disabled')
   }
   if (!isTwilioConfigured()) {
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: false,
-      error: 'sms_provider_not_configured',
-    }))
-  }
-
-  // ── Rate-limit (per kind + from_e164 tail, last 60s) ────────────
-  const sinceIso = new Date(Date.now() - RATE_LIMIT_MS).toISOString()
-  const { data: recent } = await supabaseAdmin
-    .from('activity_log')
-    .select('id')
-    .eq('organization_id', org.id)
-    .eq('action', 'voice_link_sent')
-    .gte('created_at', sinceIso)
-    .contains('metadata', { link_kind: linkKind, from_e164_tail: fromTail })
-    .limit(1)
-  if (recent && recent.length > 0) {
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: true,
-      output: { sent: false, reason: 'rate_limited', link_kind: linkKind },
-    }))
+    return wontSend('sms_provider_not_configured')
   }
 
   // ── Resolve contact (best-effort; required only for manage) ─────
@@ -238,10 +301,7 @@ export async function POST(req: Request) {
     ) ?? null
   }
   if (contact?.opted_out_sms) {
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: false,
-      error: 'caller_opted_out_sms',
-    }))
+    return wontSend('caller_opted_out_sms')
   }
   // Cross-archive opt-out check: when an active-contact match misses
   // (unknown caller OR caller whose contact was archived after they
@@ -260,10 +320,7 @@ export async function POST(req: Request) {
       c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
     )
     if (optedOut) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: false,
-        error: 'caller_opted_out_sms',
-      }))
+      return wontSend('caller_opted_out_sms')
     }
   }
 
@@ -273,10 +330,7 @@ export async function POST(req: Request) {
 
   if (linkKind === 'booking') {
     if (!org.slug) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: false,
-        error: 'org_missing_booking_slug',
-      }))
+      return wontSend('org_missing_booking_slug')
     }
     let bookingUrl = `${getAppUrl()}/book/${org.slug}`
     if (serviceSlug) {
@@ -302,18 +356,12 @@ export async function POST(req: Request) {
     bodyCopy = `${org.name ?? 'Your clinic'}: book here ${url} Reply STOP to opt out.`
   } else if (linkKind === 'manage') {
     if (!contact) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: true,
-        output: { sent: false, reason: 'caller_not_recognized' },
-      }))
+      return wontSend('caller_not_recognized')
     }
     // Stored consent gate — verbal consent does NOT substitute for
     // sms_consent on PHI-bearing links.
     if (!contact.sms_consent) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: false,
-        error: 'sms_consent_missing_on_contact',
-      }))
+      return wontSend('sms_consent_missing_on_contact')
     }
     // Re-validate consultation_id ownership + state. Mirrors my-
     // appointments + cancel-appointment so the LLM can't text a
@@ -327,30 +375,21 @@ export async function POST(req: Request) {
       .in('status', ['scheduled', 'confirmed'])
       .maybeSingle()
     if (!consultation) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: true,
-        output: { sent: false, reason: 'consultation_not_manageable' },
-      }))
+      return wontSend('consultation_not_manageable')
     }
     let token: string
     try {
       token = signManageToken(consultation.id)
     } catch (err) {
       console.error('[voice/send-link-sms manage] sign failed:', err instanceof Error ? err.message : 'unknown')
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: false,
-        error: 'manage_token_unavailable',
-      }))
+      return wontSend('manage_token_unavailable')
     }
     url = `${getAppUrl()}/manage/${token}`
     bodyCopy = `${org.name ?? 'Your clinic'}: manage your appointment ${url} Reply STOP to opt out.`
   } else if (linkKind === 'intake') {
     const raw = typeof org.intake_form_url === 'string' ? org.intake_form_url.trim() : ''
     if (!raw || !URL_RE.test(raw)) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: false,
-        error: 'no_intake_form_configured',
-      }))
+      return wontSend('no_intake_form_configured')
     }
     url = raw
     bodyCopy = `${org.name ?? 'Your clinic'}: new-patient form ${url} Reply STOP to opt out.`
@@ -359,10 +398,7 @@ export async function POST(req: Request) {
     const line1   = typeof org.address_line1   === 'string' ? org.address_line1.trim()   : ''
     const city    = typeof org.city            === 'string' ? org.city.trim()            : ''
     if (!placeId && !(line1 && city)) {
-      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-        ok: false,
-        error: 'no_address_configured',
-      }))
+      return wontSend('no_address_configured')
     }
     if (placeId) {
       url = `https://maps.google.com/?q=place_id:${encodeURIComponent(placeId)}`
@@ -401,21 +437,31 @@ export async function POST(req: Request) {
       linkKind,
       orgId:    org.id,
     })
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: false,
-      error: 'body_too_long',
-    }))
+    return wontSend('body_too_long')
   }
 
-  // ── Pre-send rate-limit sentinel ────────────────────────────────
-  // Write the activity_log row BEFORE calling Twilio so a concurrent
-  // tool call sees it on the SELECT above and short-circuits. Without
-  // this, two near-simultaneous LLM-driven calls both observe an
-  // empty result set and both fire SMS. The row carries status='pending'
-  // until the after() block patches it; the read-side filter only
-  // checks (link_kind, from_e164_tail), not status, so pending counts.
   const smsLogConsultationId = linkKind === 'manage' ? consultationId! : null
-  const { data: sentinel } = await supabaseAdmin
+
+  // ── Rate-limit sentinel: INSERT-as-primitive ────────────────────
+  // The unique partial index on activity_log
+  //   (org_id, metadata->>link_kind, metadata->>from_e164_tail,
+  //    date_trunc('minute', created_at))
+  //   WHERE action='voice_link_sent'
+  // (migration 20260712100000_voice_link_sent_uniq.sql) means a
+  // second concurrent INSERT for the same (org, kind, caller, minute)
+  // bucket is rejected by Postgres with 23505. That IS the rate
+  // limit — no SELECT-then-INSERT TOCTOU window. The previous
+  // implementation read activity_log first and then inserted; two
+  // tool calls firing within the same turn both passed the SELECT
+  // and the caller got two texts. Now the second caller gets
+  // rate_limited deterministically.
+  //
+  // If the INSERT raises any error OTHER than 23505 (DB unavailable,
+  // schema mismatch), we refuse to send. Sending un-logged would
+  // also leave the rate-limit shut for nothing because the next
+  // attempt would face the same outage. ok:false is the right
+  // signal — this is real infra.
+  const sentinelInsert = await supabaseAdmin
     .from('activity_log')
     .insert({
       organization_id: org.id,
@@ -433,8 +479,27 @@ export async function POST(req: Request) {
     })
     .select('id')
     .single()
+  if (sentinelInsert.error) {
+    if (isUniqueViolation(sentinelInsert.error)) {
+      // Bucket already has a row for this minute — second concurrent
+      // call lost the race. The prompt scripts a soft response ("I
+      // just texted that — should be coming through any second").
+      return wontSend('rate_limited')
+    }
+    console.error('[voice/send-link-sms] sentinel insert failed', {
+      orgId:    org.id,
+      linkKind,
+      code:     (sentinelInsert.error as { code?: string }).code,
+      message:  sentinelInsert.error.message,
+    })
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: false,
+      error: 'sms_provider_unavailable',
+    }))
+  }
+  const sentinelId = sentinelInsert.data?.id ?? null
 
-  // ── Send + log ──────────────────────────────────────────────────
+  // ── Send ────────────────────────────────────────────────────────
   // We send synchronously (before responding) so the LLM can speak
   // with confidence: "I just texted it to you." If the send fails
   // we surface a soft fail; we don't pretend it went through.
@@ -445,12 +510,13 @@ export async function POST(req: Request) {
   } catch (err: any) {
     sendError = err?.message ?? 'send_failed'
   }
-
-  // sms_log row — supabaseAdmin bypasses RLS, mirrors the gate-and-
-  // log block in /api/booking/cancel + /api/voice/tool/cancel-
-  // appointment. consultation_id is set only on the manage branch
-  // (the only kind tied to a specific booking).
   const smsStatus = sendError ? 'failed' : sendResult ? 'sent' : 'skipped'
+
+  // ── sms_log row ─────────────────────────────────────────────────
+  // supabaseAdmin bypasses RLS, mirrors the gate-and-log block in
+  // /api/booking/cancel + /api/voice/tool/cancel-appointment.
+  // consultation_id is set only on the manage branch (the only kind
+  // tied to a specific booking).
   after(async () => {
     try {
       await supabaseAdmin.from('sms_log').insert({
@@ -469,11 +535,37 @@ export async function POST(req: Request) {
     }
   })
 
-  // Patch the sentinel row's status now that we know the outcome.
-  // The row's existence already satisfies the rate-limit gate; this
-  // update just upgrades 'pending' → 'sent' | 'failed' | 'skipped'
-  // for the owner's analytics view.
-  if (sentinel?.id) {
+  if (sendError) {
+    // Twilio failed — delete the sentinel synchronously so a
+    // legitimate retry (Layla offers to "try again in a moment") in
+    // the same minute isn't blocked by our own failed attempt. The
+    // delete is best-effort: if it fails the rate-limit just stays
+    // shut until the bucket rolls, which is the safer side to err.
+    if (sentinelId) {
+      const { error: delErr } = await supabaseAdmin
+        .from('activity_log')
+        .delete()
+        .eq('id', sentinelId)
+      if (delErr) {
+        console.error('[voice/send-link-sms] sentinel delete after twilio failure', {
+          sentinelId,
+          code:    (delErr as { code?: string }).code,
+          message: delErr.message,
+        })
+      }
+    }
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: false,
+      error: 'sms_send_failed',
+    }))
+  }
+
+  // ── Patch sentinel status pending → sent ────────────────────────
+  // The row's existence already satisfied the rate-limit gate; this
+  // update just upgrades 'pending' → 'sent' for the owner's
+  // analytics view. Skipped status is impossible at this point (we
+  // bailed on send error above).
+  if (sentinelId) {
     after(async () => {
       try {
         await supabaseAdmin
@@ -489,18 +581,11 @@ export async function POST(req: Request) {
               verbal_consent:   consentConfirmed,
             },
           })
-          .eq('id', sentinel.id)
+          .eq('id', sentinelId)
       } catch (err) {
         console.error('[voice/send-link-sms activity_log] status patch failed', err)
       }
     })
-  }
-
-  if (sendError) {
-    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
-      ok: false,
-      error: 'sms_send_failed',
-    }))
   }
 
   return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {

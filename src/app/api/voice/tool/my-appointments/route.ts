@@ -94,9 +94,27 @@ export async function POST(req: Request) {
     .eq('is_archived', false)
     .ilike('phone', `%${last10}`)
     .limit(5)
-  const contact = (candidates ?? []).find(
+  // Exact-match on the trailing 10 digits — ilike '%<last10>' can
+  // accidentally match a phone whose middle digits happen to contain
+  // the same suffix (e.g. '15125551212' vs '5551212' on a country
+  // code with the wrong split). The JS compare is the authoritative
+  // check.
+  const exactMatches = (candidates ?? []).filter(
     c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
   )
+  // Collision guard: two contacts in the same org with the same
+  // trailing 10 digits is rare but real (data-entry duplicates,
+  // shared family lines). Picking one arbitrarily would mis-identify
+  // the caller — surface ambiguous_caller_id and let Layla fall back
+  // to take_message rather than silently exposing someone else's
+  // appointments.
+  if (exactMatches.length > 1) {
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { found: false, reason: 'ambiguous_caller_id' },
+    }))
+  }
+  const contact = exactMatches[0]
   if (!contact) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: true,

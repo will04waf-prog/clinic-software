@@ -3,14 +3,36 @@ import { createClient } from '@/lib/supabase/server'
 import { requireRole, isDenied, OWNER_ADMIN } from '@/lib/auth/roles'
 import { z } from 'zod'
 
+// TCPA: every transactional SMS we send must include a STOP
+// instruction. An owner who saves a custom template that omits
+// "STOP" (or "opt out" / "unsubscribe") effectively strips that
+// disclosure from confirmations and reminders, exposing the clinic
+// to carrier filtering and CTIA violations. We refuse such
+// templates at save time so the UI can show a clear error rather
+// than silently letting renderSmsForConsultation paper over it
+// later. Empty string / null are allowed — they fall back to the
+// hard-coded DEFAULT_TEMPLATES, which already contain "Reply STOP
+// to opt out.".
+const STOP_PATTERN = /\b(stop|opt[\s-]?out|unsubscribe)\b/i
+
+const templateField = z.string().max(320).nullable().optional().refine(
+  (val) => {
+    if (val == null) return true
+    const trimmed = val.trim()
+    if (trimmed.length === 0) return true
+    return STOP_PATTERN.test(trimmed)
+  },
+  { message: 'Template must include a STOP/opt-out instruction (e.g. "Reply STOP to opt out.") or be left blank to use the default.' },
+)
+
 const SmsSettingsSchema = z.object({
   sms_enabled:               z.boolean(),
   sms_confirmation_enabled:  z.boolean(),
   sms_reminder_24h_enabled:  z.boolean(),
   sms_reminder_2h_enabled:   z.boolean(),
-  sms_template_confirmation: z.string().max(320).nullable().optional(),
-  sms_template_reminder_24h: z.string().max(320).nullable().optional(),
-  sms_template_reminder_2h:  z.string().max(320).nullable().optional(),
+  sms_template_confirmation: templateField,
+  sms_template_reminder_24h: templateField,
+  sms_template_reminder_2h:  templateField,
 })
 
 export async function PATCH(request: Request) {

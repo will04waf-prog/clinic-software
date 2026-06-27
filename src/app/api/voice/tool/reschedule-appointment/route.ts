@@ -98,16 +98,30 @@ export async function POST(req: Request) {
       error: 'Unparseable caller id',
     }))
   }
+  // Use contacts_active (soft-delete-aware view) so the lookup here
+  // matches the same row the SMS-send block reads. Earlier code
+  // looked up via contacts.is_archived=false but the SMS step
+  // re-reads via contacts_active, so a soft-deleted contact would
+  // get rescheduled silently with no patient SMS confirmation.
   const { data: candidates } = await supabaseAdmin
-    .from('contacts')
+    .from('contacts_active')
     .select('id, first_name, phone')
     .eq('organization_id', org.id)
-    .eq('is_archived', false)
     .ilike('phone', `%${last10}`)
     .limit(5)
-  const contact = (candidates ?? []).find(
+  const exactMatches = (candidates ?? []).filter(
     c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
   )
+  // Collision guard — two contacts in the same org sharing the same
+  // trailing 10 digits would otherwise allow rescheduling under the
+  // wrong identity. Fall back so Layla can take_message instead.
+  if (exactMatches.length > 1) {
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { rescheduled: false, reason: 'ambiguous_caller_id' },
+    }))
+  }
+  const contact = exactMatches[0]
   if (!contact) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: true,
@@ -160,6 +174,17 @@ export async function POST(req: Request) {
     providerForUpdate = newProviderId
   }
   const nowIso = new Date().toISOString()
+  // Concurrent-update guard: two near-simultaneous reschedule calls
+  // for the same consultation (Vapi tool retry, double-click in a
+  // hypothetical UI, a network blip that resends) would both observe
+  // the same `existing` row, both UPDATE successfully, and both fire
+  // patient SMS + owner email — the patient gets two confirmation
+  // texts and the owner two notification emails for what is logically
+  // one change. Pin the UPDATE to `existing.scheduled_at` so only the
+  // first request matches; the second sees the already-updated
+  // scheduled_at, .maybeSingle() returns null, and we return a clean
+  // `already_rescheduled` reason rather than re-running the after()
+  // side effects.
   const { data: updated, error: updErr } = await supabaseAdmin
     .from('consultations')
     .update({
@@ -170,6 +195,7 @@ export async function POST(req: Request) {
     .eq('id', consultationId)
     .eq('organization_id', org.id)
     .eq('contact_id', contact.id)
+    .eq('scheduled_at', existing.scheduled_at)
     .in('status', ['scheduled', 'confirmed'])
     .select('id, scheduled_at')
     .maybeSingle()
@@ -184,9 +210,50 @@ export async function POST(req: Request) {
     }))
   }
   if (!updated) {
+    // Either the row was canceled/completed since the SELECT above
+    // (status check failed) OR a concurrent reschedule already
+    // changed scheduled_at out from under us. Distinguish: re-fetch
+    // the row and look at its current state. If scheduled_at no
+    // longer matches existing.scheduled_at, a sibling request won
+    // the race — surface `already_rescheduled` so the LLM/caller
+    // understands the change is in flight without re-firing SMS or
+    // email side effects.
+    const { data: recheck } = await supabaseAdmin
+      .from('consultations')
+      .select('scheduled_at, status')
+      .eq('id', consultationId)
+      .eq('organization_id', org.id)
+      .eq('contact_id', contact.id)
+      .maybeSingle()
+    const raced = recheck && recheck.scheduled_at !== existing.scheduled_at
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: true,
-      output: { rescheduled: false, reason: 'not_reschedulable_or_not_yours' },
+      output: {
+        rescheduled: false,
+        reason: raced ? 'already_rescheduled' : 'not_reschedulable_or_not_yours',
+      },
+    }))
+  }
+
+  // Retry-idempotency guard. Distinct from the in-flight concurrent
+  // case above: if request A succeeded but its response was lost in
+  // transit and Vapi retried, the retry re-fetches `existing`,
+  // which now has scheduled_at = newTime (A's UPDATE landed). The
+  // retry's UPDATE then matches (scheduled_at=newTime equals itself),
+  // succeeds as a no-op, and would naively re-fire the after()
+  // patient-SMS + owner-email. Catch it: an activity_log row for this
+  // exact (consultation_id, new_scheduled) already exists from A.
+  const { data: priorAudit } = await supabaseAdmin
+    .from('activity_log')
+    .select('id')
+    .eq('organization_id', org.id)
+    .eq('action', 'consultation_rescheduled_voice')
+    .contains('metadata', { consultation_id: updated.id, new_scheduled: updated.scheduled_at })
+    .limit(1)
+  if (priorAudit && priorAudit.length > 0) {
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { rescheduled: false, reason: 'already_rescheduled' },
     }))
   }
 

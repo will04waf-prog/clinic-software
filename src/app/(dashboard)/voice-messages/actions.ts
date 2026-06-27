@@ -18,12 +18,20 @@ export async function markResolved(messageId: string): Promise<{ ok: true } | { 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'unauthenticated' }
 
+  // role='owner' AND is_active=true mirrors the tightened RLS policy
+  // from migration 20260712090000_tighten_voice_messages_rls — an
+  // owner who has been deactivated (terminated, locked out) must not
+  // be able to resolve/reopen voicemails behind the policy's back via
+  // the server-action layer. The two checks must move in lockstep
+  // with the policy or the action becomes a quiet bypass.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('role, organization_id, is_active')
     .eq('id', user.id)
     .single()
-  if (profile?.role !== 'owner') return { ok: false, error: 'not_owner' }
+  if (profile?.role !== 'owner' || profile?.is_active !== true) {
+    return { ok: false, error: 'not_owner' }
+  }
 
   const { error } = await supabase
     .from('voice_messages')
@@ -41,12 +49,20 @@ export async function reopenMessage(messageId: string): Promise<{ ok: true } | {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { ok: false, error: 'unauthenticated' }
 
+  // role='owner' AND is_active=true mirrors the tightened RLS policy
+  // from migration 20260712090000_tighten_voice_messages_rls — an
+  // owner who has been deactivated (terminated, locked out) must not
+  // be able to resolve/reopen voicemails behind the policy's back via
+  // the server-action layer. The two checks must move in lockstep
+  // with the policy or the action becomes a quiet bypass.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('role, organization_id, is_active')
     .eq('id', user.id)
     .single()
-  if (profile?.role !== 'owner') return { ok: false, error: 'not_owner' }
+  if (profile?.role !== 'owner' || profile?.is_active !== true) {
+    return { ok: false, error: 'not_owner' }
+  }
 
   const { error } = await supabase
     .from('voice_messages')

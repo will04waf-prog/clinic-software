@@ -39,11 +39,19 @@ export function checkVoiceUtterance(
   // structured tool outputs read back verbatim, not LLM-authored
   // sentences that need exempting.
   //
-  // Pass a tighter override on the body so the SMS 160-char cap
-  // doesn't fire (we already checked our own 600-char cap).
-  const trimmedForLengthCheck = text.slice(0, 159)
-  return checkGuardrails(trimmedForLengthCheck, {
+  // PREVIOUSLY this passed `text.slice(0, 159)` to dodge the SMS
+  // 160-char length cap. That worked, but the side effect was that
+  // EVERY content rule (price, dose, banned-phrase, calendar-commit)
+  // only saw the first 159 chars — an utterance could smuggle a $999
+  // quote or a banned phrase past 160 and ship clean. The 600-char
+  // voice ceiling above already protects against runaway length;
+  // what we needed was a way to suppress the SMS length rule WITHOUT
+  // hiding the rest of the body from the content scans. The
+  // allowLengthOverride flag added to checkGuardrails does exactly
+  // that — content rules see the full text, length cap is skipped.
+  return checkGuardrails(text, {
     bannedPhrases:       opts?.bannedPhrases,
     allowCalendarCommit: false,
+    allowLengthOverride: true,
   })
 }

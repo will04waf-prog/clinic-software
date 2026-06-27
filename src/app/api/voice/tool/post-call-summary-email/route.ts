@@ -18,20 +18,25 @@
  *   - Even if a string slips through sanitization, it's still never
  *     surfaced to the email transport.
  *
- * Idempotency: keyed by call_sid. Same call_sid invoked twice within
- * 24h dedupes via Resend's Idempotency-Key + the activity_log row
- * lookup in the email helper. The activity_log INSERT itself is NOT
- * idempotency-gated here (the email helper is the user-visible
- * dedupe surface; double-INSERTing a summary row on a retry is
- * acceptable and visible to the owner).
+ * Idempotency: keyed by call_sid. call_sid is REQUIRED — absence is
+ * a real upstream bug (or a prompt-injected dashboard call) and we
+ * fail loudly with missing_call_sid rather than fall back to a
+ * synthetic key (the synthetic key would bypass both the Resend
+ * idempotency window and the new partial UNIQUE index on
+ * activity_log used by the owner-email dedupe in
+ * notifyOwnerOfCallSummary, so a Vapi retry could fire two owner
+ * emails for the same call). The activity_log voice_call_summary
+ * INSERT itself is NOT idempotency-gated here — double-INSERTing
+ * the structured summary row on a retry is acceptable; the
+ * user-visible dedupe surface is the owner email helper.
  */
 
 import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
 import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
+import { sanitizeSummary } from '@/lib/voice-agent/sanitize-summary'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
-import { normalizePhone } from '@/lib/validators'
 import { notifyOwnerOfCallSummary, type CallDisposition } from '@/lib/voice/call-summary-notification'
 
 const DISPOSITIONS: readonly CallDisposition[] = [
@@ -44,12 +49,6 @@ const DISPOSITIONS: readonly CallDisposition[] = [
   'abandoned',
   'escalation_needed',
 ] as const
-
-const SUMMARY_MAX_CHARS = 280
-
-// Phone-number-shaped runs: 7+ consecutive digit groups separated by
-// at most one of (space, dash, dot, paren). Catches "555-123-4567",
-import { sanitizeSummary } from '@/lib/voice-agent/sanitize-summary'
 
 export async function POST(req: Request) {
   if (!verifyVapiSignature(req)) {
@@ -99,25 +98,63 @@ export async function POST(req: Request) {
   const summaryTrimmed = summaryRaw.length > 500 ? summaryRaw.slice(0, 500) : summaryRaw
   const summarySanitized = sanitizeSummary(summaryTrimmed)
 
+  // contact_resolved: accept native booleans plus stringified
+  // "true"/"false" the LLM occasionally emits when it JSON-encodes
+  // its tool-call args (same lenient coercion as find-service's
+  // max_results, for the same reason). Anything else is a real
+  // protocol error and we surface it back to the model.
   const contactResolvedRaw = tc.arguments.contact_resolved
-  if (typeof contactResolvedRaw !== 'boolean') {
+  let contactResolved: boolean
+  if (typeof contactResolvedRaw === 'boolean') {
+    contactResolved = contactResolvedRaw
+  } else if (typeof contactResolvedRaw === 'string') {
+    const lowered = contactResolvedRaw.trim().toLowerCase()
+    if (lowered === 'true') {
+      contactResolved = true
+    } else if (lowered === 'false') {
+      contactResolved = false
+    } else {
+      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+        ok: false,
+        error: 'contact_resolved is required and must be a boolean',
+      }))
+    }
+  } else {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
       error: 'contact_resolved is required and must be a boolean',
     }))
   }
-  const contactResolved = contactResolvedRaw
 
-  // call_sid: prefer args override (dashboard test), else envelope.
-  // We need a non-empty string for the idempotency key + deep link;
-  // fall back to a synthetic key tagged with the toolCallId so the
-  // INSERT still goes through and Resend has SOMETHING to dedupe on
-  // (won't collide with a real sid because real sids start with 'CA').
+  // call_sid resolution. This is the call-END summary tool, so the
+  // Vapi envelope MUST carry tc.callSid; absence is a real upstream
+  // bug (or a prompt-injected dashboard call) and we want it to fail
+  // loudly here rather than silently break downstream dedupe (the
+  // activity_log partial UNIQUE index + Resend idempotency key are
+  // both keyed on call_sid; a synthetic `no_sid_${toolCallId}`
+  // fallback bypasses both, so a Vapi retry could fire two owner
+  // emails for the same call).
+  //
+  // Args override is honored only outside production so the Vapi
+  // dashboard's manual test harness can still exercise the route;
+  // mirrors the resolveCallEnvelope() pattern.
+  const allowSidOverride = process.env.NODE_ENV !== 'production'
   const argsCallSid = typeof tc.arguments.call_sid === 'string' ? tc.arguments.call_sid : undefined
-  const rawCallSid = argsCallSid ?? tc.callSid ?? ''
-  const callSid = rawCallSid && rawCallSid.length <= 64
-    ? rawCallSid
-    : `no_sid_${tc.toolCallId}`
+  if (!allowSidOverride && argsCallSid) {
+    // Don't log the full value — last 4 of whatever they tried to pass.
+    console.warn('[voice/tool/post-call-summary-email] call_sid override attempted in prod (refused)', {
+      envelope_call_sid_tail: tc.callSid ? tc.callSid.slice(-4) : undefined,
+      arg_call_sid_tail:      argsCallSid.slice(-4),
+    })
+  }
+  const rawCallSid = (allowSidOverride ? argsCallSid : undefined) ?? tc.callSid ?? ''
+  if (!rawCallSid || rawCallSid.length > 64) {
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: false,
+      error: 'missing_call_sid',
+    }))
+  }
+  const callSid = rawCallSid
 
   // ── Resolve org + agent-enabled gate. ──
   const { data: org } = await supabaseAdmin

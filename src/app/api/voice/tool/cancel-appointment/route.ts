@@ -90,16 +90,31 @@ export async function POST(req: Request) {
       error: 'Unparseable caller id',
     }))
   }
+  // Use contacts_active (the soft-delete-aware view) as the single
+  // source of truth — same view the downstream SMS-send block reads
+  // from. Earlier code looked up via contacts.is_archived=false here
+  // but then re-read via contacts_active for the SMS step, so a
+  // soft-deleted-but-not-archived contact would resolve here, get
+  // canceled, then silently get no cancellation SMS.
   const { data: candidates } = await supabaseAdmin
-    .from('contacts')
+    .from('contacts_active')
     .select('id, first_name, phone')
     .eq('organization_id', org.id)
-    .eq('is_archived', false)
     .ilike('phone', `%${last10}`)
     .limit(5)
-  const contact = (candidates ?? []).find(
+  const exactMatches = (candidates ?? []).filter(
     c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
   )
+  // Collision guard — two contacts in the same org sharing the same
+  // trailing 10 digits would otherwise let Layla cancel an
+  // appointment under a name she's not actually authenticated as.
+  if (exactMatches.length > 1) {
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: { canceled: false, reason: 'ambiguous_caller_id' },
+    }))
+  }
+  const contact = exactMatches[0]
   if (!contact) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: true,

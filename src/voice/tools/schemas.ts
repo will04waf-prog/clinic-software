@@ -49,7 +49,7 @@ export const TOOL_LOOKUP_AVAILABILITY: VapiTool = {
   function: {
     name: 'lookup_availability',
     description:
-      'Find 1-2 open appointment slots for a service. ALWAYS pass `service_id` (the UUID from a prior find_service.best_match_id or get_context.services[*].id) — that guarantees we book the right service. `service` (free-form name) is accepted only as a last-resort fallback when no id is known. Returns spoken strings + a booking_url.',
+      "Find 1-2 open appointment slots for a service. ALWAYS pass `service_id` (the UUID from a prior find_service.best_match_id or get_context.services[*].id) — that guarantees we book the right service. `service` (free-form name) is accepted only as a last-resort fallback when no id is known. The result has a `kind` discriminator with three branches: (1) kind:'slots' returns `slots[]` (each with `spoken`, `start_utc`, `end_utc`, `provider_id`) + a `booking_url` — read 1-2 slot.spoken strings aloud verbatim; (2) kind:'fully_booked' returns `service` + `booking_url` and means we know about the service but have no open slots in the visible window — offer take_message or text the booking link; (3) kind:'none' returns `reason` (e.g. 'no_service_match', 'no_providers_configured', 'lookup_failed') — apologize and offer take_message instead of inventing times.",
     parameters: {
       type: 'object',
       properties: {
@@ -98,7 +98,7 @@ export const TOOL_LOOKUP_MY_APPOINTMENTS: VapiTool = {
   function: {
     name: 'lookup_my_appointments',
     description:
-      "Look up the caller's own upcoming appointments using their caller ID (from the Vapi envelope). Takes no arguments. Returns { found, appointments[] } with spoken time strings to read back, or { found: false, reason }. If found:false, do NOT ask the caller to dictate a different phone number — offer take_message instead.",
+      "Look up the caller's own upcoming appointments using their caller ID (from the Vapi envelope). Takes no arguments. On success returns { found: true, appointments[] } with per-appointment `spoken` time strings to read back + `consultation_id` for downstream cancel/reschedule. On failure returns { found: false, reason } where reason is one of: 'no_upcoming' (caller IS in our system but has no future visit — offer to book one), 'no_contact_for_caller_id' (caller ID isn't in our patient list — ask if they were a previous patient, fall back to take_message), 'unparseable_caller_id' or 'no_caller_id' (caller ID is missing/blocked — offer take_message), or 'lookup_failed' (DB issue — apologize and offer take_message). NEVER ask the caller to dictate a different phone number — we cannot verify identity that way and the tool will refuse the override.",
     parameters: {
       type: 'object',
       properties: {},
@@ -112,7 +112,7 @@ export const TOOL_RESCHEDULE_APPOINTMENT: VapiTool = {
   function: {
     name: 'reschedule_appointment',
     description:
-      "Reschedule one of the caller's existing appointments to a new slot. Use AFTER lookup_my_appointments returned the consultation AND lookup_availability gave you a target slot AND the caller confirmed the swap. The route re-verifies caller ownership and refuses if the new slot is already taken (rescheduled:false, reason:'slot_taken' — offer another slot).",
+      "Reschedule one of the caller's existing appointments to a new slot. Use AFTER lookup_my_appointments returned the consultation AND lookup_availability gave you a target slot AND the caller confirmed the swap. On success returns { rescheduled: true } + new spoken time. On failure returns { rescheduled: false, reason } where reason is one of: 'caller_not_recognized' (caller ID no longer matches a contact — offer take_message, do NOT say the appointment is already moved), 'not_reschedulable_or_not_yours' (consultation_id doesn't belong to the caller or is in a non-reschedulable state — offer take_message), 'slot_taken' (someone grabbed that slot first — offer the next slot you have), 'invalid_provider' (new_provider_id is bogus — re-lookup availability), 'update_failed' (DB issue — apologize and offer take_message).",
     parameters: {
       type: 'object',
       properties: {
@@ -139,7 +139,7 @@ export const TOOL_CANCEL_APPOINTMENT: VapiTool = {
   function: {
     name: 'cancel_appointment',
     description:
-      "Cancel one of the caller's upcoming appointments. Use ONLY after lookup_my_appointments returned a match AND the caller explicitly confirmed which one to cancel (read the date/time back to them first). The consultation_id MUST come from a prior lookup_my_appointments result — never guess. The route re-verifies the consultation belongs to the caller (caller-ID-gated), so a wrong id is safe-fail.",
+      "Cancel one of the caller's upcoming appointments. Use ONLY after lookup_my_appointments returned a match AND the caller explicitly confirmed which one to cancel (read the date/time back to them first). The consultation_id MUST come from a prior lookup_my_appointments result — never guess. The route re-verifies the consultation belongs to the caller (caller-ID-gated), so a wrong id is safe-fail. On success returns { canceled: true }. On failure returns { canceled: false, reason } where reason is one of: 'caller_not_recognized' (caller ID no longer matches a contact — offer take_message, do NOT say it's already canceled) or 'not_cancelable_or_not_yours' (the consultation_id doesn't belong to this caller or is already canceled/in a non-cancelable state — apologize and offer take_message).",
     parameters: {
       type: 'object',
       properties: {
@@ -220,7 +220,7 @@ export const TOOL_SEND_LINK_SMS: VapiTool = {
   function: {
     name: 'send_link_sms',
     description:
-      "Mid-call: text the caller a one-tap link. Use when the caller agrees to be texted a booking page, a self-serve manage/reschedule link for an existing appointment, the new-patient intake form, or directions to the clinic. ALWAYS verbally confirm first ('want me to text it to you?') and only set consent_confirmed=true once they say yes. The destination is the caller's own number — you cannot text anyone else. Returns { sent: true } on success, or { sent: false, reason } when blocked.",
+      "Mid-call: text the caller a one-tap link. Use when the caller agrees to be texted a booking page, a self-serve manage/reschedule link for an existing appointment, the new-patient intake form, or directions to the clinic. ALWAYS verbally confirm first ('want me to text it to you?') and only set consent_confirmed=true once they say yes. The destination is the caller's own number — you cannot text anyone else. Returns { sent: true } on success, or { sent: false, reason } when blocked. Possible reason values (closed enum): rate_limited (you already texted this kind of link in the last minute — tell the caller it's on the way and move on); caller_not_recognized (no contact matches the caller-id — only emitted on link_kind='manage'); consultation_not_manageable (the consultation_id is canceled/completed or doesn't belong to this caller); caller_opted_out_sms (the caller previously sent STOP — apologize and offer to email or take a message instead); sms_consent_missing_on_contact (we don't have stored SMS consent for this caller — required for the PHI-bearing manage link); sms_not_enabled (clinic hasn't turned on SMS); sms_transactional_disabled (clinic turned off transactional SMS); sms_provider_not_configured (clinic hasn't connected an SMS provider); no_address_configured (link_kind='directions' but the clinic hasn't entered an address); no_intake_form_configured (link_kind='intake' but no intake URL); manage_token_unavailable (server couldn't sign the manage token — try again later or take a message); org_missing_booking_slug (clinic has no public booking page); body_too_long (the rendered message would exceed the SMS cap — report to owner). On any reason other than rate_limited, do NOT retry the same kind in this call; offer a non-SMS alternative (read details aloud, take a message, transfer).",
     parameters: {
       type: 'object',
       properties: {
@@ -238,7 +238,7 @@ export const TOOL_SEND_LINK_SMS: VapiTool = {
         consultation_id: {
           type: 'string',
           description:
-            "UUID of the consultation to manage. Required when link_kind='manage'. Use the value from a prior lookup_my_appointments result.",
+            "UUID of the consultation to manage. REQUIRED when link_kind='manage' (enforced by the schema's allOf/if/then below — the LLM will be rejected before the tool fires if missing). Use the value from a prior lookup_my_appointments result.",
         },
         service_slug: {
           type: 'string',
@@ -247,6 +247,22 @@ export const TOOL_SEND_LINK_SMS: VapiTool = {
         },
       },
       required: ['link_kind', 'consent_confirmed'],
+      // Conditional requirement: consultation_id is mandatory iff
+      // link_kind='manage'. Expressed as JSON Schema allOf+if/then so
+      // a tool-call without it is rejected by the validator before the
+      // route runs. The route still does a defense-in-depth check on
+      // presence + uuid format (older Vapi clients may not honor
+      // conditional requireds, and we never trust the validator alone
+      // for PHI-bearing paths).
+      allOf: [
+        {
+          if: {
+            properties: { link_kind: { const: 'manage' } },
+            required: ['link_kind'],
+          },
+          then: { required: ['consultation_id'] },
+        },
+      ],
     },
   },
 }

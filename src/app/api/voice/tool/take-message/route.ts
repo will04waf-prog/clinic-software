@@ -141,6 +141,13 @@ export async function POST(req: Request) {
   // digit ilike + JS exact-compare pattern as my-appointments /
   // cancel-appointment. A missing contact is normal (unknown
   // caller, new lead) — the message still gets stored. ──
+  // Collision case: when two contacts in the same org share the
+  // same trailing 10 digits we deliberately leave contact_id null
+  // rather than picking arbitrarily. The voice_message row still
+  // gets stored (the caller's request shouldn't be lost) and the
+  // owner can manually attribute it from the inbox after listening
+  // to the recording. Mis-attributing to the wrong patient would be
+  // worse than leaving it unattributed.
   let contactId: string | null = null
   if (fromE164) {
     const last10 = fromE164.replace(/\D/g, '').slice(-10)
@@ -152,10 +159,12 @@ export async function POST(req: Request) {
         .eq('is_archived', false)
         .ilike('phone', `%${last10}`)
         .limit(5)
-      const match = (candidates ?? []).find(
+      const exactMatches = (candidates ?? []).filter(
         c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
       )
-      contactId = match?.id ?? null
+      if (exactMatches.length === 1) {
+        contactId = exactMatches[0]!.id
+      }
     }
   }
 

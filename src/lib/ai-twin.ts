@@ -113,7 +113,21 @@ export type DraftResult =
  */
 export function checkGuardrails(
   body: string,
-  opts?: { bannedPhrases?: string[]; allowCalendarCommit?: boolean },
+  opts?: {
+    bannedPhrases?:       string[]
+    allowCalendarCommit?: boolean
+    /**
+     * When true, skip the 160-char SMS length cap entirely. Voice
+     * utterances are longer than texts (the medium has no character
+     * budget) but still need every CONTENT rule applied to the FULL
+     * body — previously the voice wrapper sliced to 159 chars before
+     * calling, which silently skipped banned-phrase / price / dose
+     * scans on chars 160+. With this flag, voice can let the content
+     * scans see the whole utterance and enforce its own 600-char
+     * ceiling separately.
+     */
+    allowLengthOverride?: boolean
+  },
 ): { ok: true } | { ok: false; violation: string } {
   // Price quoting: $ followed by digits, "20 dollars", "20.00".
   // Kept first — it's the most specific and the highest-stakes rule
@@ -225,8 +239,10 @@ export function checkGuardrails(
   // Length cap — LAST, after all content rules, so a draft that
   // violates a content rule still reports the more useful reason.
   // 160 chars matches the SMS character budget the model is told to
-  // hit; the disclosure footer is appended at send time.
-  if (body.trim().length > 160) {
+  // hit; the disclosure footer is appended at send time. Voice paths
+  // pass allowLengthOverride because spoken utterances are bounded
+  // by a separate 600-char ceiling (see lib/voice-agent/guardrails.ts).
+  if (!opts?.allowLengthOverride && body.trim().length > 160) {
     return { ok: false, violation: 'too_long' }
   }
 

@@ -48,18 +48,10 @@ export async function notifyOwnerOfCallSummary(
 
   const action = 'owner_notified_call_summary'
 
-  // ── Durable dedupe per call_sid. ──
-  const { data: priorNotice } = await supabaseAdmin
-    .from('activity_log')
-    .select('id')
-    .eq('organization_id', args.organizationId)
-    .eq('action', action)
-    .contains('metadata', { call_sid: args.callSid })
-    .limit(1)
-    .maybeSingle()
-  if (priorNotice) return
-
-  // ── Owner + org name lookup. ──
+  // ── Owner + org name lookup. We resolve identity BEFORE claiming
+  // the dedupe row so that a missing owner email doesn't leave behind
+  // a phantom "notified" row that suppresses a future retry once the
+  // owner profile is fixed. ──
   const [{ data: owner }, { data: org }] = await Promise.all([
     supabaseAdmin
       .from('profiles')
@@ -78,6 +70,32 @@ export async function notifyOwnerOfCallSummary(
 
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
+
+  // ── Race-safe dedupe: INSERT the claim ticket FIRST, only send
+  // the email if the insert succeeds. The partial UNIQUE index
+  // activity_log_call_summary_uniq (migration
+  // 20260712110000_call_summary_dedupe_uniq) on (organization_id,
+  // metadata->>'call_sid') WHERE action='owner_notified_call_summary'
+  // is what makes this atomic — Postgres raises 23505 on the loser,
+  // we treat that as "someone else won, no-op." This replaces the
+  // older SELECT-then-INSERT pattern which had a check-then-act race
+  // window between two retried tool-call invocations. ──
+  const { error: claimErr } = await supabaseAdmin.from('activity_log').insert({
+    organization_id: args.organizationId,
+    action,
+    metadata: {
+      call_sid:    args.callSid,
+      disposition: args.disposition,
+    },
+  })
+  if (claimErr) {
+    // 23505 = unique_violation = another concurrent invocation
+    // already claimed this (org, call_sid). That's the happy path
+    // for dedupe — silently no-op.
+    if (claimErr.code === '23505') return
+    console.error('[call-summary-notification] dedupe claim insert failed', claimErr.message)
+    return
+  }
 
   // Deep link to the transcript view by call_sid. The page may 404
   // until the transcript UI lands — owners still get the URL on
@@ -99,19 +117,13 @@ export async function notifyOwnerOfCallSummary(
       to: owner.email,
       subject: `Call summary at ${orgName}: ${args.disposition}`,
       html,
+      // Belt-and-suspenders alongside the DB-level claim row above:
+      // if the same call_sid somehow re-runs after the claim is
+      // already in place (e.g. owner email retry), Resend's 24h
+      // idempotency window still catches it.
       idempotencyKey: `voice_call_summary:${args.callSid}`,
     })
   } catch {
     console.error('[call-summary-notification] resend send failed')
-    return
   }
-
-  await supabaseAdmin.from('activity_log').insert({
-    organization_id: args.organizationId,
-    action,
-    metadata: {
-      call_sid:    args.callSid,
-      disposition: args.disposition,
-    },
-  })
 }

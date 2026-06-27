@@ -87,7 +87,17 @@ export function renderSmsForConsultation(
   // Collapse any double-spaces produced by an empty {{manage_url}}
   // placeholder so the SMS reads naturally regardless of whether a
   // URL was injected.
-  return rendered.replace(/  +/g, ' ')
+  const collapsed = rendered.replace(/  +/g, ' ')
+
+  // Belt-and-suspenders TCPA enforcement: sms-settings refuses to
+  // save a custom template that lacks STOP, but a template could
+  // have been written directly to the DB (manual SQL, an older
+  // migration, etc.) or the placeholder substitution could in
+  // principle elide the STOP phrase. Mirror the pattern used by
+  // /api/leads/[id]/send-sms and append the footer when the
+  // rendered body doesn't already carry it.
+  const needsStop = !/\b(STOP|opt[\s-]?out|unsubscribe)\b/i.test(collapsed)
+  return needsStop ? `${collapsed} Reply STOP to opt out.` : collapsed
 }
 
 export const DEFAULT_TEMPLATE_TEXT = DEFAULT_TEMPLATES

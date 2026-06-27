@@ -16,7 +16,8 @@
  * one place.
  */
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { MapPin } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,10 +52,22 @@ function toFieldState(initial: ClinicAddressInitial): FieldState {
 }
 
 export function ClinicAddressCard({ initial }: { initial: ClinicAddressInitial }) {
+  const router = useRouter()
   const [fields, setFields] = useState<FieldState>(() => toFieldState(initial))
   const [error, setError]   = useState<string | null>(null)
   const [saved, setSaved]   = useState(false)
   const [pending, startTransition] = useTransition()
+
+  // Re-sync the draft from server-supplied props whenever `initial`
+  // changes (i.e. after a successful save + router.refresh() roundtrip).
+  // updateClinicAddress normalizes inputs server-side (uppercases the
+  // ISO country code, trims whitespace, etc.); without this rehydrate
+  // the user's NEXT edit would operate on whatever they typed locally,
+  // not the canonical normalized values — they'd see "us" in the input
+  // even though the DB now holds "US", and a subsequent partial edit
+  // could silently overwrite the normalization. Mirrors the
+  // FallbackInput / GreetingInput pattern in call-agent-settings-card.
+  useEffect(() => { setFields(toFieldState(initial)) }, [initial])
 
   function set<K extends keyof FieldState>(key: K, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }))
@@ -70,6 +83,12 @@ export function ClinicAddressCard({ initial }: { initial: ClinicAddressInitial }
         setError(result.error)
       } else {
         setSaved(true)
+        // Pull the now-normalized row back from the server so the
+        // useEffect above can rehydrate the draft from canonical values.
+        // Without this refresh, props stay stale until the user
+        // navigates away and back, which is exactly the window where
+        // their next edit happens on a divergent draft.
+        router.refresh()
       }
     })
   }
