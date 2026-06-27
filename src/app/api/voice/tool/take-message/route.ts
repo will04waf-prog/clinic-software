@@ -35,6 +35,7 @@
 import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { normalizePhone } from '@/lib/validators'
 import { notifyOwnerOfVoiceMessage } from '@/lib/voice/message-notification'
@@ -96,10 +97,9 @@ export async function POST(req: Request) {
   // dashboard test calls, same pattern as the other tool routes).
   // caller_phone comes from the envelope, NEVER from an LLM arg —
   // we don't even read tc.arguments.caller_phone here. ──
-  const argsToE164   = typeof tc.arguments.to_e164   === 'string' ? tc.arguments.to_e164   : undefined
-  const argsFromE164 = typeof tc.arguments.from_e164 === 'string' ? tc.arguments.from_e164 : undefined
-  const toE164   = normalizePhone(argsToE164   ?? tc.toE164   ?? '')
-  const fromE164 = normalizePhone(argsFromE164 ?? tc.fromE164 ?? '')
+  // Identity hard-locked to call envelope in prod; LLM-supplied
+  // to_e164/from_e164/phone_number args refused outside dev.
+  const { toE164, fromE164 } = resolveCallEnvelope(tc)
 
   // Tail-only logging — never log full caller IDs (PII).
   console.log('[voice/tool/take-message] envelope', {

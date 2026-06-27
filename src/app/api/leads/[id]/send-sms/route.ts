@@ -36,7 +36,7 @@ export async function POST(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, organization:organizations(id, name)')
+    .select('organization_id, organization:organizations(id, name, sms_enabled)')
     .eq('id', user.id)
     .single()
 
@@ -44,6 +44,17 @@ export async function POST(
 
   const orgId = profile.organization_id
   const org   = profile.organization as any
+
+  // Org-wide SMS kill-switch. If the owner has flipped this off in
+  // /settings/sms, no outbound SMS — including manual sends from the
+  // leads detail page — should fire. UI also disables, but this is
+  // the canonical gate.
+  if (!org?.sms_enabled) {
+    return NextResponse.json(
+      { error: 'sms_disabled', message: 'SMS is disabled for this clinic. Enable it in /settings/sms before sending.' },
+      { status: 403 },
+    )
+  }
 
   // Explicit org scoping (belt + suspenders with RLS).
   const { data: contact } = await supabase
@@ -134,13 +145,17 @@ export async function POST(
   // Append the mandatory AI-disclosure footer when this send is
   // either resolving a persisted AI draft (draft_id) OR was authored
   // via the manual AI Draft button (is_ai_drafted flag from composer).
-  // The footer is added at the route layer, not in the composer, so
-  // a non-AI manual send is never labeled and the user can't delete
-  // the disclosure text from the composer.
   const isAiAuthored = draft != null || is_ai_drafted === true
-  const finalOutboundBody = isAiAuthored
-    ? renderedBody + disclosureFooter(org?.name ?? 'our clinic')
-    : renderedBody
+  const aiFooter = isAiAuthored ? disclosureFooter(org?.name ?? 'our clinic') : ''
+
+  // TCPA: every outbound transactional SMS must end with a STOP
+  // instruction. We append it server-side so users can't strip it
+  // from the composer, and so this gate doesn't depend on whether
+  // the body was AI-authored or hand-typed.
+  const STOP_FOOTER = '\nReply STOP to opt out.'
+  const needsStop = !/\b(STOP|opt[\s-]?out|unsubscribe)\b/i.test(renderedBody + aiFooter)
+  const finalOutboundBody =
+    renderedBody + aiFooter + (needsStop ? STOP_FOOTER : '')
 
   let providerId: string | null = null
   let sendError:  string | null = null

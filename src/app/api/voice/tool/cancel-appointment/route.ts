@@ -29,7 +29,7 @@ import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
-import { normalizePhone } from '@/lib/validators'
+import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { notifyOwnerOfBooking } from '@/lib/booking/owner-notification'
 
@@ -54,11 +54,10 @@ export async function POST(req: Request) {
     }))
   }
 
-  // Resolve org + caller — same dance as lookup_my_appointments.
-  const argsToE164   = typeof tc.arguments.to_e164   === 'string' ? tc.arguments.to_e164   : undefined
-  const argsFromE164 = typeof tc.arguments.from_e164 === 'string' ? tc.arguments.from_e164 : undefined
-  const toE164   = normalizePhone(argsToE164   ?? tc.toE164   ?? '')
-  const fromE164 = normalizePhone(argsFromE164 ?? tc.fromE164 ?? '')
+  // CRITICAL: identity comes ONLY from the Vapi envelope in prod.
+  // resolveCallEnvelope refuses LLM-supplied to_e164/from_e164/
+  // phone_number args in production — see lib/voice-agent/resolve-envelope.ts.
+  const { toE164, fromE164 } = resolveCallEnvelope(tc)
   if (!toE164 || !fromE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

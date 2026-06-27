@@ -22,6 +22,7 @@
 import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { normalizePhone } from '@/lib/validators'
 
@@ -40,8 +41,9 @@ export async function POST(req: Request) {
 
   // Args overrides for dashboard test calls. Production reads from
   // the Vapi call envelope.
-  const argsToE164 = typeof tc.arguments.to_e164 === 'string' ? tc.arguments.to_e164 : undefined
-  const toE164 = normalizePhone(argsToE164 ?? tc.toE164 ?? '')
+  // Identity hard-locked to call envelope in prod; LLM-supplied
+  // to_e164/from_e164/phone_number args refused outside dev.
+  const { toE164 } = resolveCallEnvelope(tc)
   if (!toE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

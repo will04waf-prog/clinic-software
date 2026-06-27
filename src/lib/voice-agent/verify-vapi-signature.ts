@@ -29,11 +29,15 @@ let warnedNoSecret = false
 export function verifyVapiSignature(request: Request): boolean {
   const expected = process.env.VAPI_WEBHOOK_SECRET
   if (!expected) {
+    // In production a missing secret is a deploy-time misconfiguration
+    // and must fail closed — the previous behavior (return true + warn)
+    // silently auth-bypassed every voice tool. In dev/test we keep the
+    // soft-pass so local exploration works without env juggling.
     if (!warnedNoSecret) {
-      console.warn('[vapi] VAPI_WEBHOOK_SECRET is not set — skipping signature verification. Lock down before real patient calls route through the agent.')
+      console.warn('[vapi] VAPI_WEBHOOK_SECRET is not set. In production this fails closed; only dev/test soft-passes.')
       warnedNoSecret = true
     }
-    return true
+    return process.env.NODE_ENV !== 'production'
   }
 
   const got = request.headers.get('x-vapi-secret') ?? ''

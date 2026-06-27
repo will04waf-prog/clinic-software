@@ -94,15 +94,10 @@ export const TOOL_LOOKUP_MY_APPOINTMENTS: VapiTool = {
   function: {
     name: 'lookup_my_appointments',
     description:
-      "Look up upcoming appointments. By default uses the caller's caller ID — call with no args first. If found:false comes back, ask the caller which number they booked from, then call again with phone_number set to that number. Returns { found, appointments[] } with spoken time strings, or { found: false, reason }.",
+      "Look up the caller's own upcoming appointments using their caller ID (from the Vapi envelope). Takes no arguments. Returns { found, appointments[] } with spoken time strings to read back, or { found: false, reason }. If found:false, do NOT ask the caller to dictate a different phone number — offer take_message instead.",
     parameters: {
       type: 'object',
-      properties: {
-        phone_number: {
-          type: 'string',
-          description: "Optional. E.164 phone number to look up appointments by (e.g. '+15551234567'). Use this when the caller says they booked from a DIFFERENT number than the one they're calling from. Leave empty on the first call so we try the caller's own number first.",
-        },
-      },
+      properties: {},
       required: [],
     },
   },

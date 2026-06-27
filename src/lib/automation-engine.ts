@@ -206,7 +206,7 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
   // Get org for clinic name
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, email, phone')
+    .select('name, email, phone, sms_enabled')
     .eq('id', enrollment.organization_id)
     .single()
 
@@ -295,9 +295,16 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
         step.channel === 'sms' &&
         contact.phone &&
         contact.sms_consent === true &&
-        !contact.opted_out_sms
+        !contact.opted_out_sms &&
+        org?.sms_enabled !== false
       ) {
-        const body = renderSMS(step.body, vars)
+        const renderedBody = renderSMS(step.body, vars)
+        // TCPA: always end with a STOP instruction. We append server-side
+        // so a sequence-step author can't strip it from the template,
+        // and idempotently skip if their text already includes opt-out
+        // language.
+        const needsStop = !/\b(STOP|opt[\s-]?out|unsubscribe)\b/i.test(renderedBody)
+        const body = needsStop ? `${renderedBody}\nReply STOP to opt out.` : renderedBody
         const smsResult = await sendSMS(contact.phone, body)
         if (smsResult === null) {
           messageStatus = 'skipped'

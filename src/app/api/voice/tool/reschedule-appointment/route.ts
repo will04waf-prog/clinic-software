@@ -25,7 +25,7 @@ import { NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
-import { normalizePhone } from '@/lib/validators'
+import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { notifyOwnerOfBooking } from '@/lib/booking/owner-notification'
 
@@ -63,13 +63,8 @@ export async function POST(req: Request) {
     }))
   }
 
-  // Same envelope dance as cancel_appointment + my-appointments.
-  const argsToE164   = typeof tc.arguments.to_e164   === 'string' ? tc.arguments.to_e164   : undefined
-  const argsPhone    =
-    (typeof tc.arguments.phone_number === 'string' ? tc.arguments.phone_number : undefined) ??
-    (typeof tc.arguments.from_e164     === 'string' ? tc.arguments.from_e164     : undefined)
-  const toE164   = normalizePhone(argsToE164 ?? tc.toE164   ?? '')
-  const fromE164 = normalizePhone(argsPhone  ?? tc.fromE164 ?? '')
+  // CRITICAL: identity from envelope only — never from LLM args in prod.
+  const { toE164, fromE164 } = resolveCallEnvelope(tc)
   if (!toE164 || !fromE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

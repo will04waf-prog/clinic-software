@@ -23,8 +23,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
-import { normalizePhone } from '@/lib/validators'
 
 export async function POST(req: Request) {
   if (!verifyVapiSignature(req)) {
@@ -37,32 +37,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'unrecognized_payload_shape' }, { status: 400 })
   }
 
-  // Allow args overrides for dashboard test calls (same pattern as
-  // /tool/context). Production calls populate these from the call
-  // envelope automatically.
-  const argsToE164   = typeof tc.arguments.to_e164   === 'string' ? tc.arguments.to_e164   : undefined
-  // Accept either `phone_number` (the prompt-facing arg Layla uses
-  // when the caller dictates a different number than their caller ID)
-  // OR `from_e164` (legacy dashboard-test arg). Either takes priority
-  // over the call envelope so a caller can find their booking when
-  // calling from someone else's phone.
-  const argsPhone =
-    (typeof tc.arguments.phone_number === 'string' ? tc.arguments.phone_number : undefined) ??
-    (typeof tc.arguments.from_e164     === 'string' ? tc.arguments.from_e164     : undefined)
-  const toE164   = normalizePhone(argsToE164 ?? tc.toE164   ?? '')
-  const fromE164 = normalizePhone(argsPhone  ?? tc.fromE164 ?? '')
-  // Diagnostic: capture WHICH payload field actually populated. We
-  // log only the digit-suffix (last 4) — never the full caller ID —
-  // and stamp the call_sid so an operator can correlate to a real
-  // call without seeing PII. Remove once the payload shape is locked.
-  console.log('[voice/tool/my-appointments] envelope', {
-    callSid:    tc.callSid,
-    toolFromE164_present: Boolean(tc.fromE164),
-    toolFromE164_tail:    tc.fromE164?.slice(-4),
-    argsPhone_present:    Boolean(argsPhone),
-    normalized_from_tail: fromE164?.slice(-4),
-    toE164_tail:          toE164?.slice(-4),
-  })
+  // CRITICAL: identity (fromE164) MUST come from the Vapi call
+  // envelope in production. Earlier versions accepted an LLM-supplied
+  // `phone_number` arg as a fallback, which let a prompt-injecting
+  // caller pivot to another patient's record. resolveCallEnvelope
+  // refuses args in prod and only honors them in dev/test.
+  const { toE164, fromE164 } = resolveCallEnvelope(tc)
   if (!toE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

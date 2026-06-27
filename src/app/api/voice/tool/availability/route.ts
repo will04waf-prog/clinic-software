@@ -19,6 +19,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
+import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { fetchSlotsForTwin } from '@/lib/ai-twin/booking-slots-for-twin'
 import { normalizePhone } from '@/lib/validators'
@@ -32,8 +33,9 @@ export async function POST(req: Request) {
   const tc = toolCallFromVapiPayload(body)
   if (!tc) return NextResponse.json({ error: 'unrecognized_payload_shape' }, { status: 400 })
 
-  const argsToE164 = typeof tc.arguments.to_e164 === 'string' ? tc.arguments.to_e164 : undefined
-  const toE164 = normalizePhone(argsToE164 ?? tc.toE164 ?? '')
+  // Identity hard-locked to call envelope in prod; LLM-supplied
+  // to_e164/from_e164/phone_number args refused outside dev.
+  const { toE164 } = resolveCallEnvelope(tc)
   const serviceHintArg = typeof tc.arguments.service === 'string'
     ? tc.arguments.service
     : null
