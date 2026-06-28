@@ -49,7 +49,18 @@ for (const path of ['.env.local', '.env']) {
 
 const VAPI_API_KEY        = process.env.VAPI_API_KEY
 const VAPI_WEBHOOK_SECRET = process.env.VAPI_WEBHOOK_SECRET
-const APP_URL             = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net').replace(/\/$/, '')
+// Reject localhost URLs hard — a Vapi assistant seeded with localhost
+// receives no tool calls (Vapi's cloud can't reach 127.0.0.1) AND no
+// call-end webhook. Symptom is a call that connects but where the
+// bot has no working tools and we never learn how it ended. Bit me
+// once in W1 + once in W2. The env var defaults to the public app
+// URL; explicit localhost is a misconfiguration.
+const RAW_APP_URL = (process.env.SEED_APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net')
+if (/localhost|127\.0\.0\.1/.test(RAW_APP_URL)) {
+  console.error(`[seed-vapi] refusing to seed against ${RAW_APP_URL} — Vapi cloud cannot reach it.\nSet SEED_APP_URL=https://your-prod-host (or unset NEXT_PUBLIC_APP_URL) and rerun.`)
+  process.exit(1)
+}
+const APP_URL = RAW_APP_URL.replace(/\/$/, '')
 const SUPABASE_URL        = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY        = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -153,6 +164,12 @@ async function main() {
     firstMessage: 'One moment while I pull up the clinic\'s info...',
     serverUrl:        `${APP_URL}/api/webhooks/vapi/call-end`,
     serverUrlSecret:  VAPI_WEBHOOK_SECRET ?? undefined,
+    // Subscribe to end-of-call-report explicitly. Vapi only sends
+    // tool-call events by default — without this list, the call-end
+    // webhook NEVER fires and our call_logs table stays empty (and
+    // outbound voice_reminder_status never flips to its terminal
+    // disposition). Burned us once in W2; never again.
+    serverMessages: ['end-of-call-report', 'status-update', 'hang'],
     metadata: {
       orgId:    org.id,
       orgSlug:  org.slug,
