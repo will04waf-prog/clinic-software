@@ -90,10 +90,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: msg.type })
   }
 
-  // Phone-number extraction with broader fallback paths. Vapi's
-  // end-of-call-report has shifted these between releases —
-  // phoneNumber{.number,.twilioPhoneNumber}, customer{.number,.phone}.
-  // Walk all known shapes before giving up.
+  // Vapi's end-of-call-report does NOT carry the clinic-side
+  // (phoneNumber) object in any release we've seen — only the
+  // assistantId and the customer.number (the patient's phone).
+  // Resolve the org by assistant id instead of by phone number,
+  // then synthesize toE164 from organizations.twilio_phone_number.
+  // The customer.number always represents the patient regardless
+  // of direction (caller for inbound, callee for outbound).
   function pickNumber(obj: unknown, ...keys: string[]): string {
     if (!obj || typeof obj !== 'object') return ''
     for (const k of keys) {
@@ -102,41 +105,77 @@ export async function POST(req: Request) {
     }
     return ''
   }
-  const toRaw   = pickNumber(call.phoneNumber, 'number', 'twilioPhoneNumber')
-  const fromRaw = pickNumber(call.customer,    'number', 'phone')
-  const toE164   = normalizePhone(toRaw)   ?? toRaw
-  const fromE164 = normalizePhone(fromRaw) ?? fromRaw
+  const customerRaw = pickNumber(call.customer, 'number', 'phone')
+  // Backwards-compat: older Vapi payloads sometimes DID include
+  // phoneNumber.{number,twilioPhoneNumber}. Use it if present, else
+  // we'll fill from the org below.
+  const phoneNumberRaw = pickNumber(call.phoneNumber, 'number', 'twilioPhoneNumber')
+  const assistantId    = typeof call.assistantId === 'string' ? call.assistantId : null
+
+  // Resolve org: prefer assistantId (matches either inbound or
+  // reminder assistant), fall back to phoneNumber lookup for
+  // backwards-compat with the older payload shape.
+  let orgRow: { id: string; twilio_phone_number: string | null; is_reminder: boolean } | null = null
+  if (assistantId) {
+    const { data: byAssist } = await supabaseAdmin
+      .from('organizations')
+      .select('id, twilio_phone_number, call_agent_assistant_id, call_agent_reminder_assistant_id')
+      .or(`call_agent_assistant_id.eq.${assistantId},call_agent_reminder_assistant_id.eq.${assistantId}`)
+      .maybeSingle()
+    if (byAssist) {
+      orgRow = {
+        id:                  byAssist.id,
+        twilio_phone_number: byAssist.twilio_phone_number,
+        is_reminder:         byAssist.call_agent_reminder_assistant_id === assistantId,
+      }
+    }
+  }
+  if (!orgRow && phoneNumberRaw) {
+    const normalized = normalizePhone(phoneNumberRaw) ?? phoneNumberRaw
+    const { data: byPhone } = await supabaseAdmin
+      .from('organizations')
+      .select('id, twilio_phone_number')
+      .eq('twilio_phone_number', normalized)
+      .maybeSingle()
+    if (byPhone) {
+      orgRow = { id: byPhone.id, twilio_phone_number: byPhone.twilio_phone_number, is_reminder: false }
+    }
+  }
+  if (!orgRow) {
+    console.warn('[vapi/call-end] no org match', { assistantId, hasPhoneNumber: !!phoneNumberRaw })
+    return NextResponse.json({ ok: true, ignored: true })
+  }
+
+  // Direction + phone derivation:
+  //   inbound  → customer is the FROM, org's Twilio is the TO
+  //   outbound → customer is the TO,   org's Twilio is the FROM
+  // Vapi's call.type is 'inboundPhoneCall' / 'outboundPhoneCall'.
+  // Fall back to is_reminder (outbound only fires for reminders today).
+  const isOutbound = (typeof call.type === 'string' && call.type.toLowerCase().includes('outbound'))
+    || orgRow.is_reminder
+  const direction: 'inbound' | 'outbound' = isOutbound ? 'outbound' : 'inbound'
+  const orgPhone = orgRow.twilio_phone_number ?? phoneNumberRaw
+  const customerE164 = normalizePhone(customerRaw) ?? customerRaw
+  const orgE164      = normalizePhone(orgPhone   ?? '') ?? (orgPhone ?? '')
+  const toE164   = direction === 'inbound' ? orgE164      : customerE164
+  const fromE164 = direction === 'inbound' ? customerE164 : orgE164
   if (!toE164 || !fromE164) {
-    console.warn('[vapi/call-end] missing_phone_numbers', {
-      msgType:           msg.type,
-      callKeys:          Object.keys(call as Record<string, unknown>),
-      phoneNumberKeys:   call.phoneNumber ? Object.keys(call.phoneNumber) : null,
-      customerKeys:      call.customer    ? Object.keys(call.customer)    : null,
-      toRaw_len:         toRaw.length,
-      fromRaw_len:       fromRaw.length,
+    console.warn('[vapi/call-end] could not derive phones after org match', {
+      direction, orgPhone_present: !!orgPhone, customerRaw_len: customerRaw.length,
     })
     return NextResponse.json({ error: 'missing_phone_numbers' }, { status: 400 })
   }
 
-  // Resolve org by To-number. Same pattern as the voice webhook.
-  const { data: org } = await supabaseAdmin
-    .from('organizations')
-    .select('id')
-    .eq('twilio_phone_number', toE164)
-    .maybeSingle()
-  if (!org) {
-    // Unknown To-number → log warning + 200 (no-op) so Vapi
-    // doesn't keep retrying for a misconfigured call.
-    console.warn('[vapi/call-end] no org for to_e164', toE164)
-    return NextResponse.json({ ok: true, ignored: true })
-  }
+  // Shim to keep the existing org lookup contract below — persistCallLog
+  // takes orgId from `org`, so build a compatible local object.
+  const org = { id: orgRow.id }
 
   const result = await persistCallLog({
     orgId:        org.id,
     callSid:      call.id,
     fromE164,
     toE164,
-    direction:    'inbound',
+    direction,
     startedAt:    call.startedAt ?? new Date().toISOString(),
     endedAt:      call.endedAt   ?? null,
     durationSec:  call.durationMs != null ? Math.round(call.durationMs / 1000) : null,
