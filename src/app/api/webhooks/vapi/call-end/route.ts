@@ -62,8 +62,23 @@ export async function POST(req: Request) {
 
   const body: VapiCallEndPayload | null = await req.json().catch(() => null)
   const msg = body?.message
-  const call = msg?.call
+  // Accept call envelope from either nesting depth. Vapi's tool-calls
+  // events nest it under message.call; some end-of-call-report
+  // variants put it at the root alongside message. We've already
+  // handled this in tool-types.ts for tool routes — mirror it here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const call: any = msg?.call ?? (body as any)?.call ?? null
+  // Diagnostic: log the top-level shape so we can see what Vapi is
+  // actually sending if any of the gates below reject. PHI-free —
+  // only field names + presence booleans, no values.
   if (!msg || !call || !call.id) {
+    console.warn('[vapi/call-end] invalid_payload', {
+      bodyKeys:     body ? Object.keys(body as Record<string, unknown>) : null,
+      msgKeys:      msg  ? Object.keys(msg  as Record<string, unknown>) : null,
+      msgType:      msg?.type,
+      hasCall:      !!call,
+      hasCallId:    !!call?.id,
+    })
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 })
   }
 
@@ -75,9 +90,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: msg.type })
   }
 
-  const toE164   = normalizePhone(call.phoneNumber?.number ?? '') ?? (call.phoneNumber?.number ?? '')
-  const fromE164 = normalizePhone(call.customer?.number ?? '')   ?? (call.customer?.number ?? '')
+  // Phone-number extraction with broader fallback paths. Vapi's
+  // end-of-call-report has shifted these between releases —
+  // phoneNumber{.number,.twilioPhoneNumber}, customer{.number,.phone}.
+  // Walk all known shapes before giving up.
+  function pickNumber(obj: unknown, ...keys: string[]): string {
+    if (!obj || typeof obj !== 'object') return ''
+    for (const k of keys) {
+      const v = (obj as Record<string, unknown>)[k]
+      if (typeof v === 'string' && v.length > 0) return v
+    }
+    return ''
+  }
+  const toRaw   = pickNumber(call.phoneNumber, 'number', 'twilioPhoneNumber')
+  const fromRaw = pickNumber(call.customer,    'number', 'phone')
+  const toE164   = normalizePhone(toRaw)   ?? toRaw
+  const fromE164 = normalizePhone(fromRaw) ?? fromRaw
   if (!toE164 || !fromE164) {
+    console.warn('[vapi/call-end] missing_phone_numbers', {
+      msgType:           msg.type,
+      callKeys:          Object.keys(call as Record<string, unknown>),
+      phoneNumberKeys:   call.phoneNumber ? Object.keys(call.phoneNumber) : null,
+      customerKeys:      call.customer    ? Object.keys(call.customer)    : null,
+      toRaw_len:         toRaw.length,
+      fromRaw_len:       fromRaw.length,
+    })
     return NextResponse.json({ error: 'missing_phone_numbers' }, { status: 400 })
   }
 
