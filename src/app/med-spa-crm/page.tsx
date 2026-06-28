@@ -1,35 +1,42 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
-  Users,
+  Phone,
+  PhoneIncoming,
+  PhoneOutgoing,
+  MessageSquare,
   CalendarDays,
-  Zap,
-  BellOff,
-  LayoutGrid,
-  FileText,
+  Inbox,
+  Database,
+  ShieldCheck,
+  Users,
   CheckCircle,
   ArrowRight,
-  AlertCircle,
+  Sparkles,
 } from 'lucide-react'
 import { ProductShowcase } from './product-showcase'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
 
+/* SEO landing for the "med spa CRM" search intent. The route stays at
+   /med-spa-crm so Google keeps the keyword association, but the H1 and
+   meta lead with the real product — an AI receptionist on top of a CRM
+   foundation — because that's the wedge, not the CRM category. */
 export const metadata: Metadata = {
-  title: 'CRM for Med Spas — Tarhunna',
+  title: 'Med Spa CRM with an AI Receptionist Built In — Tarhunna',
   description:
-    'Tarhunna is CRM software built specifically for med spas. Capture leads, automate follow-up, book consultations, and reduce no-shows — all in one platform.',
+    'Tarhunna is a med spa CRM with Layla, an AI voice receptionist that answers every call, books appointments live, and writes back to inbound texts in your voice. Capture every lead — even after hours.',
   keywords: [
     'med spa CRM',
     'CRM for med spas',
-    'med spa lead management',
-    'med spa follow-up software',
-    'med spa consultation software',
+    'AI receptionist for med spas',
+    'med spa AI voice agent',
+    'med spa booking software',
+    'med spa SMS automation',
     'med spa no-show reduction',
     'medical spa CRM',
     'med spa patient management',
-    'med spa pipeline software',
     'med spa lead capture',
   ],
   alternates: {
@@ -38,110 +45,275 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'Tarhunna',
-    title: 'CRM for Med Spas — Tarhunna',
+    title: 'Med Spa CRM with an AI Receptionist Built In — Tarhunna',
     description:
-      'Stop losing med spa leads. Tarhunna helps medical spas capture inquiries, automate follow-up, and book more consultations.',
+      'An AI receptionist that answers every call, backed by a full med spa CRM. Layla books appointments live and texts the confirmation — so leads stop slipping while your front desk is on another call.',
     url: 'https://tarhunna.net/med-spa-crm',
     locale: 'en_US',
   },
 }
 
-// ── Page data ──────────────────────────────────────────────
+// ── Tier helpers ──────────────────────────────────────────────
+type Tier = 'starter' | 'professional' | 'scale' | 'any'
 
-const PAIN_POINTS = [
-  'You are taking DMs, website form submissions, and referrals — and they all live in different places',
-  'Follow-up depends on whoever remembers to send it. Some leads get five messages, most get none',
-  'No-shows keep happening because reminder calls take time your front desk does not have',
-  'Your lead notes are in a spreadsheet nobody keeps current',
-  'Your team spends more time chasing old leads than welcoming the clients walking in the door',
+const TIER_LABEL: Record<Tier, string> = {
+  starter: 'Starter and up',
+  professional: 'Professional and up',
+  scale: 'Scale',
+  any: 'Every plan',
+}
+
+const TIER_STYLE: Record<Tier, string> = {
+  starter:      'bg-brand-50  text-brand-700 ring-1 ring-brand-200/70',
+  professional: 'bg-brand-100 text-brand-800 ring-1 ring-brand-300/70',
+  scale:        'bg-[#14241d] text-[#F5EFE1] ring-1 ring-[#14241d]',
+  any:          'bg-[#FAF6EC] text-brand-800 ring-1 ring-brand-200/60',
+}
+
+function TierBadge({ tier }: { tier: Tier }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${TIER_STYLE[tier]}`}
+    >
+      {TIER_LABEL[tier]}
+    </span>
+  )
+}
+
+// ── Page data ─────────────────────────────────────────────────
+
+/* What Layla does on every call. Receptionist verbs, not feature names —
+   these are the 16 voice tools rephrased the way an owner would describe
+   their front desk if she never called in sick. */
+const LAYLA_DOES = [
+  'Answers the phone in your clinic\'s voice',
+  'Looks up your services and hours on her first turn',
+  'Matches a treatment the caller asks for by name',
+  'Finds 1-2 open slots on the line',
+  'Holds the slot and confirms the booking verbally',
+  'Confirms or reschedules existing appointments',
+  'Cancels an appointment when the patient asks',
+  'Looks up a caller\'s own appointment (caller-ID gated)',
+  'Texts the booking, manage, intake, or directions link mid-call',
+  'Reads back directions to your address',
+  'Answers FAQs verbatim from your written corpus',
+  'Reads pre-visit instructions for booked patients',
+  'Takes a message when the question needs a human',
+  'Transfers to a nominated team member on request',
+  'Sends a PHI-scrubbed summary email after every call',
+  'Declines pricing and medical questions politely',
 ]
 
-const FEATURES = [
+const FEATURE_BLOCKS: Array<{
+  icon: typeof Phone
+  title: string
+  oneLine: string
+  body: string
+  tier: Tier
+}> = [
   {
-    icon: FileText,
-    title: 'Branded Intake Forms',
-    body: 'Embed a custom intake form on your med spa website. Botox inquiries, filler consultations, laser bookings — every request lands in your CRM automatically, no manual entry.',
-  },
-  {
-    icon: Users,
-    title: 'Leads and Contact Records',
-    body: 'Keep a complete record for every lead — procedure interest, contact history, pipeline stage, and notes. No more lost inquiries or scattered information.',
-  },
-  {
-    icon: LayoutGrid,
-    title: 'Pipeline Management',
-    body: 'Move leads through your pipeline stages — new inquiry, follow-up sent, consultation booked, treatment scheduled. See every lead at a glance.',
+    icon: PhoneIncoming,
+    title: 'Layla answers the phone',
+    oneLine:
+      'An AI voice receptionist that picks up inbound calls 24/7 or after-hours, in your clinic\'s voice.',
+    body:
+      'Layla is a Vapi-backed voice agent that answers your Twilio number and talks to callers like a trained front-desk hire. She greets, listens, asks the right intake questions, and resolves the call — or transfers to a human you nominate. Owners choose always-on or after-hours-only, and set a fallback number for anything Layla can\'t handle. Inbound calls cost you nothing if your team is already on another line.',
+    tier: 'scale',
   },
   {
     icon: CalendarDays,
-    title: 'Consultation Scheduling',
-    body: 'Track every consultation — who is coming in, what service they want, pre-consult notes, and post-visit follow-up. All tied to the lead record.',
+    title: 'She books appointments live, on the call',
+    oneLine:
+      'Layla checks real provider availability and confirms a slot before the caller hangs up.',
+    body:
+      'Layla reads your service catalog, your providers\' weekly hours, and date-specific overrides — then offers slots that actually exist. She holds the time, confirms it verbally, books the consultation in your calendar, and texts a confirmation. No "we\'ll call you back" loop, no double-booking, no slots invented out of thin air.',
+    tier: 'scale',
   },
   {
-    icon: Zap,
-    title: 'Automated Follow-Up',
-    body: 'Build follow-up sequences for Botox inquiries, filler consultations, and package renewals. Emails go out automatically — no chasing required.',
+    icon: PhoneOutgoing,
+    title: 'Outbound reminder calls that cut no-shows',
+    oneLine:
+      'Layla phones patients 4–72 hours before their visit so they can confirm, move, or cancel by voice.',
+    body:
+      'An hourly cron places outbound reminder calls into the day-before window you choose. Patients confirm, reschedule onto another open slot, cancel, or ask for a callback — entirely by voice. The result is fewer empty chairs without your team dialing through tomorrow\'s schedule by hand. Outbound reminders don\'t transfer to a live human, since the clinic may be closed.',
+    tier: 'scale',
   },
   {
-    icon: BellOff,
-    title: 'No-Show Reduction',
-    body: 'Automated appointment reminders go out before every consultation. Fewer no-shows means more revenue and a more predictable schedule.',
+    icon: MessageSquare,
+    title: 'AI Twin drafts every SMS reply in your voice',
+    oneLine:
+      'Inbound texts come back with a ready-to-send reply that already includes real open slots.',
+    body:
+      'Train a per-clinic writing profile once. After that, every inbound SMS gets an AI-drafted response in your tone, with genuinely available booking times pulled from your live calendar pasted into the body. On Professional you approve each send. On Scale, the AI Twin sends autonomously. Either way, you stop losing leads to the "we\'ll text you back tomorrow" gap.',
+    tier: 'professional',
+  },
+  {
+    icon: CalendarDays,
+    title: 'Self-service booking and reschedules',
+    oneLine:
+      'A public booking page per clinic and signed SMS links that let patients move their own visit.',
+    body:
+      'Your /book/[slug] page lets new patients pick a service and a provider, see real availability, and confirm a hold. Existing patients get a /manage link via SMS so they can reschedule or cancel themselves — no email tag, no front-desk involvement. Confirmation SMS goes to the patient and a notification email to the owner.',
+    tier: 'starter',
+  },
+  {
+    icon: Inbox,
+    title: 'Voice messages inbox + full call logs',
+    oneLine:
+      'Every call Layla can\'t resolve becomes a message in a real inbox, not a Post-it.',
+    body:
+      'When Layla takes a message, you get a PHI-scrubbed summary email and a row in /voice-messages with the linked call context. Every call she handles also writes a call_logs entry with transcript, disposition, duration, and recording URL — searchable, reviewable, and tied to the contact. Triage tomorrow morning from one screen instead of a voicemail box.',
+    tier: 'scale',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Trained on your clinic, not the internet',
+    oneLine:
+      'Owner-authored FAQs Layla reads verbatim, caller-ID-gated lookups, no medical or pricing advice.',
+    body:
+      'You author your own FAQ corpus in Settings. Layla matches caller questions to your entries and reads them word for word — she doesn\'t paraphrase or invent. Appointment lookups, reschedules, and cancellations are gated on the caller\'s verified caller-ID, so a dictated phone number never overrides identity. She declines to quote prices, give post-care guidance, or anything that should come from a clinician.',
+    tier: 'scale',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Threaded two-way SMS on your number',
+    oneLine:
+      'Inbound replies land on the contact\'s timeline as a conversation, on the Twilio number you already own.',
+    body:
+      'Send manual or AI-drafted SMS from a contact\'s page. Replies come back to the same thread, STOP/HELP keywords are honored automatically, and every message is logged to the activity timeline. No shared shortcode, no rebranded sender — just your clinic\'s number, two ways.',
+    tier: 'starter',
+  },
+  {
+    icon: Sparkles,
+    title: 'Automation sequences for the rest of the funnel',
+    oneLine:
+      'Multi-step email + SMS sequences triggered by new lead, stage change, no-show, or reactivation.',
+    body:
+      'Build sequences off six triggers: new_lead, stage_changed, consultation_booked, consultation_completed, no_show, and old_lead_reactivation. Mix email and SMS steps. Add the automated 24h and 2h consultation reminders on top, with editable per-org templates and master toggles. Set it once; let it run on every new lead.',
+    tier: 'professional',
+  },
+  {
+    icon: Database,
+    title: 'The CRM underneath it all',
+    oneLine:
+      'Contacts, kanban pipeline, consultations calendar, tags, notes, activity timeline, and team seats.',
+    body:
+      'Every call Layla takes, every SMS the AI Twin sends, every booking from the public page lands in one contact record with a complete timeline. Drag consultations to reschedule them on the calendar. Tag and segment contacts. Invite staff with roles. Multi-tenant isolation is enforced at both the query layer and at Postgres RLS — your data stays your data.',
+    tier: 'starter',
+  },
+  {
+    icon: Sparkles,
+    title: 'AI lead summary on every contact',
+    oneLine:
+      'Open a contact, see an AI-generated brief of their history before you call back.',
+    body:
+      'Each contact detail page surfaces a generated summary of the lead\'s history — source, stage, last touch, and what they\'ve asked for — so whoever picks up the file has context in five seconds, not five minutes. Available on every plan.',
+    tier: 'starter',
+  },
+  {
+    icon: CheckCircle,
+    title: 'Stripe-billed trial, real super-admin, no surprises',
+    oneLine:
+      '14-day trial, Stripe Checkout + Billing Portal, monthly or annual, switch tiers without a sales call.',
+    body:
+      'Start the trial in under 20 minutes. Upgrade, downgrade, or cancel from the Billing Portal. Annual is 20% off. There\'s no per-seat surprise — seats are capped per tier (2 / 5 / unlimited) and shown on the pricing page. You always know what you\'ll be charged.',
+    tier: 'any',
   },
 ]
 
-const COMPARISONS = [
+/* Tier ladder card data — the third explicit "yes, the CRM is on every
+   plan, voice unlocks at Scale" reassurance. Keeps the honesty guardrail
+   that Layla is Scale-only and AI Twin SMS is Pro+. */
+const TIERS = [
   {
-    vs: 'Spreadsheets',
-    heading: 'No reminders. No pipeline. No history.',
-    before: 'Miss one follow-up and the lead goes cold — and you will never know it happened.',
-    after: 'Automatic follow-up from the moment they inquire. Every lead tracked, every stage visible, nothing slipping through.',
+    name: 'Starter',
+    price: '$147',
+    cap: '500 contacts · 2 seats',
+    headline: 'The med spa CRM, end to end',
+    includes: [
+      'Contacts, kanban pipeline, consultations calendar',
+      'Tags, notes, activity timeline, team management',
+      'Public booking page + signed /manage reschedule links',
+      'Two-way SMS threading on your Twilio number',
+      'AI lead summary on every contact',
+    ],
   },
   {
-    vs: 'Generic CRMs',
-    heading: 'Built for sales reps, not injectors.',
-    before: 'No intake forms. No consultation tracking. No aesthetic workflow. You spend weeks customizing something that never quite fits.',
-    after: 'Built around med spa workflows from day one. Intake forms, pipeline, consultation log — ready without setup gymnastics.',
+    name: 'Professional',
+    price: '$297',
+    cap: '2,500 contacts · 5 seats',
+    headline: 'Everything in Starter, plus the texting half of the stack',
+    includes: [
+      'AI Twin drafts every inbound SMS reply for owner approval',
+      'Multi-step email + SMS automation sequences',
+      'Six event triggers including no-show and reactivation',
+      '24h and 2h consultation reminder SMS',
+      'Bulk CSV import and AI Twin voice training',
+    ],
+    highlight: true,
   },
   {
-    vs: 'Patchwork systems',
-    heading: 'Four tools, four logins, constant gaps.',
-    before: 'Leads fall through the cracks between your booking app, email tool, spreadsheet, and notes. Nobody knows what the current status is.',
-    after: 'One login. Lead capture, follow-up, scheduling, and reminders all connected and in sync.',
+    name: 'Scale',
+    price: '$497',
+    cap: 'Unlimited contacts · unlimited seats',
+    headline: 'Layla, the AI voice receptionist',
+    includes: [
+      'Inbound voice agent — 24/7 or after-hours, your choice',
+      'Books, reschedules, cancels live on the call',
+      'Outbound AI reminder calls 4–72h ahead',
+      'Voice messages inbox + searchable call transcripts',
+      'AI Twin sends SMS replies autonomously',
+    ],
   },
-]
+] as const
 
+/* FAQ — rewritten for the new positioning. Honors search intent
+   ("yes we are a CRM"), then escalates to the AI receptionist story.
+   Schema.org FAQPage JSON-LD picks these up automatically. */
 const FAQ_ITEMS = [
   {
-    q: 'What is a med spa CRM?',
-    a: 'A med spa CRM is software that helps medical spas manage leads, automate follow-up, track consultations, and organize patient communication in one place. Instead of spreadsheets and sticky notes, a CRM gives your team a central system to capture every inquiry and move it toward a booked consultation.',
+    q: 'Is Tarhunna a CRM for med spas?',
+    a: 'Yes. Tarhunna is a med spa CRM at its foundation — contacts, a kanban pipeline, a consultations calendar, tags, notes, an activity timeline, team seats with roles, and Postgres-level multi-tenant isolation. The CRM is on every plan. On top of that foundation, Professional adds AI-drafted SMS replies and automation sequences, and Scale adds Layla, the AI voice receptionist that answers your phone.',
   },
   {
-    q: 'Is Tarhunna built for med spas?',
-    a: 'Yes. Tarhunna is built specifically for aesthetic practices including med spas. Every feature — intake forms, lead pipeline, consultation tracking, and automated follow-up — is designed around how medical spas and aesthetic clinics actually operate.',
+    q: 'What is the AI receptionist and which plan does it come with?',
+    a: 'Layla is an AI voice receptionist that answers your Twilio number. She greets callers in your clinic\'s voice, books appointments into real provider slots, reschedules or cancels existing visits, takes messages, transfers to a human you nominate, and follows up with PHI-scrubbed summary emails. Layla is on the Scale plan. The CRM is on every plan, and AI-drafted SMS replies are on Professional and Scale.',
   },
   {
-    q: 'Can Tarhunna automate follow-up for med spa leads?',
-    a: 'Yes. You can build follow-up sequences that trigger automatically when a new lead comes in, a consultation is booked, or a patient goes no-show. Tarhunna sends the emails on schedule without any manual work from your team.',
+    q: 'How does Layla actually book an appointment?',
+    a: 'Layla reads your service catalog, your providers\' weekly hours, and any date-specific overrides through the same availability engine the public booking page uses. She offers slots that genuinely exist, holds the time during the call, verbally confirms it with the caller, books the consultation, and texts a confirmation. She does not invent times and she does not double-book.',
   },
   {
-    q: 'Can Tarhunna help reduce no-shows at my med spa?',
-    a: 'Yes. Tarhunna sends automated appointment reminders before every consultation. When patients receive timely reminders, no-show rates drop and your schedule stays full.',
+    q: 'Will Layla call patients back to reduce no-shows?',
+    a: 'Yes. An hourly cron places outbound AI reminder calls in the 4–72 hour window before each appointment. Patients confirm, reschedule onto another open slot, cancel, or request a callback — entirely by voice. Outbound reminder calls do not transfer to a live human, since the clinic may be closed when the call goes out.',
   },
   {
-    q: 'Does Tarhunna replace my EMR?',
-    a: 'No. Tarhunna is a CRM and lead management platform, not an electronic medical records system. It handles the front-of-funnel — capturing leads, automating follow-up, and tracking consultations — and works alongside your existing EMR.',
+    q: 'What does AI Twin SMS do, and how is it different from Layla?',
+    a: 'AI Twin handles texts. Every inbound SMS comes back with an AI-drafted reply in your clinic\'s writing voice, with real open slots from your live calendar pasted into the body. On Professional, you approve each send. On Scale, the AI Twin sends autonomously. Layla handles voice calls. Together they cover both halves of inbound communication.',
   },
   {
-    q: 'Can I track consultations and lead stages in one place?',
-    a: 'Yes. Tarhunna gives you a pipeline view of every lead and a consultation log tied to each patient record. You can see where every lead stands — new inquiry, follow-up sent, consultation booked — all in one dashboard.',
+    q: 'Is Tarhunna HIPAA compliant?',
+    a: 'We do not claim HIPAA compliance as a checkbox. Vendor BAAs are available with Vapi, Twilio, Supabase, Stripe, and Resend, and an in-app BAA attestation is required from the owner before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest via Supabase/Postgres infrastructure. Caller-ID-gated lookups prevent a dictated phone number from being accepted as identity. Talk to us about your specific compliance posture.',
+  },
+  {
+    q: 'Does Tarhunna integrate with my EMR or Google Calendar?',
+    a: 'No. Tarhunna runs its own calendar, contact database, and SMS pipeline — it is intentionally not an EMR and does not currently sync with EMRs, Google Calendar, Outlook, or ad platforms. The trade-off is that Layla, the booking page, and your CRM all read from the same source of truth, so a slot offered on the phone is the same slot offered on the website.',
+  },
+  {
+    q: 'How fast can I get set up?',
+    a: '14-day free trial, no credit card. The CRM is usable inside 20 minutes. Connecting a Twilio number for SMS adds a few more, and provisioning Layla on the Scale plan is a guided setup that includes writing your FAQ corpus, choosing always-on or after-hours mode, and setting your transfer-to-human fallback.',
+  },
+  {
+    q: 'What does it cost?',
+    a: 'Starter is $147/mo (500 contacts, 2 seats) — the full CRM. Professional is $297/mo (2,500 contacts, 5 seats) — adds AI Twin SMS, automations, and bulk import. Scale is $497/mo (unlimited contacts and seats) — adds Layla, outbound reminder calls, and autonomous AI SMS. Annual billing is 20% off on all tiers.',
   },
 ]
 
-// ── Page ───────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────
 
 export default function MedSpaCRMPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-[#FAF6EC]">
 
       {/* FAQPage schema */}
       <script
@@ -166,16 +338,17 @@ export default function MedSpaCRMPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'WebPage',
-            name: 'CRM for Med Spas — Tarhunna',
+            name: 'Med Spa CRM with an AI Receptionist Built In — Tarhunna',
             url: 'https://tarhunna.net/med-spa-crm',
-            description: 'CRM software built specifically for med spas. Capture leads, automate follow-up, book consultations, and reduce no-shows.',
+            description:
+              'A med spa CRM with Layla, an AI voice receptionist that answers every call and books appointments live. Backed by a full CRM, AI-drafted SMS replies, and automation sequences.',
             isPartOf: { '@type': 'WebSite', name: 'Tarhunna', url: 'https://tarhunna.net' },
           }),
         }}
       />
 
       {/* ── Nav ──────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-brand-900/10 bg-[#FAF6EC]/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
             <LogoMark size="md" standalone />
@@ -183,7 +356,7 @@ export default function MedSpaCRMPage() {
           <nav className="flex items-center gap-3">
             <Link
               href="/login"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className="text-sm font-medium text-brand-900/70 hover:text-brand-900 transition-colors"
             >
               Log in
             </Link>
@@ -200,40 +373,45 @@ export default function MedSpaCRMPage() {
       <main className="flex-1">
 
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="bg-gradient-to-b from-white to-gray-50 px-6 py-20 sm:py-28">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#02C39A]/20 bg-[#02C39A]/10 px-4 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#028090]">
-                Med Spa CRM · 14-day free trial
+        <section className="relative overflow-hidden bg-[#FAF6EC] px-6 py-20 sm:py-28">
+          <div className="hero-glow" aria-hidden />
+          <div className="relative mx-auto max-w-3xl text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-50 px-4 py-1.5">
+              <Phone className="h-3.5 w-3.5 text-brand-700" aria-hidden />
+              <span className="text-xs font-semibold uppercase tracking-wider text-brand-700">
+                Med Spa CRM · AI Receptionist · 14-day free trial
               </span>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              CRM Software Built<br className="hidden sm:block" /> for Med Spas
+            <h1 className="text-4xl font-extrabold tracking-tight text-brand-900 sm:text-5xl lg:text-6xl">
+              An AI receptionist that actually books appointments<span className="text-brand-600">.</span>
             </h1>
-            <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
-              Most med spas lose leads between the first inquiry and the consultation.
-              Tarhunna captures every request, follows up automatically, and books more
-              consultations — without adding work for your team.
+            <p className="mt-4 text-base font-medium text-brand-700 sm:text-lg">
+              Yes, it&apos;s a med spa CRM. The upgrade is who answers the phone.
+            </p>
+            <p className="mt-5 text-lg text-brand-900/70 sm:text-xl max-w-2xl mx-auto">
+              Layla picks up the phone, books appointments, texts the link, and writes back to
+              inbound SMS in your voice — so leads stop slipping while your front desk is on
+              another call.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
-                Start free trial
+                Start 14-day free trial
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/book-demo"
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-6 py-3 text-base font-semibold text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-brand-900/15 bg-white px-6 py-3 text-base font-semibold text-brand-900 hover:border-brand-900/30 transition-colors"
               >
-                Book a demo
+                Book a 20-min demo
               </Link>
             </div>
             <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6">
-              {['No credit card required', 'Setup in under 5 minutes', 'Cancel anytime'].map((item) => (
-                <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
-                  <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+              {['No credit card required', 'CRM live in under 20 minutes', 'Cancel anytime'].map((item) => (
+                <div key={item} className="flex items-center gap-1.5 text-sm text-brand-900/60">
+                  <CheckCircle className="h-4 w-4 text-brand-500 shrink-0" />
                   {item}
                 </div>
               ))}
@@ -241,122 +419,262 @@ export default function MedSpaCRMPage() {
           </div>
         </section>
 
-        {/* ── Product Showcase ─────────────────────────────────── */}
-        <ProductShowcase />
-
-        {/* ── Problem ──────────────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
-          <AnimatedSection className="mx-auto max-w-3xl">
-            <div className="mb-10 text-center">
-              <p className="text-xs font-semibold uppercase tracking-widest text-red-400 mb-3">Sound familiar?</p>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Med spas lose revenue when leads fall through the cracks
-              </h2>
-              <p className="mt-4 text-gray-500 max-w-xl mx-auto">
-                Most med spas attract plenty of interest. Without a system, that interest quietly
-                disappears — one missed follow-up at a time.
-              </p>
-            </div>
-            <ul className="space-y-3 max-w-xl mx-auto">
-              {PAIN_POINTS.map((point) => (
-                <li
-                  key={point}
-                  className="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50 px-5 py-4"
-                >
-                  <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-sm text-gray-700">{point}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-8 text-center text-sm font-medium text-gray-500">
-              Tarhunna was built to solve exactly these problems — for med spas specifically.
+        {/* ── Yes-we-are-a-CRM reassurance ─────────────────────── */}
+        {/* SEO intent honored explicitly before we escalate to voice.
+            Visitor arrived searching "med spa CRM" — confirm it, then
+            pivot to "and here is the upgrade you didn't know to ask for." */}
+        <section className="bg-white px-6 py-16">
+          <AnimatedSection className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">
+              You searched for a med spa CRM. We are one.
             </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-brand-900">
+              The CRM is the foundation. The AI receptionist is the upgrade.
+            </h2>
+            <p className="mt-4 text-brand-900/70 max-w-2xl mx-auto">
+              Contacts, pipeline, consultations calendar, tags, notes, activity timeline, two-way
+              SMS, team seats — all of it is here on day one, on every plan. What makes Tarhunna
+              different is what sits on top: a voice agent that answers your phone in your
+              clinic&apos;s voice, books real slots live on the call, and texts the confirmation
+              before the caller hangs up.
+            </p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3 text-left">
+              <div className="rounded-xl bg-[#FAF6EC] border border-brand-200/50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">CRM foundation</p>
+                <p className="mt-2 text-sm text-brand-900/80">Every call, text, and booking lands on a single contact record with a complete timeline.</p>
+              </div>
+              <div className="rounded-xl bg-[#FAF6EC] border border-brand-200/50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand-700">AI Twin SMS</p>
+                <p className="mt-2 text-sm text-brand-900/80">Inbound texts come back with a draft reply that already has real open slots pasted in.</p>
+              </div>
+              <div className="rounded-xl bg-[#14241d] text-[#F5EFE1] p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand-300">Layla, the AI receptionist</p>
+                <p className="mt-2 text-sm text-[#F5EFE1]/85">Answers the phone, books appointments live, takes messages, transfers to a human on request.</p>
+              </div>
+            </div>
           </AnimatedSection>
         </section>
 
-        {/* ── Features ─────────────────────────────────────────── */}
-        <section className="bg-white px-6 py-20">
-          <div className="mx-auto max-w-6xl">
-            <AnimatedSection className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Every tool a med spa needs to fill the schedule
+        {/* ── Product Showcase (visual scaffold kept as-is) ────── */}
+        <ProductShowcase />
+
+        {/* ── What Layla does on every call ────────────────────── */}
+        <section className="bg-[#FAF6EC] px-6 py-20">
+          <div className="mx-auto max-w-5xl">
+            <AnimatedSection className="mb-10 text-center">
+              <div className="inline-flex items-center gap-2">
+                <TierBadge tier="scale" />
+              </div>
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-brand-900">
+                What Layla does on every call
               </h2>
-              <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-                Not a generic CRM adapted for healthcare. Every feature is built around
-                how medical spas and aesthetic clinics actually run their business.
+              <p className="mt-3 text-brand-900/70 max-w-2xl mx-auto">
+                Sixteen voice tools, written the way an owner would describe their front desk if
+                she never called in sick. No category nouns, just receptionist verbs.
               </p>
             </AnimatedSection>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map(({ icon: Icon, title, body }, index) => (
-                <AnimatedCard key={title} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/10">
-                    <Icon className="h-5 w-5 text-[#028090]" />
-                  </div>
-                  <h3 className="mb-2 text-base font-semibold text-gray-900">{title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {LAYLA_DOES.map((line, index) => (
+                <AnimatedCard
+                  key={line}
+                  index={index}
+                  className="flex items-start gap-3 rounded-xl border border-brand-200/60 bg-white px-5 py-4 shadow-sm"
+                >
+                  <CheckCircle className="h-4 w-4 text-brand-500 mt-0.5 shrink-0" />
+                  <span className="text-sm text-brand-900/85 leading-snug">{line}</span>
                 </AnimatedCard>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── Why Tarhunna ─────────────────────────────────────── */}
-        <section className="bg-gray-50 px-6 py-20">
-          <div className="mx-auto max-w-5xl">
+        {/* ── Feature blocks ───────────────────────────────────── */}
+        <section className="bg-white px-6 py-20">
+          <div className="mx-auto max-w-6xl">
             <AnimatedSection className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Why med spas choose Tarhunna over spreadsheets and generic CRMs
+              <h2 className="text-3xl font-bold tracking-tight text-brand-900">
+                Everything in the stack, with the tier it lives on
               </h2>
-              <p className="mt-3 text-gray-500 max-w-xl mx-auto">
-                Most practices try to make do with tools that were never built for them.
-                There is a better option.
+              <p className="mt-3 text-brand-900/70 max-w-xl mx-auto">
+                The CRM is on every plan. Automations and AI Twin SMS unlock on Professional.
+                Layla, the AI voice receptionist, is on Scale. Here is what each one actually does.
               </p>
             </AnimatedSection>
-            <div className="grid gap-5 sm:grid-cols-3">
-              {COMPARISONS.map(({ vs, heading, before, after }, index) => (
-                <AnimatedCard key={vs} index={index} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div>
-                    <div className="mb-3 inline-flex rounded-full bg-red-50 px-3 py-1">
-                      <span className="text-xs font-semibold text-red-500">vs. {vs}</span>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURE_BLOCKS.map(({ icon: Icon, title, oneLine, body, tier }, index) => (
+                <AnimatedCard
+                  key={title}
+                  index={index}
+                  className="flex flex-col gap-3 rounded-xl border border-brand-200/60 bg-[#FAF6EC] p-6 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/10 ring-1 ring-brand-500/20">
+                      <Icon className="h-5 w-5 text-brand-700" />
                     </div>
-                    <h3 className="text-base font-semibold text-gray-900">{heading}</h3>
+                    <TierBadge tier={tier} />
                   </div>
-                  <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3">
-                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Without Tarhunna</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{before}</p>
-                  </div>
-                  <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
-                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">With Tarhunna</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{after}</p>
-                  </div>
+                  <h3 className="text-base font-semibold text-brand-900">{title}</h3>
+                  <p className="text-sm font-medium text-brand-800/90 leading-snug">{oneLine}</p>
+                  <p className="text-sm text-brand-900/70 leading-relaxed">{body}</p>
                 </AnimatedCard>
               ))}
             </div>
           </div>
+        </section>
+
+        {/* ── Tier ladder ──────────────────────────────────────── */}
+        {/* Explicit ladder so the "voice is Scale-only" guardrail is
+            visible on the page, not buried on the pricing route. */}
+        <section className="bg-[#FAF6EC] px-6 py-20">
+          <div className="mx-auto max-w-5xl">
+            <AnimatedSection className="mb-12 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-brand-900">
+                Three tiers. The CRM on every one. Voice unlocks at Scale.
+              </h2>
+              <p className="mt-3 text-brand-900/70 max-w-xl mx-auto">
+                Annual billing is 20% off across the board. Seats are capped per tier and shown
+                here so there are no per-seat surprises.
+              </p>
+            </AnimatedSection>
+            <div className="grid gap-5 lg:grid-cols-3">
+              {TIERS.map((tier) => (
+                <div
+                  key={tier.name}
+                  className={[
+                    'flex flex-col gap-4 rounded-2xl p-6 shadow-sm',
+                    tier.name === 'Scale'
+                      ? 'bg-[#14241d] text-[#F5EFE1] ring-1 ring-[#14241d]'
+                      : tier.name === 'Professional'
+                        ? 'bg-white ring-2 ring-brand-500/60'
+                        : 'bg-white ring-1 ring-brand-200/60',
+                  ].join(' ')}
+                >
+                  <div className="flex items-baseline justify-between">
+                    <h3 className={`text-xl font-bold ${tier.name === 'Scale' ? 'text-[#F5EFE1]' : 'text-brand-900'}`}>
+                      {tier.name}
+                    </h3>
+                    {'highlight' in tier && tier.highlight ? (
+                      <span className="inline-flex items-center rounded-full bg-brand-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-700 ring-1 ring-brand-300/60">
+                        Most popular
+                      </span>
+                    ) : null}
+                  </div>
+                  <div>
+                    <span className={`text-3xl font-extrabold ${tier.name === 'Scale' ? 'text-[#F5EFE1]' : 'text-brand-900'}`}>
+                      {tier.price}
+                    </span>
+                    <span className={tier.name === 'Scale' ? 'text-[#F5EFE1]/70' : 'text-brand-900/60'}>
+                      {' '}/ month
+                    </span>
+                  </div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${tier.name === 'Scale' ? 'text-brand-300' : 'text-brand-700'}`}>
+                    {tier.cap}
+                  </p>
+                  <p className={`text-sm font-medium ${tier.name === 'Scale' ? 'text-[#F5EFE1]/90' : 'text-brand-900/85'}`}>
+                    {tier.headline}
+                  </p>
+                  <ul className="space-y-2">
+                    {tier.includes.map((line) => (
+                      <li key={line} className="flex items-start gap-2 text-sm">
+                        <CheckCircle
+                          className={`h-4 w-4 mt-0.5 shrink-0 ${
+                            tier.name === 'Scale' ? 'text-brand-400' : 'text-brand-500'
+                          }`}
+                        />
+                        <span className={tier.name === 'Scale' ? 'text-[#F5EFE1]/85' : 'text-brand-900/75'}>
+                          {line}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-center text-xs text-brand-900/55">
+              Vendor BAAs available with Vapi, Twilio, Supabase, Stripe, and Resend. In-app BAA
+              attestation required before Layla accepts inbound or places outbound calls.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Grounding & safety ──────────────────────────────── */}
+        <section className="bg-white px-6 py-20">
+          <AnimatedSection className="mx-auto max-w-3xl">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-brand-900">
+                Trained on your clinic, not the internet
+              </h2>
+              <p className="mt-3 text-brand-900/70 max-w-2xl mx-auto">
+                Honest framing of what Layla will and won&apos;t say — and how she stays grounded
+                in your data.
+              </p>
+            </div>
+            <ul className="space-y-3">
+              {[
+                'Owner-authored FAQ corpus. Layla matches caller questions to your entries and reads them word for word. She does not paraphrase or invent.',
+                'Appointment lookups, reschedules, and cancellations are gated on the caller\'s verified caller-ID. A dictated phone number never overrides identity.',
+                'She declines to quote prices, give post-care guidance, or anything that should come from a clinician — and routes those questions to a human you nominate.',
+                'Encrypted at rest via Supabase/Postgres infrastructure. Multi-tenant isolation enforced at both the query layer and Postgres RLS.',
+                'Closed-enum dispositions tag every call: booked, rescheduled, canceled, info_only, message_taken, transferred, abandoned, escalation_needed.',
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex items-start gap-3 rounded-xl border border-brand-200/60 bg-[#FAF6EC] px-5 py-4"
+                >
+                  <ShieldCheck className="h-4 w-4 text-brand-700 mt-0.5 shrink-0" />
+                  <span className="text-sm text-brand-900/85">{line}</span>
+                </li>
+              ))}
+            </ul>
+          </AnimatedSection>
         </section>
 
         {/* ── Mid-page CTA ─────────────────────────────────────── */}
         <section className="bg-[#14241d] px-6 py-12">
           <AnimatedSection className="mx-auto max-w-3xl flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>
-              <p className="text-base font-semibold text-white">Ready to see how it works?</p>
-              <p className="mt-1 text-sm text-gray-300">Try Tarhunna free for 14 days — no credit card required.</p>
+              <p className="text-base font-semibold text-[#F5EFE1]">
+                Let Layla answer your next call.
+              </p>
+              <p className="mt-1 text-sm text-[#F5EFE1]/75">
+                14-day trial. Founder-led setup. No credit card required.
+              </p>
             </div>
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:shrink-0">
               <Link
                 href="/signup"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
-                Try free for 14 days
+                Start 14-day free trial
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link
                 href="/book-demo"
-                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                className="text-sm font-medium text-[#F5EFE1]/80 hover:text-[#F5EFE1] transition-colors"
               >
-                or book a 20-minute walkthrough
+                or book a 20-min demo
               </Link>
             </div>
+          </AnimatedSection>
+        </section>
+
+        {/* ── Founder block ────────────────────────────────────── */}
+        <section className="bg-[#FAF6EC] px-6 py-20">
+          <AnimatedSection className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-50 border border-brand-200/60 px-3 py-1">
+              <Users className="h-3.5 w-3.5 text-brand-700" aria-hidden />
+              <span className="text-xs font-semibold uppercase tracking-wider text-brand-700">
+                Built with clinic owners, shipped by a founder
+              </span>
+            </div>
+            <h2 className="mt-5 text-3xl font-bold tracking-tight text-brand-900">
+              Talk to a founder, not a sales rep
+            </h2>
+            <p className="mt-4 text-brand-900/70">
+              Every feature on this page was scoped against a real med spa front desk. When you
+              book a demo, you talk to the person who decides what ships next — and your feedback
+              goes into the roadmap, not a queue.
+            </p>
           </AnimatedSection>
         </section>
 
@@ -364,15 +682,18 @@ export default function MedSpaCRMPage() {
         <section className="bg-white px-6 py-20">
           <AnimatedSection className="mx-auto max-w-3xl">
             <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Frequently asked questions about med spa CRM software
+              <h2 className="text-3xl font-bold tracking-tight text-brand-900">
+                Frequently asked questions
               </h2>
+              <p className="mt-3 text-brand-900/65">
+                Honest answers about the CRM, Layla, AI Twin SMS, and what each tier actually includes.
+              </p>
             </div>
-            <dl className="divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <dl className="divide-y divide-brand-200/60 rounded-xl border border-brand-200/60 bg-[#FAF6EC] overflow-hidden shadow-sm">
               {FAQ_ITEMS.map(({ q, a }) => (
                 <div key={q} className="px-6 py-5">
-                  <dt className="mb-2 text-sm font-semibold text-gray-900">{q}</dt>
-                  <dd className="text-sm text-gray-500 leading-relaxed">{a}</dd>
+                  <dt className="mb-2 text-sm font-semibold text-brand-900">{q}</dt>
+                  <dd className="text-sm text-brand-900/70 leading-relaxed">{a}</dd>
                 </div>
               ))}
             </dl>
@@ -383,28 +704,28 @@ export default function MedSpaCRMPage() {
         <section className="bg-[#14241d] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
             <LogoMark size="lg" standalone className="mb-3" />
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Start filling your med spa schedule today
+            <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1] sm:text-4xl">
+              Let Layla answer your next call
             </h2>
-            <p className="mt-4 text-gray-300 text-base">
-              Built for med spas that want to capture more leads, reduce no-shows, and fill their schedule.
+            <p className="mt-4 text-[#F5EFE1]/80 text-base">
+              An AI receptionist that answers every call, backed by a full CRM.
             </p>
-            <p className="mt-2 text-gray-400 text-sm">
-              14-day free trial. No credit card required. Set up in minutes.
+            <p className="mt-2 text-[#F5EFE1]/55 text-sm">
+              14-day free trial. No credit card required. CRM live in under 20 minutes.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
-                Start free trial
+                Start 14-day free trial
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/book-demo"
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white hover:border-white/60 hover:bg-white/5 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-[#F5EFE1]/30 px-6 py-3 text-base font-semibold text-[#F5EFE1] hover:border-[#F5EFE1]/60 hover:bg-white/5 transition-colors"
               >
-                Book a demo
+                Book a 20-min demo
               </Link>
             </div>
           </AnimatedSection>
@@ -413,18 +734,18 @@ export default function MedSpaCRMPage() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-gray-200 bg-white px-6 py-8">
+      <footer className="border-t border-brand-900/10 bg-[#FAF6EC] px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
             <LogoMark size="sm" standalone />
-            <span className="text-sm text-gray-400">· CRM for Aesthetic Clinics</span>
+            <span className="text-sm text-brand-900/55">· AI receptionist + CRM for aesthetic clinics</span>
           </div>
-          <div className="flex items-center gap-5 text-sm text-gray-500">
-            <Link href="/" className="hover:text-gray-900 transition-colors">Home</Link>
-            <Link href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-gray-900 transition-colors">Terms</Link>
-            <Link href="/login" className="hover:text-gray-900 transition-colors">Log in</Link>
-            <Link href="/signup" className="hover:text-gray-900 transition-colors">Sign up</Link>
+          <div className="flex items-center gap-5 text-sm text-brand-900/65">
+            <Link href="/" className="hover:text-brand-900 transition-colors">Home</Link>
+            <Link href="/privacy" className="hover:text-brand-900 transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-brand-900 transition-colors">Terms</Link>
+            <Link href="/login" className="hover:text-brand-900 transition-colors">Log in</Link>
+            <Link href="/signup" className="hover:text-brand-900 transition-colors">Sign up</Link>
             <span>© {new Date().getFullYear()} Tarhunna</span>
           </div>
         </div>

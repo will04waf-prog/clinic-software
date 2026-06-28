@@ -23,52 +23,75 @@ const TIER_ANNUAL_TOTAL_CENTS: Record<TierId, number> = {
   scale:        479900,
 }
 
+// Per-tier feature lists shown in the pricing cards.
+//
+// Source of truth for tier capabilities is src/lib/billing/tiers.ts —
+// every checkmark here must match a real flag in TIER_LIMITS (or a
+// shipped capability the tier opens up). Voice agent + outbound
+// reminders are Scale-only (allowsCallAgent). AI Twin SMS drafts /
+// voice training / automations are Pro+ (allowsVoiceTraining,
+// allowsAutomationSequences). The CRM, public booking page, two-way
+// SMS, manual AI draft button, and AI lead summary are available to
+// every tier including Starter.
 const TIER_FEATURES: Record<TierId, string[]> = {
   starter: [
-    'Up to 500 contacts',
-    'Lead capture forms',
-    'Pipeline & consultation tracking',
-    'Manual AI draft button (review every reply)',
-    'Persistent drafts in inbox',
-    'Email support',
+    'Up to 500 contacts, 2 seats',
+    'Full CRM — contacts, kanban pipeline, consultations calendar, tags, notes, activity timeline',
+    'Public booking page at /book/[slug] with real provider availability',
+    'Signed /manage SMS links — patients reschedule and cancel themselves',
+    'Two-way SMS threading on your Twilio number',
+    'AI lead summary on every contact',
+    'Manual AI draft button on inbound texts (you review and send)',
+    'Stripe-billed 14-day trial, switch tiers anytime',
   ],
   professional: [
-    'Up to 2,500 contacts',
+    'Up to 2,500 contacts, 5 seats',
     'Everything in Starter',
-    'Voice training — capture your real reply style',
-    'Voice health metrics',
+    'AI Twin drafts every inbound SMS in your voice (owner approves each send)',
+    'AI Twin draft includes real open booking slots from your live calendar',
+    'AI Twin voice training — capture your real reply style',
     'AI Twin audit + flagging',
-    'Automated email sequences',
-    'Automated 24h/2h consultation reminders',
-    'Bulk contact import',
-    'Priority email support',
+    'Automation sequences off six triggers (new lead, stage change, booked, completed, no-show, reactivation)',
+    'Automated 24h and 2h consultation reminder SMS',
+    'Bulk CSV contact import',
   ],
   scale: [
-    'Unlimited contacts',
+    'Unlimited contacts, unlimited seats',
     'Everything in Professional',
-    'Autonomous send — AI replies 24/7 within your guardrails',
-    'Rollout dial + shadow mode',
-    'Provider briefing every 24 hours',
-    'Quiet hours (gates autonomous send)',
+    'Layla — AI voice receptionist that answers your phone 24/7 or after-hours',
+    'Layla books, reschedules, cancels, transfers to a human, and takes messages live on the call',
+    'Outbound AI reminder calls 4–72h before each visit (confirm / reschedule / cancel by voice)',
+    'Voice messages inbox + full call logs with transcripts, dispositions, and recordings',
+    'PHI-scrubbed post-call summary emails to the owner',
+    'Autonomous AI Twin SMS send — replies 24/7 within your guardrails',
     'Direct founder support',
-    'Dedicated onboarding session',
   ],
 }
 
 // Feature-matrix rows shown BELOW the three pricing cards. Honest
 // copy — a row is either available on a tier or it isn't. We use a
 // mint check for yes and a muted dash for no (no red Xs — we aren't
-// punishing lower tiers).
+// punishing lower tiers). Every row must trace back to a real
+// capability flag in src/lib/billing/tiers.ts or a shipped feature.
 const FEATURE_MATRIX: { feature: string; starter: boolean; professional: boolean; scale: boolean }[] = [
-  { feature: 'Manual AI Draft button',                          starter: true,  professional: true,  scale: true  },
-  { feature: 'Persistent drafts in inbox',                      starter: true,  professional: true,  scale: true  },
-  { feature: 'Quiet hours (gates autonomous send)',             starter: false, professional: false, scale: true  },
-  { feature: 'Voice training (capture your reply style)',       starter: false, professional: true,  scale: true  },
-  { feature: 'Voice health metrics',                            starter: false, professional: true,  scale: true  },
+  // CRM foundation — every tier
+  { feature: 'CRM (contacts, pipeline, calendar, timeline)',    starter: true,  professional: true,  scale: true  },
+  { feature: 'Public booking page + signed /manage links',      starter: true,  professional: true,  scale: true  },
+  { feature: 'Two-way SMS threading on your Twilio number',     starter: true,  professional: true,  scale: true  },
+  { feature: 'AI lead summary on every contact',                starter: true,  professional: true,  scale: true  },
+  { feature: 'Manual AI draft button',                          starter: true,  professional: true,  scale: true  },
+  // Pro+ — AI Twin SMS + automations
+  { feature: 'AI Twin drafts every inbound SMS in your voice',  starter: false, professional: true,  scale: true  },
+  { feature: 'AI Twin voice training + voice health metrics',   starter: false, professional: true,  scale: true  },
   { feature: 'AI Twin audit + flag',                            starter: false, professional: true,  scale: true  },
-  { feature: 'Autonomous send (AI replies without you)',        starter: false, professional: false, scale: true  },
-  { feature: 'Rollout dial + shadow mode',                      starter: false, professional: false, scale: true  },
-  { feature: 'Provider briefing every 24h',                     starter: false, professional: false, scale: true  },
+  { feature: 'Automation sequences (6 triggers)',               starter: false, professional: true,  scale: true  },
+  { feature: 'Automated 24h / 2h consultation reminders',       starter: false, professional: true,  scale: true  },
+  { feature: 'Bulk CSV contact import',                         starter: false, professional: true,  scale: true  },
+  // Scale-only — full Layla voice agent + autonomous SMS
+  { feature: 'Layla — AI voice receptionist (inbound calls)',   starter: false, professional: false, scale: true  },
+  { feature: 'Outbound AI reminder calls (4–72h before visit)', starter: false, professional: false, scale: true  },
+  { feature: 'Voice messages inbox + call logs with transcripts', starter: false, professional: false, scale: true },
+  { feature: 'Autonomous AI Twin SMS send',                     starter: false, professional: false, scale: true  },
 ]
 
 const TIERS: TierId[] = ['starter', 'professional', 'scale']
@@ -139,10 +162,13 @@ export default function PricingPage() {
           {/* Hero */}
           <div className="text-center mb-10">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-              Simple, transparent pricing
+              Three tiers. Voice unlocks at Scale.
             </h1>
-            <p className="text-gray-600 text-base sm:text-lg">
-              Choose the plan that fits your clinic. Change or cancel anytime.
+            <p className="text-gray-600 text-base sm:text-lg max-w-2xl mx-auto">
+              The CRM, booking page, and two-way SMS are on every plan.
+              AI Twin SMS drafts unlock on Professional. Layla — the AI voice
+              receptionist who answers your phone — is on Scale. 14-day free
+              trial, switch tiers anytime, no per-seat surprise.
             </p>
           </div>
 
@@ -268,8 +294,9 @@ export default function PricingPage() {
           {/* ── Feature matrix ─────────────────────────────────────── */}
           <section className="mt-20">
             <p className="mx-auto max-w-2xl text-center text-[14px] text-gray-700 mb-6">
-              AI Twin is included on every plan. What changes is how much of
-              your voice it learns and whether it can send for you.
+              The CRM is the foundation on every plan. AI Twin drafts your
+              SMS replies on Professional. Layla — the voice receptionist who
+              books appointments live on the call — unlocks on Scale.
             </p>
             <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
               <table className="w-full text-sm">
@@ -306,20 +333,47 @@ export default function PricingPage() {
                 id="starter"
                 name="Starter"
                 accent="#6B7572"
-                blurb="AI drafts for every inbound — you review and send. Quiet hours and persistent drafts included."
+                blurb="The CRM, a public booking page, signed reschedule links, two-way SMS on your Twilio number, and a manual AI draft button you review before sending. 500 contacts, 2 seats."
               />
               <TierCallout
                 id="professional"
                 name="Professional"
                 accent="#028090"
-                blurb="Train the AI on your voice with example messages and tone sliders. See voice health metrics. Audit and flag every AI action."
+                blurb="AI Twin drafts every inbound SMS in your voice with real open slots in the body — you approve each send. Plus voice training, audit + flag, automation sequences, and 24h/2h consultation reminders. 2,500 contacts, 5 seats."
               />
               <TierCallout
                 id="scale"
                 name="Scale"
                 accent="#02C39A"
-                blurb="The AI Twin replies on its own within your guardrails. Rollout dial, shadow mode, and a 24-hour briefing that explains what it handled."
+                blurb="Layla, the AI voice receptionist, answers your phone and books appointments live on the call. Outbound AI reminder calls cut no-shows. Voice messages inbox + full call logs with transcripts. AI Twin SMS sends autonomously. Unlimited contacts and seats."
               />
+            </div>
+          </section>
+
+          {/* ── Final CTA ──────────────────────────────────────────── */}
+          <section className="mt-20 rounded-2xl bg-[#14241D] text-[#FAF6EC] px-6 py-12 sm:px-12 sm:py-14 text-center">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-3">
+              Let Layla answer your next call.
+            </h2>
+            <p className="mx-auto max-w-xl text-[15px] text-[#FAF6EC]/80 mb-7">
+              Start the 14-day trial in under 20 minutes — or book a 20-minute
+              demo and talk to the founder, not a sales rep.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleGetStarted('professional')}
+                disabled={loadingTier !== null}
+                className="inline-flex items-center justify-center rounded-lg bg-gradient-brand text-white px-5 py-2.5 text-sm font-medium hover:scale-[1.02] transition-all duration-150 disabled:opacity-50"
+              >
+                Start 14-day free trial
+              </button>
+              <Link
+                href="/book-demo"
+                className="inline-flex items-center justify-center rounded-lg border border-[#FAF6EC]/30 text-[#FAF6EC] px-5 py-2.5 text-sm font-medium hover:bg-[#FAF6EC]/10 transition-colors"
+              >
+                Book a 20-min demo
+              </Link>
             </div>
           </section>
         </div>
