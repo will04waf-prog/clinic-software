@@ -15,6 +15,7 @@ import {
   Sparkles,
   UserCog,
   Voicemail,
+  PhoneCall,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/ui/logo-mark'
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { href: '/import-contacts',      label: 'Import Contacts',  icon: Upload },
   { href: '/pipeline',             label: 'Pipeline',         icon: Kanban },
   { href: '/consultations',        label: 'Consultations',    icon: CalendarCheck },
+  { href: '/calls',                label: 'Call log',         icon: PhoneCall },
   { href: '/voice-messages',       label: 'Voice messages',   icon: Voicemail },
   { href: '/automations',          label: 'Automations',      icon: Zap },
   // AI Twin operational surfaces. /ai-drafts/review is the daily

@@ -39,12 +39,22 @@ interface CallAgentConfig {
   call_agent_reminder_assistant_id:     string | null
 }
 
+interface VapiHealthSnapshot {
+  configured:         boolean
+  reachable:          boolean
+  server_url_ok:      boolean
+  server_messages_ok: boolean
+  tools_url_ok:       boolean
+  assistant_id:       string | null
+}
+
 export function CallAgentSettingsCard() {
   const [config, setConfig]     = useState<CallAgentConfig | null>(null)
   const [locked, setLocked]     = useState<any | null>(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState<string | null>(null)
   const [saving, setSaving]     = useState(false)
+  const [health, setHealth]     = useState<{ inbound: VapiHealthSnapshot; reminder: VapiHealthSnapshot } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -58,6 +68,12 @@ export function CallAgentSettingsCard() {
       }
       if (!res.ok) throw new Error(json.message ?? json.error ?? 'Could not load')
       setConfig(json)
+      // Fire the live-Vapi health check in parallel; tolerate failure.
+      // The page renders without this if Vapi's slow / down.
+      fetch('/api/org/call-agent/vapi-health', { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(h => h && setHealth(h))
+        .catch(() => { /* silent */ })
     } catch (err: any) {
       setError(err?.message ?? 'Could not load')
     } finally {
@@ -141,6 +157,50 @@ export function CallAgentSettingsCard() {
             label="Vapi assistant configured"
             help="Set call_agent_assistant_id via the setup script after creating the assistant in Vapi."
           />
+          {/* Live Vapi-config health. These check the actual deployed
+              assistant config — the two latent defects that broke W1
+              and W2 (localhost URLs and missing serverMessages
+              subscription) both look healthy from every other angle. */}
+          {health?.inbound && health.inbound.configured && (
+            <>
+              <Check
+                ok={health.inbound.reachable && health.inbound.server_url_ok && health.inbound.tools_url_ok}
+                label="Inbound assistant URLs point at production"
+                help={
+                  !health.inbound.reachable
+                    ? 'Could not reach Vapi to verify. Check VAPI_API_KEY env var.'
+                    : !health.inbound.server_url_ok
+                      ? 'Inbound assistant has a localhost webhook URL — Vapi cloud cannot reach it. Re-run the seed script with a prod NEXT_PUBLIC_APP_URL.'
+                      : 'One or more inbound tools have a localhost URL. Re-seed.'
+                }
+              />
+              <Check
+                ok={health.inbound.server_messages_ok}
+                label="Inbound subscribed to end-of-call events"
+                help="Without serverMessages including 'end-of-call-report', Vapi never sends call-end webhooks and call_logs stays empty. Re-run the seed script."
+              />
+            </>
+          )}
+          {health?.reminder && health.reminder.configured && (
+            <>
+              <Check
+                ok={health.reminder.reachable && health.reminder.server_url_ok && health.reminder.tools_url_ok}
+                label="Reminder assistant URLs point at production"
+                help={
+                  !health.reminder.reachable
+                    ? 'Could not reach Vapi to verify.'
+                    : !health.reminder.server_url_ok
+                      ? 'Reminder assistant has a localhost webhook URL. Re-run seed-vapi-reminder-assistant.ts with a prod URL.'
+                      : 'One or more reminder tools have a localhost URL. Re-seed.'
+                }
+              />
+              <Check
+                ok={health.reminder.server_messages_ok}
+                label="Reminder subscribed to end-of-call events"
+                help="Without serverMessages, the reminder call status never flips from 'sent' to a terminal disposition."
+              />
+            </>
+          )}
           <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3">
             <input
               id="baa-attest"
