@@ -170,15 +170,43 @@ export async function POST(req: Request) {
   // takes orgId from `org`, so build a compatible local object.
   const org = { id: orgRow.id }
 
+  // Vapi puts the call timestamps + duration at the MESSAGE level on
+  // end-of-call-report, not under `call.*`. The empirical shape:
+  //   message.startedAt:        ISO string
+  //   message.endedAt:          ISO string
+  //   message.durationSeconds:  number (Vapi's preferred field)
+  //   message.durationMs:       number (older alias)
+  // We accept any of them and fall back to startedAt/endedAt diff if
+  // only the timestamps are present.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const m: any = msg
+  const startedAt: string =
+    (typeof m.startedAt   === 'string' && m.startedAt) ||
+    (typeof call.startedAt === 'string' && call.startedAt) ||
+    new Date().toISOString()
+  const endedAt: string | null =
+    (typeof m.endedAt    === 'string' && m.endedAt) ||
+    (typeof call.endedAt === 'string' && call.endedAt) ||
+    null
+
+  let durationSec: number | null = null
+  if (typeof m.durationSeconds === 'number')      durationSec = Math.round(m.durationSeconds)
+  else if (typeof m.durationMs       === 'number') durationSec = Math.round(m.durationMs       / 1000)
+  else if (typeof call.durationMs    === 'number') durationSec = Math.round(call.durationMs    / 1000)
+  else if (startedAt && endedAt) {
+    const diff = (Date.parse(endedAt) - Date.parse(startedAt)) / 1000
+    if (Number.isFinite(diff) && diff >= 0 && diff < 86400) durationSec = Math.round(diff)
+  }
+
   const result = await persistCallLog({
     orgId:        org.id,
     callSid:      call.id,
     fromE164,
     toE164,
     direction,
-    startedAt:    call.startedAt ?? new Date().toISOString(),
-    endedAt:      call.endedAt   ?? null,
-    durationSec:  call.durationMs != null ? Math.round(call.durationMs / 1000) : null,
+    startedAt,
+    endedAt,
+    durationSec,
     intent:       msg.analysis?.structuredData?.intent ?? null,
     transcript:   msg.transcript ?? null,
     recordingUrl: msg.recordingUrl ?? null,
