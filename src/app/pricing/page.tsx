@@ -39,7 +39,7 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Full CRM — contacts, kanban pipeline, consultations calendar, tags, notes, activity timeline',
     'Public booking page at /book/[slug] with real provider availability',
     'Signed /manage SMS links — patients reschedule and cancel themselves',
-    'Two-way SMS threading on your Twilio number',
+    'Two-way SMS threading on your own phone number',
     'AI lead summary on every contact',
     'Manual AI draft button on inbound texts (you review and send)',
     'Stripe-billed 14-day trial, switch tiers anytime',
@@ -77,7 +77,7 @@ const FEATURE_MATRIX: { feature: string; starter: boolean; professional: boolean
   // CRM foundation — every tier
   { feature: 'CRM (contacts, pipeline, calendar, timeline)',    starter: true,  professional: true,  scale: true  },
   { feature: 'Public booking page + signed /manage links',      starter: true,  professional: true,  scale: true  },
-  { feature: 'Two-way SMS threading on your Twilio number',     starter: true,  professional: true,  scale: true  },
+  { feature: 'Two-way SMS threading on your own phone number',     starter: true,  professional: true,  scale: true  },
   { feature: 'AI lead summary on every contact',                starter: true,  professional: true,  scale: true  },
   { feature: 'Manual AI draft button',                          starter: true,  professional: true,  scale: true  },
   // Pro+ — AI Twin SMS + automations
@@ -333,7 +333,7 @@ export default function PricingPage() {
                 id="starter"
                 name="Starter"
                 accent="#6B7572"
-                blurb="The CRM, a public booking page, signed reschedule links, two-way SMS on your Twilio number, and a manual AI draft button you review before sending. 500 contacts, 2 seats."
+                blurb="The CRM, a public booking page, signed reschedule links, two-way SMS on your own phone number, and a manual AI draft button you review before sending. 500 contacts, 2 seats."
               />
               <TierCallout
                 id="professional"

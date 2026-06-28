@@ -21,7 +21,7 @@ const DEMO_AGENDA: Array<{
   {
     title: 'Layla answers a live call',
     detail:
-      'We dial a real Twilio number. Layla picks up, books an appointment from real availability, and texts the confirmation before we hang up.',
+      'We dial a real clinic line. Layla picks up, books an appointment from real availability, and texts the confirmation before we hang up.',
     tier: 'scale',
   },
   {

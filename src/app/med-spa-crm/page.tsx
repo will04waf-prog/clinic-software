@@ -117,7 +117,7 @@ const FEATURE_BLOCKS: Array<{
     oneLine:
       'An AI voice receptionist that picks up inbound calls 24/7 or after-hours, in your clinic\'s voice.',
     body:
-      'Layla is a Vapi-backed voice agent that answers your Twilio number and talks to callers like a trained front-desk hire. She greets, listens, asks the right intake questions, and resolves the call — or transfers to a human you nominate. Owners choose always-on or after-hours-only, and set a fallback number for anything Layla can\'t handle. Inbound calls cost you nothing if your team is already on another line.',
+      "Layla is a voice AI agent that answers your clinic's phone number and talks to callers like a trained front-desk hire. She greets, listens, asks the right intake questions, and resolves the call — or transfers to a human you nominate. Owners choose always-on or after-hours-only, and set a fallback number for anything Layla can't handle. Inbound calls cost you nothing if your team is already on another line.",
     tier: 'scale',
   },
   {
@@ -178,7 +178,7 @@ const FEATURE_BLOCKS: Array<{
     icon: MessageSquare,
     title: 'Threaded two-way SMS on your number',
     oneLine:
-      'Inbound replies land on the contact\'s timeline as a conversation, on the Twilio number you already own.',
+      'Inbound replies land on the contact\'s timeline as a conversation, on the same phone number you already own.',
     body:
       'Send manual or AI-drafted SMS from a contact\'s page. Replies come back to the same thread, STOP/HELP keywords are honored automatically, and every message is logged to the activity timeline. No shared shortcode, no rebranded sender — just your clinic\'s number, two ways.',
     tier: 'starter',
@@ -234,7 +234,7 @@ const TIERS = [
       'Contacts, kanban pipeline, consultations calendar',
       'Tags, notes, activity timeline, team management',
       'Public booking page + signed /manage reschedule links',
-      'Two-way SMS threading on your Twilio number',
+      "Two-way SMS threading on your clinic's phone number",
       'AI lead summary on every contact',
     ],
   },
@@ -277,7 +277,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What is the AI receptionist and which plan does it come with?',
-    a: 'Layla is an AI voice receptionist that answers your Twilio number. She greets callers in your clinic\'s voice, books appointments into real provider slots, reschedules or cancels existing visits, takes messages, transfers to a human you nominate, and follows up with PHI-scrubbed summary emails. Layla is on the Scale plan. The CRM is on every plan, and AI-drafted SMS replies are on Professional and Scale.',
+    a: "Layla is an AI voice receptionist that answers your clinic's phone number. She greets callers in your clinic's voice, books appointments into real provider slots, reschedules or cancels existing visits, takes messages, transfers to a human you nominate, and follows up with PHI-scrubbed summary emails. Layla is on the Scale plan. The CRM is on every plan, and AI-drafted SMS replies are on Professional and Scale.",
   },
   {
     q: 'How does Layla actually book an appointment?',
@@ -293,7 +293,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Is Tarhunna HIPAA compliant?',
-    a: 'We do not claim HIPAA compliance as a checkbox. Vendor BAAs are available with Vapi, Twilio, Supabase, Stripe, and Resend, and an in-app BAA attestation is required from the owner before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest via Supabase/Postgres infrastructure. Caller-ID-gated lookups prevent a dictated phone number from being accepted as identity. Talk to us about your specific compliance posture.',
+    a: 'We do not claim HIPAA compliance as a checkbox. Business Associate Agreements are in place with every infrastructure provider behind the platform, and an in-app BAA attestation is required from the owner before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest. Caller-ID-gated lookups prevent a dictated phone number from being accepted as identity. Talk to us about your specific compliance posture.',
   },
   {
     q: 'Does Tarhunna integrate with my EMR or Google Calendar?',
@@ -301,7 +301,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How fast can I get set up?',
-    a: '14-day free trial, no credit card. The CRM is usable inside 20 minutes. Connecting a Twilio number for SMS adds a few more, and provisioning Layla on the Scale plan is a guided setup that includes writing your FAQ corpus, choosing always-on or after-hours mode, and setting your transfer-to-human fallback.',
+    a: '14-day free trial, no credit card. The CRM is usable inside 20 minutes. Connecting a phone number for SMS adds a few more, and provisioning Layla on the Scale plan is a guided setup that includes writing your FAQ corpus, choosing always-on or after-hours mode, and setting your transfer-to-human fallback.',
   },
   {
     q: 'What does it cost?',
@@ -591,7 +591,7 @@ export default function MedSpaCRMPage() {
               ))}
             </div>
             <p className="mt-6 text-center text-xs text-brand-900/55">
-              Vendor BAAs available with Vapi, Twilio, Supabase, Stripe, and Resend. In-app BAA
+              Business Associate Agreements in place with every infrastructure provider behind the platform. In-app BAA
               attestation required before Layla accepts inbound or places outbound calls.
             </p>
           </div>

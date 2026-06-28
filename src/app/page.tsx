@@ -91,7 +91,7 @@ const PILLAR_SECTIONS = [
     eyebrow: 'Inbound voice',
     title: 'Layla answers the phone',
     oneLine: 'An AI voice receptionist that picks up inbound calls 24/7 or after-hours, in your clinic\'s voice.',
-    body: 'Layla is a Vapi-backed voice agent that answers your Twilio number and talks to callers like a trained front-desk hire. She greets, listens, asks the right intake questions, and resolves the call — or transfers to a human you nominate. Owners choose always-on or after-hours-only, and set a fallback number for anything Layla can\'t handle.',
+    body: "Layla is a voice AI agent that answers your clinic's phone number and talks to callers like a trained front-desk hire. She greets, listens, asks the right intake questions, and resolves the call — or transfers to a human you nominate. Owners choose always-on or after-hours-only, and set a fallback number for anything Layla can't handle.",
     tier: 'scale' as Tier,
   },
   {
@@ -156,7 +156,7 @@ const CRM_PIECES = [
   {
     icon: MessageSquareText,
     title: 'Threaded two-way SMS',
-    body: 'Send manual or AI-drafted SMS from a contact\'s page. Replies thread back on the same Twilio number you already own. STOP/HELP keywords honored automatically.',
+    body: 'Send manual or AI-drafted SMS from a contact\'s page. Replies thread back to the same number you already own. STOP/HELP keywords honored automatically.',
   },
   {
     icon: Sparkles,
@@ -187,7 +187,7 @@ const TIERS: readonly TierCard[] = [
     includes: [
       'Full CRM: contacts, pipeline, calendar, tags, notes, timeline',
       'Public /book/[slug] page + signed /manage reschedule links',
-      'Two-way SMS threading on your Twilio number',
+      "Two-way SMS threading on your clinic's phone number",
       'AI lead summary on every contact',
     ],
   },
@@ -231,7 +231,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Does Layla use my phone number?',
-    a: 'Yes — Layla answers calls on your Twilio number, not a shared shortcode or rebranded sender. Inbound SMS replies thread on the same number. There is no separate caller ID for the AI.',
+    a: "Yes — Layla answers calls on your clinic's phone number, not a shared shortcode or rebranded sender. Inbound SMS replies thread on the same number. There is no separate caller ID for the AI.",
   },
   {
     q: 'How does Layla avoid making things up?',
@@ -239,7 +239,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Is Tarhunna HIPAA compliant?',
-    a: 'Vendor BAAs are available with Vapi, Twilio, Supabase, Stripe, and Resend, and an in-app BAA attestation is required before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest via Supabase/Postgres infrastructure. We do not market the product as "HIPAA compliant" as a checkbox — compliance is shared between your clinic and the platform.',
+    a: 'Business Associate Agreements are in place with every infrastructure provider behind the platform, and an in-app BAA attestation is required from the clinic owner before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest. We do not market the product as "HIPAA compliant" as a checkbox — compliance is shared between your clinic and the platform.',
   },
   {
     q: 'Does Tarhunna replace my EMR?',
@@ -247,7 +247,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How long does setup take?',
-    a: 'Most clinics are running the CRM and the public booking page in under 20 minutes. Bringing Layla online takes longer because you need to author your FAQ corpus, attest to the BAA, and port or buy a Twilio number — usually a single afternoon with the founder.',
+    a: 'Most clinics are running the CRM and the public booking page in under 20 minutes. Bringing Layla online takes longer because you need to author your FAQ corpus, attest to the BAA, and port or buy a phone number — usually a single afternoon with the founder.',
   },
 ]
 
@@ -433,7 +433,7 @@ export default function LandingPage() {
               {[
                 { stat: '16 voice tools', label: 'Layla can book, reschedule, transfer, take messages, and more on every call' },
                 { stat: 'Day-before recall', label: 'Outbound AI reminder calls 4–72 hours ahead — patients confirm or move by voice' },
-                { stat: 'One stack', label: 'Voice, two-way SMS, public booking, and CRM on a single Twilio number' },
+                { stat: 'One stack', label: 'Voice, two-way SMS, public booking, and CRM on a single phone number' },
               ].map(({ stat, label }) => (
                 <div key={stat} className="bg-[#F5EFE1] px-6 py-6 text-center">
                   <div className="text-xl font-extrabold tracking-tight text-[#14241d]">{stat}</div>
@@ -580,7 +580,7 @@ export default function LandingPage() {
                   should come from a clinician.
                 </p>
                 <p className="mt-3 text-gray-500 leading-relaxed">
-                  Vendor BAAs are available with Vapi, Twilio, Supabase, Stripe, and Resend. An in-app BAA
+                  Business Associate Agreements are in place with every infrastructure provider behind the platform. An in-app BAA
                   attestation is required before the voice agent will accept inbound or place outbound calls.
                   Data is encrypted at rest via Supabase/Postgres infrastructure.
                 </p>
