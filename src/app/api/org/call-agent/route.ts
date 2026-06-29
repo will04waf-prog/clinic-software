@@ -75,7 +75,10 @@ export async function GET() {
       call_agent_baa_attested_at,
       voice_reminder_enabled, voice_reminder_lead_hours,
       voice_reminder_consent_attested_at,
-      call_agent_reminder_assistant_id
+      call_agent_reminder_assistant_id,
+      vapi_phone_number_id, twilio_phone_sid,
+      phone_number_purchased_at, phone_number_monthly_cost_cents,
+      a2p_brand_sid, a2p_campaign_sid, a2p_status, a2p_status_updated_at
     `)
     .eq('id', gate.orgId)
     .single()
@@ -94,6 +97,19 @@ export async function GET() {
     voice_reminder_lead_hours: org?.voice_reminder_lead_hours ?? 24,
     voice_reminder_consent_attested_at: org?.voice_reminder_consent_attested_at ?? null,
     call_agent_reminder_assistant_id: org?.call_agent_reminder_assistant_id ?? null,
+    // ── M1: per-org phone-number provisioning surface ────────────
+    // PATCH does NOT accept these — they're set by the provisioning
+    // cron (M5) and the manual provision-clinic-phone.ts script.
+    // GET surfaces them so the settings-card pre-flight checks
+    // ("dedicated number assigned", "A2P approved") can render.
+    vapi_phone_number_id:            org?.vapi_phone_number_id            ?? null,
+    twilio_phone_sid:                org?.twilio_phone_sid                ?? null,
+    phone_number_purchased_at:       org?.phone_number_purchased_at       ?? null,
+    phone_number_monthly_cost_cents: org?.phone_number_monthly_cost_cents ?? 0,
+    a2p_brand_sid:                   org?.a2p_brand_sid                   ?? null,
+    a2p_campaign_sid:                org?.a2p_campaign_sid                ?? null,
+    a2p_status:                      org?.a2p_status                      ?? 'not_started',
+    a2p_status_updated_at:           org?.a2p_status_updated_at           ?? null,
   })
 }
 

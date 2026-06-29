@@ -12,6 +12,7 @@ import { ScheduleRail } from '@/components/dashboard/morning/schedule-rail'
 import { WeekStrip } from '@/components/dashboard/morning/week-strip'
 import { AiTwinTile } from '@/components/dashboard/morning/ai-twin-tile'
 import { AnalyticsSections } from '@/components/dashboard/analytics/analytics-sections'
+import { PhoneNumberBanner } from '@/components/onboarding/phone-number-banner'
 import type { MorningResponse } from '@/components/dashboard/morning/types'
 
 const POLL_INTERVAL_MS = 60_000
@@ -61,6 +62,24 @@ export default function DashboardPage() {
   const [data, setData] = useState<MorningResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // M3 phone-number onboarding banner. We fetch the org's call-agent
+  // status (which exposes vapi_phone_number_id) once on mount; the
+  // banner is owner-only on the API side, so non-owner roles will see
+  // a 403 and the predicate falls back to "no banner" — exactly what
+  // we want. Failures are silent: the dashboard must keep rendering.
+  const [showPhoneBanner, setShowPhoneBanner] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/org/call-agent', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => {
+        if (cancelled || !body) return
+        setShowPhoneBanner(body.vapi_phone_number_id == null)
+      })
+      .catch(() => { /* silent — banner just won't render */ })
+    return () => { cancelled = true }
+  }, [])
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -161,6 +180,10 @@ export default function DashboardPage() {
 
       <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10 sm:py-7" style={{ scrollBehavior: 'smooth' }}>
         <div className="mx-auto flex max-w-[1240px] flex-col gap-7">
+          {/* M3 — finish-setup nudge. Renders only when the owner's
+              org has vapi_phone_number_id IS NULL. Hidden for staff
+              and for owners who've already provisioned. */}
+          <PhoneNumberBanner shouldShow={showPhoneBanner} />
           {loading && !data ? (
             <DashboardSkeleton />
           ) : error ? (

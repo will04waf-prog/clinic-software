@@ -47,6 +47,15 @@ export type VapiCallResult = { provider_id: string; status: string } | null
 export interface PlaceOutboundCallArgs {
   /** Vapi assistant id for the reminder bot. */
   assistantId: string
+  /**
+   * Vapi-side phone-number resource that places the call. M1 moved
+   * this off the global VAPI_PHONE_NUMBER_ID env var so each org can
+   * own its own Vapi phone resource (organizations.vapi_phone_number_id).
+   * REQUIRED — callers MUST resolve it from the org row before
+   * calling. The cron writes a 'skipped' row for orgs that have no
+   * number on file yet.
+   */
+  phoneNumberId: string
   /** Patient phone — will be E.164-normalized inside. */
   to: string
   /** Optional first-name to pass to the bot for personalization. */
@@ -70,8 +79,16 @@ export interface PlaceOutboundCallArgs {
   }
 }
 
+/**
+ * Cheap env-only check the caller runs before resolving per-org
+ * phoneNumberId. After M1 the phoneNumberId itself is per-org (lives
+ * on organizations.vapi_phone_number_id) — this helper is now
+ * exclusively an API-key check. The legacy VAPI_PHONE_NUMBER_ID env
+ * var is no longer consulted here; if it's set in production it's
+ * vestigial.
+ */
 export function isVapiOutboundConfigured(): boolean {
-  return !!(process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID)
+  return !!process.env.VAPI_API_KEY
 }
 
 /**
@@ -92,11 +109,19 @@ export function isVapiOutboundConfigured(): boolean {
  */
 export async function placeOutboundCall(args: PlaceOutboundCallArgs): Promise<VapiCallResult> {
   if (!isVapiOutboundConfigured()) {
-    console.warn('[vapi-outbound] not configured — skipping placeOutboundCall')
+    console.warn('[vapi-outbound] VAPI_API_KEY not configured — skipping placeOutboundCall')
+    return null
+  }
+  // The phoneNumberId is now per-call (per-org). A missing value is a
+  // caller bug, not a config gap — but to keep the contract uniform
+  // (null = silent skip, throw = real failure) we treat empty string /
+  // undefined as a skip and let the cron stamp 'skipped'.
+  if (!args.phoneNumberId) {
+    console.warn('[vapi-outbound] phoneNumberId not provided — skipping placeOutboundCall')
     return null
   }
   const apiKey        = process.env.VAPI_API_KEY!
-  const phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID!
+  const phoneNumberId = args.phoneNumberId
 
   const e164 = normalizePhone(args.to)
   if (!e164) {

@@ -85,6 +85,12 @@ interface OrgRow {
   call_agent_baa_attested_at:        string | null
   call_agent_reminder_assistant_id:  string | null
   twilio_phone_number:               string | null
+  // M1: per-org Vapi phone-number resource id. Replaces the global
+  // VAPI_PHONE_NUMBER_ID env var that gated the whole platform.
+  // Orgs where this is null are still provisioning — counted as
+  // 'no_phone_number_orgs' in the outcome so the operator can see
+  // the gap.
+  vapi_phone_number_id:              string | null
 }
 
 interface JobOutcome {
@@ -93,12 +99,19 @@ interface JobOutcome {
   sent:      number
   skipped:   number
   errors:    number
-  no_assistant_orgs: number
+  no_assistant_orgs:     number
+  // M1: orgs with reminder + agent enabled + BAA attested + assistant
+  // seeded, but no vapi_phone_number_id yet. These are the orgs the
+  // M5 provisioning runner is still working through — surfacing the
+  // count separately from no_assistant_orgs makes the difference
+  // diagnosable from the cron response alone.
+  no_phone_number_orgs:  number
 }
 
 export async function sendVoiceReminders(): Promise<JobOutcome> {
   const outcome: JobOutcome = {
-    ok: true, attempted: 0, sent: 0, skipped: 0, errors: 0, no_assistant_orgs: 0,
+    ok: true, attempted: 0, sent: 0, skipped: 0, errors: 0,
+    no_assistant_orgs: 0, no_phone_number_orgs: 0,
   }
 
   const wrapped = await withCronLock('voice_reminders', 300, async () => {
@@ -115,7 +128,8 @@ export async function sendVoiceReminders(): Promise<JobOutcome> {
         id, name, timezone,
         voice_reminder_enabled, voice_reminder_lead_hours,
         call_agent_enabled, call_agent_baa_attested_at,
-        call_agent_reminder_assistant_id, twilio_phone_number
+        call_agent_reminder_assistant_id, twilio_phone_number,
+        vapi_phone_number_id
       `)
       .eq('voice_reminder_enabled', true)
       .eq('call_agent_enabled', true)
@@ -132,7 +146,9 @@ export async function sendVoiceReminders(): Promise<JobOutcome> {
       // Bail loudly. The cron should not silently no-op on missing
       // env in production — a misconfigured deploy is the kind of
       // thing that goes undetected for weeks if we just skip.
-      console.warn('[voice-reminders] VAPI_API_KEY / VAPI_PHONE_NUMBER_ID not configured — skipping tick')
+      // Note: as of M1 this is purely an API-key check — the
+      // phoneNumberId is per-org and read off the row below.
+      console.warn('[voice-reminders] VAPI_API_KEY not configured — skipping tick')
       outcome.ok = false
       return outcome
     }
@@ -144,6 +160,18 @@ export async function sendVoiceReminders(): Promise<JobOutcome> {
         // cron response so the operator can see the gap.
         console.warn(`[voice-reminders] org ${org.id} has no call_agent_reminder_assistant_id — run scripts/seed-vapi-reminder-assistant.ts ${org.id}`)
         outcome.no_assistant_orgs += 1
+        return
+      }
+
+      if (!org.vapi_phone_number_id) {
+        // M1: per-org Vapi phone-number resource isn't provisioned
+        // yet. Same shape as the missing-assistant branch: leave
+        // rows pending, surface the count, let the M5 cron complete
+        // provisioning. We deliberately do NOT mark these rows
+        // 'skipped' — that would permanently strand them; we want
+        // the next tick post-provisioning to fire normally.
+        console.warn(`[voice-reminders] org ${org.id} has no vapi_phone_number_id — run scripts/provision-clinic-phone.ts or wait for the provisioning cron`)
+        outcome.no_phone_number_orgs += 1
         return
       }
 
@@ -237,6 +265,9 @@ export async function sendVoiceReminders(): Promise<JobOutcome> {
           // rows scan.
           const result = await placeOutboundCall({
             assistantId:   org.call_agent_reminder_assistant_id!,
+            // M1: per-org Vapi phone-number resource (was global env).
+            // The null-guard above means this is always defined here.
+            phoneNumberId: org.vapi_phone_number_id!,
             to:            contact!.phone!,
             customerName:  contact!.first_name ?? null,
             metadata: {

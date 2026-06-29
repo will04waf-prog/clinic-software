@@ -1,13 +1,17 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Building2, Users, CalendarCheck } from 'lucide-react'
+import { LayoutDashboard, Building2, Users, CalendarCheck, PhoneCall } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { href: '/admin/home',          label: 'Home',          icon: LayoutDashboard },
   { href: '/admin/accounts',      label: 'Accounts',      icon: Building2 },
   { href: '/admin/users',         label: 'Users',         icon: Users },
+  // M6 — per-org phone-number provisioning health board. Super-admin
+  // only (already gated by the /admin layout); the row's "Re-trigger"
+  // button enqueues fresh provisioning_jobs rows for stuck steps.
+  { href: '/admin/numbers',       label: 'Number health', icon: PhoneCall },
   { href: '/admin/demo-requests', label: 'Demo Requests', icon: CalendarCheck },
 ]
 

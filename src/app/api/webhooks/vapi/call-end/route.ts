@@ -20,6 +20,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyVapiSignature } from '@/lib/voice-agent/verify-vapi-signature'
 import { persistCallLog } from '@/lib/voice-agent/persist-call'
 import { normalizePhone } from '@/lib/validators'
+import { recordUsage } from '@/lib/billing/metered-usage'
 
 type VapiCallEndPayload = {
   message?: {
@@ -225,6 +226,30 @@ export async function POST(req: Request) {
   // existing row's id, a true failure has none.
   if (!result.inserted && !result.callLogId) {
     return NextResponse.json({ ok: false, error: 'persist_failed' }, { status: 500 })
+  }
+
+  // Phase 5 M7 — metered-billing audit. Record voice_minute usage AFTER
+  // persistCallLog succeeds (so we don't bill for transcripts we failed
+  // to store) but ONLY when result.inserted is true (so Vapi's webhook
+  // retry doesn't double-record — the persist-layer's call_sid dedup
+  // already absorbs the duplicate, and the usage_events idempotency
+  // index on (org, kind, source_ref=call_sid) is the belt-and-suspenders
+  // second line). Quantity is duration_sec/60 — fractional minutes, the
+  // reporter ceils at submission time. Calls with no duration (failed
+  // dial, missed call, etc.) get quantity=0 which recordUsage rejects,
+  // so the audit row is silently skipped in that case.
+  if (result.inserted && durationSec && durationSec > 0) {
+    try {
+      await recordUsage({
+        organizationId: org.id,
+        kind:           'voice_minute',
+        quantity:       durationSec / 60,
+        sourceRef:      call.id,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[vapi/call-end] recordUsage failed (non-fatal):', msg)
+    }
   }
 
   // Phase 5 W2: outbound reminder call lifecycle close-out. When the

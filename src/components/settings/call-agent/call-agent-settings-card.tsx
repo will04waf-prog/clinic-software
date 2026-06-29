@@ -37,6 +37,18 @@ interface CallAgentConfig {
   voice_reminder_lead_hours:            number
   voice_reminder_consent_attested_at:   string | null
   call_agent_reminder_assistant_id:     string | null
+  // M1: per-org phone-number + A2P provisioning state. Surfaced as
+  // pre-flight Check rows below; not editable from this card (those
+  // mutations happen in /onboarding/phone-number + the M5 provisioning
+  // cron).
+  vapi_phone_number_id:                 string | null
+  twilio_phone_sid:                     string | null
+  phone_number_purchased_at:            string | null
+  phone_number_monthly_cost_cents:      number
+  a2p_brand_sid:                        string | null
+  a2p_campaign_sid:                     string | null
+  a2p_status:                           'pending' | 'approved' | 'rejected' | 'not_started'
+  a2p_status_updated_at:                string | null
 }
 
 interface VapiHealthSnapshot {
@@ -45,6 +57,9 @@ interface VapiHealthSnapshot {
   server_url_ok:      boolean
   server_messages_ok: boolean
   tools_url_ok:       boolean
+  // M1: matches the Vapi phone-number resource's bound assistant id?
+  // null means indeterminate (no phone-number id, or Vapi unreachable).
+  phone_assistant_binding_ok: boolean | null
   assistant_id:       string | null
 }
 
@@ -156,6 +171,38 @@ export function CallAgentSettingsCard() {
             ok={hasAssistant}
             label="Vapi assistant configured"
             help="Set call_agent_assistant_id via the setup script after creating the assistant in Vapi."
+          />
+          {/* ── M1 provisioning pre-flight rows ───────────────────
+              These three rows surface the multi-clinic phone-number
+              + A2P state added in M1. Each is purely a read-out from
+              the columns on organizations; mutations happen in
+              /onboarding/phone-number (M3) and the M5 provisioning
+              cron, not here. */}
+          <Check
+            ok={!!config.vapi_phone_number_id}
+            label="Dedicated phone number assigned"
+            help="The Vapi phone resource for this clinic hasn't been provisioned yet. New orgs complete this during onboarding; existing orgs are migrated in by the provisioning cron."
+          />
+          <Check
+            ok={(config.phone_number_monthly_cost_cents ?? 0) > 0}
+            label="Phone number cost on file"
+            help="Monthly rent for the clinic's dedicated phone number isn't recorded yet. This is what gets billed by Stripe once metered billing is enabled."
+          />
+          <Check
+            status={
+              config.a2p_status === 'approved'    ? 'ok'    :
+              config.a2p_status === 'pending'     ? 'warn'  :
+              config.a2p_status === 'rejected'    ? 'error' :
+                                                    'idle'
+            }
+            label="A2P 10DLC registration"
+            help={
+              config.a2p_status === 'rejected'
+                ? 'Twilio rejected the A2P brand registration. Re-submit from settings → A2P with corrected details.'
+                : config.a2p_status === 'pending'
+                  ? 'Brand registration submitted to Twilio — typically approved in 1-3 business days. Outbound SMS may be throttled by carriers until approval.'
+                  : 'A2P 10DLC registration is required by US carriers for reliable outbound SMS delivery. Submit your brand details from settings → A2P.'
+            }
           />
           {/* Live Vapi-config health. These check the actual deployed
               assistant config — the two latent defects that broke W1
@@ -458,16 +505,38 @@ function GreetingInput({
   )
 }
 
-function Check({ ok, label, help }: { ok: boolean; label: string; help: string }) {
+/**
+ * Pre-flight status row. Two call shapes:
+ *   - <Check ok={boolean} label help />  — binary green/amber.
+ *   - <Check status={'ok'|'warn'|'error'|'idle'} label help />  — full
+ *     spectrum (used by the A2P row, which has 4 states: not_started,
+ *     pending, approved, rejected). help is only shown when status !== 'ok'.
+ */
+type CheckStatus = 'ok' | 'warn' | 'error' | 'idle'
+
+function Check(props:
+  | { ok: boolean; label: string; help: string; status?: never }
+  | { status: CheckStatus; label: string; help: string; ok?: never }
+) {
+  const status: CheckStatus = props.status ?? (props.ok ? 'ok' : 'warn')
+  const dotColor =
+    status === 'ok'    ? 'bg-[#02C39A]' :
+    status === 'warn'  ? 'bg-amber-400' :
+    status === 'error' ? 'bg-red-500'   :
+                         'bg-gray-300'  // idle
+  const helpTextColor =
+    status === 'error' ? 'text-red-700' :
+    status === 'idle'  ? 'text-gray-500' :
+                         'text-amber-800'
   return (
     <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3">
-      <div className={`mt-0.5 h-4 w-4 rounded-full ${ok ? 'bg-[#02C39A]' : 'bg-amber-400'}`} />
+      <div className={`mt-0.5 h-4 w-4 rounded-full ${dotColor}`} />
       <div>
-        <p className="font-medium text-gray-900">{label}</p>
-        {!ok && (
-          <p className="mt-0.5 flex items-start gap-1 text-xs text-amber-800">
+        <p className="font-medium text-gray-900">{props.label}</p>
+        {status !== 'ok' && (
+          <p className={`mt-0.5 flex items-start gap-1 text-xs ${helpTextColor}`}>
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-            {help}
+            {props.help}
           </p>
         )}
       </div>
