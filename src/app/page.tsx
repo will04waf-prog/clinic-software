@@ -18,7 +18,7 @@ import {
   Users,
   Workflow,
 } from 'lucide-react'
-import { HomeProductShowcase } from './home-product-showcase'
+import { SoftwareShowcase } from '@/components/marketing/software-showcase'
 import { SignatureLogo } from '@/components/ui/signature-logo'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { AnimatedSection } from '@/components/marketing/animated-section'
@@ -465,8 +465,25 @@ export default function LandingPage() {
           </AnimatedSection>
         </section>
 
-        {/* ── Product Showcase — keeps the existing visual scaffolding ─── */}
-        <HomeProductShowcase />
+        {/* ── See the platform ─────────────────────────────────── */}
+        <section className="bg-[#F5EFE1] px-6 pt-12 pb-14 sm:pb-20">
+          <AnimatedSection className="mx-auto max-w-5xl text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-3 py-1">
+              <LayoutGrid className="h-3.5 w-3.5 text-[#14241d]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#14241d]">The platform</span>
+            </div>
+            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+              Take a tour of the platform
+            </h2>
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-500">
+              Everything Layla captures flows into one place — dashboard, pipeline, contact timelines,
+              AI Twin drafts, and your calendar. Press play for sound.
+            </p>
+          </AnimatedSection>
+          <div className="mx-auto max-w-5xl">
+            <SoftwareShowcase />
+          </div>
+        </section>
 
         {/* ── What Layla does on every call ──────────────────── */}
         <section className="bg-[#F5EFE1] px-6 py-20">
