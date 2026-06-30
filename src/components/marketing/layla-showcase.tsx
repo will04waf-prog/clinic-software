@@ -135,11 +135,20 @@ export function LaylaShowcase() {
   const [mode, setMode] = useState<Mode>('idle')
   const [t, setT] = useState(0)
   const [muted, setMuted] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const music = useRef<{ stop: (fade?: boolean) => void; mute: (m: boolean) => void } | null>(null)
   const vo = useRef<HTMLAudioElement | null>(null)
   const modeRef = useRef<Mode>('idle')
   modeRef.current = mode
+
+  // Responsive: portrait, 2-col grid, tighter spacing on phones.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 600px)')
+    const apply = () => setIsMobile(mq.matches)
+    apply(); mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   const startMusic = useCallback(() => {
     try {
@@ -214,7 +223,7 @@ export function LaylaShowcase() {
   const showControls = mode !== 'frozen'
 
   return (
-    <div style={wrap}>
+    <div style={{ ...wrap, aspectRatio: isMobile ? '0.54' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
       <style>{KEYFRAMES}</style>
       <div style={glowA} aria-hidden />
       <div style={glowB} aria-hidden />
@@ -230,7 +239,7 @@ export function LaylaShowcase() {
         </div>
       </div>
 
-      <div style={{ ...stage, transform: `scale(${1 + progress * 0.02})` }}>
+      <div style={{ ...stage, inset: isMobile ? '46px 0 48px' : '52px 0 56px', transform: `scale(${1 + progress * 0.02})` }}>
         {/* Scene 0 — incoming */}
         <div style={layer(inScene('ring'), 'ring')}>
           <div style={{ position: 'relative', display: 'grid', placeItems: 'center', height: 150 }}>
@@ -238,7 +247,7 @@ export function LaylaShowcase() {
             <div style={avatar}>L</div>
           </div>
           <p style={kicker}>Incoming call</p>
-          <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: INK }}>(415) 555‑0162</p>
+          <p style={{ margin: 0, fontSize: isMobile ? 19 : 22, fontWeight: 700, color: INK }}>(415) 555‑0162</p>
           <p style={{ margin: '10px 0 0', fontSize: 14, color: '#5b6b66' }}>{t > 2000 ? 'Layla is answering…' : 'Your front desk is on another line'}</p>
         </div>
 
@@ -353,14 +362,14 @@ export function LaylaShowcase() {
         {/* Scene 6 — the 16-tool grid */}
         <div style={layer(inScene('tools'), 'tools')}>
           <p style={{ ...kicker, margin: '0 0 4px' }}>One receptionist</p>
-          <p style={{ margin: '0 0 16px', fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: INK }}>16 tools, on every call</p>
-          <div style={gridWrap}>
+          <p style={{ margin: isMobile ? '0 0 12px' : '0 0 16px', fontSize: isMobile ? 18 : 22, fontWeight: 800, letterSpacing: '-0.02em', color: INK }}>16 tools, on every call</p>
+          <div style={{ ...gridWrap, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 7 : 9, maxWidth: isMobile ? 344 : 600 }}>
             {TOOLS.map(({ fn, label, Icon }, i) => {
               const on = t >= T.tools[0] + 250 + i * 170
               return (
-                <div key={fn} style={{ ...toolCell, opacity: on ? 1 : 0, transform: on ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)', borderColor: on ? 'rgba(2,195,154,0.45)' : 'rgba(11,32,39,0.08)' }}>
-                  <Icon size={17} color={TEAL_DEEP} aria-hidden />
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: INK, lineHeight: 1.2 }}>{label}</span>
+                <div key={fn} style={{ ...toolCell, padding: isMobile ? '8px 3px' : '12px 6px', gap: isMobile ? 4 : 6, opacity: on ? 1 : 0, transform: on ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)', borderColor: on ? 'rgba(2,195,154,0.45)' : 'rgba(11,32,39,0.08)' }}>
+                  <Icon size={isMobile ? 15 : 17} color={TEAL_DEEP} aria-hidden />
+                  <span style={{ fontSize: isMobile ? 11 : 11.5, fontWeight: 600, color: INK, lineHeight: 1.2 }}>{label}</span>
                 </div>
               )
             })}
@@ -372,7 +381,7 @@ export function LaylaShowcase() {
           <div style={{ display: 'grid', placeItems: 'center', height: '100%', textAlign: 'center' }}>
             <div>
               <div style={crmChip}><span style={{ ...liveDot, animation: 'none', background: TEAL }} /> Every call logged to your CRM</div>
-              <p style={{ margin: '20px 0 4px', fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', color: INK }}>Meet <span style={{ color: TEAL_DEEP }}>Layla</span>.</p>
+              <p style={{ margin: '20px 0 4px', fontSize: isMobile ? 24 : 32, fontWeight: 800, letterSpacing: '-0.02em', color: INK }}>Meet <span style={{ color: TEAL_DEEP }}>Layla</span>.</p>
               <p style={{ margin: 0, fontSize: 15, color: '#5b6b66', maxWidth: 400 }}>Your front desk, always on — answering, booking, and following up on every call.</p>
             </div>
           </div>
@@ -430,7 +439,7 @@ const stage: React.CSSProperties = { position: 'absolute', inset: '52px 0 56px',
 const scrubWrap: React.CSSProperties = { position: 'absolute', bottom: 0, left: 0, right: 0, minHeight: 56, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 12, zIndex: 6 }
 const kicker: React.CSSProperties = { margin: '0 0 10px', fontSize: 13, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL_DEEP }
 
-function layer(active: boolean, k: SceneKey): React.CSSProperties { return { position: 'absolute', inset: 0, padding: '0 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', opacity: active ? 1 : 0, transform: active ? 'translate(0) scale(1)' : ENTER[k], filter: active ? 'blur(0)' : 'blur(3px)', transition: 'opacity .6s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1), filter .6s ease', pointerEvents: 'none' } }
+function layer(active: boolean, k: SceneKey): React.CSSProperties { return { position: 'absolute', inset: 0, padding: '0 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', opacity: active ? 1 : 0, transform: active ? 'translate(0) scale(1)' : ENTER[k], filter: active ? 'blur(0)' : 'blur(3px)', transition: 'opacity .6s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1), filter .6s ease', pointerEvents: 'none' } }
 const avatar: React.CSSProperties = { width: 84, height: 84, borderRadius: '50%', background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})`, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 34, fontWeight: 700, fontFamily: 'var(--font-newsreader, Georgia, serif)', boxShadow: '0 14px 28px -10px rgba(2,128,144,0.6)', zIndex: 2 }
 function ring(delay: number): React.CSSProperties { return { position: 'absolute', width: 84, height: 84, borderRadius: '50%', border: `2px solid ${TEAL}`, animation: `ripple 2.4s ease-out ${delay}s infinite`, opacity: 0 } }
 const waveRow: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, height: 56, marginBottom: 20 }
