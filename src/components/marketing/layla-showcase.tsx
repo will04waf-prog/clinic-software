@@ -136,11 +136,23 @@ export function LaylaShowcase() {
   const [t, setT] = useState(0)
   const [muted, setMuted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [inView, setInView] = useState(true)
 
   const music = useRef<{ stop: (fade?: boolean) => void; mute: (m: boolean) => void } | null>(null)
   const vo = useRef<HTMLAudioElement | null>(null)
   const modeRef = useRef<Mode>('idle')
   modeRef.current = mode
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Pause the animation loop while off-screen — avoids a continuous rAF
+  // burning CPU on the landing page (helps INP / battery).
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.05 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   // Responsive: portrait, 2-col grid, tighter spacing on phones.
   useEffect(() => {
@@ -189,7 +201,7 @@ export function LaylaShowcase() {
   // Master clock: performance.now for the muted idle loop, the audio
   // element's currentTime when playing with sound (perfect sync).
   useEffect(() => {
-    if (mode === 'frozen' || mode === 'paused' || mode === 'ended') return
+    if (mode === 'frozen' || mode === 'paused' || mode === 'ended' || !inView) return
     let raf = 0
     const loop = (now: number) => {
       if (modeRef.current === 'idle') setT(now % TOTAL)
@@ -198,7 +210,7 @@ export function LaylaShowcase() {
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [mode])
+  }, [mode, inView])
 
   // Dev-only ?seek=<ms> for screenshots.
   useEffect(() => {
@@ -223,7 +235,7 @@ export function LaylaShowcase() {
   const showControls = mode !== 'frozen'
 
   return (
-    <div style={{ ...wrap, aspectRatio: isMobile ? '0.54' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
+    <div ref={rootRef} style={{ ...wrap, aspectRatio: isMobile ? '0.54' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
       <style>{KEYFRAMES}</style>
       <div style={glowA} aria-hidden />
       <div style={glowB} aria-hidden />

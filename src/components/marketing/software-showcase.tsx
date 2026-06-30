@@ -80,11 +80,23 @@ export function SoftwareShowcase() {
   const [t, setT] = useState(0)
   const [muted, setMuted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [inView, setInView] = useState(true)
 
   const music = useRef<{ stop: (fade?: boolean) => void; mute: (m: boolean) => void } | null>(null)
   const vo = useRef<HTMLAudioElement | null>(null)
   const modeRef = useRef<Mode>('idle')
   modeRef.current = mode
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Pause the animation loop while off-screen — avoids a continuous rAF
+  // burning CPU on the landing page (helps INP / battery).
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.05 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 600px)')
@@ -130,7 +142,7 @@ export function SoftwareShowcase() {
   }, [startMusic, stopAudio, muted])
 
   useEffect(() => {
-    if (mode === 'frozen' || mode === 'paused' || mode === 'ended') return
+    if (mode === 'frozen' || mode === 'paused' || mode === 'ended' || !inView) return
     let raf = 0
     const loop = (now: number) => {
       if (modeRef.current === 'idle') setT(now % TOTAL)
@@ -139,7 +151,7 @@ export function SoftwareShowcase() {
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [mode])
+  }, [mode, inView])
 
   useEffect(() => {
     const s = new URLSearchParams(window.location.search).get('seek')
@@ -163,7 +175,7 @@ export function SoftwareShowcase() {
   const twinApproved = sub('twin') > 4600
 
   return (
-    <div style={{ ...wrap, aspectRatio: isMobile ? '0.68' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
+    <div ref={rootRef} style={{ ...wrap, aspectRatio: isMobile ? '0.68' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
       <style>{KEYFRAMES}</style>
       <div style={glowA} aria-hidden />
       <div style={glowB} aria-hidden />
