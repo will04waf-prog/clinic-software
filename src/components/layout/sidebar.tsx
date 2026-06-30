@@ -18,6 +18,7 @@ import {
   PhoneCall,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { FEATURES } from '@/lib/features'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -78,7 +79,7 @@ export function Sidebar({
 
       {/* Nav — forest text on cream throughout */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => item.href !== '/automations' || FEATURES.automations).map((item) => {
           const { href, label, icon: Icon } = item
           const tierBadge = 'tierBadge' in item ? item.tierBadge : undefined
           const active =

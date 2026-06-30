@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, CalendarCheck, Zap, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { FEATURES } from '@/lib/features'
 
 const NAV_ITEMS = [
   { href: '/dashboard',     label: 'Dashboard', icon: LayoutDashboard },
@@ -22,7 +23,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden bg-[#14241d] text-[#F5EFE1]">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {NAV_ITEMS.filter((i) => i.href !== '/automations' || FEATURES.automations).map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href)
         return (
           <Link

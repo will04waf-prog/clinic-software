@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, Circle, Copy, Check } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FEATURES } from '@/lib/features'
 
 interface OnboardingChecklistProps {
   hasLeads: boolean
@@ -19,11 +20,6 @@ export function OnboardingChecklist({
   captureUrl,
 }: OnboardingChecklistProps) {
   const [copied, setCopied] = useState(false)
-
-  const allDone = hasLeads && hasConsultations && hasAutomations
-  if (allDone) return null
-
-  const doneCount = [hasLeads, hasConsultations, hasAutomations].filter(Boolean).length
 
   function copyUrl() {
     navigator.clipboard.writeText(captureUrl)
@@ -46,14 +42,23 @@ export function OnboardingChecklist({
       href: '/leads',
       cta: 'Go to Leads',
     },
-    {
-      done: hasAutomations,
-      label: 'Create an automation',
-      description: 'Set up a follow-up sequence to engage leads automatically.',
-      href: '/automations',
-      cta: 'Go to Automations',
-    },
+    // Automations onboarding step only shows while the feature is enabled.
+    ...(FEATURES.automations
+      ? [{
+          done: hasAutomations,
+          label: 'Create an automation',
+          description: 'Set up a follow-up sequence to engage leads automatically.',
+          href: '/automations',
+          cta: 'Go to Automations',
+        }]
+      : []),
   ]
+
+  const allDone = steps.every((s) => s.done)
+  if (allDone) return null
+
+  const doneCount = steps.filter((s) => s.done).length
+  const totalCount = steps.length
 
   return (
     <Card>
@@ -61,7 +66,7 @@ export function OnboardingChecklist({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Get started with Tarhunna</CardTitle>
           <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
-            {doneCount} of 3 complete
+            {doneCount} of {totalCount} complete
           </span>
         </div>
 

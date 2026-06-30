@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Sparkles, Zap, Send, Inbox } from 'lucide-react'
+import { FEATURES } from '@/lib/features'
 import type { NudgeCardData } from './types'
 
 /**
@@ -40,7 +41,10 @@ export function NudgeCard({ nudge }: Props) {
   if (!nudge || dismissed) return null
 
   const PrimaryIcon = ICONS[nudge.primary.icon] ?? Sparkles
-  const href = HREF_FOR_ICON[nudge.primary.icon] ?? '/automations'
+  const rawHref = HREF_FOR_ICON[nudge.primary.icon] ?? '/automations'
+  // Automations is hidden behind a feature flag — send those nudges to
+  // the dashboard instead of a route that bounces.
+  const href = rawHref === '/automations' && !FEATURES.automations ? '/dashboard' : rawHref
 
   return (
     <section

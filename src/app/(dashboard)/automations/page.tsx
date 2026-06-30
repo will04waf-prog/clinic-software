@@ -1,6 +1,8 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, Zap, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { FEATURES } from '@/lib/features'
 
 function AutomationsSkeleton() {
   return (
@@ -38,7 +40,19 @@ const TRIGGER_LABELS: Record<string, string> = {
   consultation_completed: 'Consultation Completed',
 }
 
+// Reversible feature gate — when FEATURES.automations is off, this route
+// renders nothing and bounces to /dashboard (the nav entry is hidden too).
+// Flip the flag in src/lib/features.ts to restore the builder below.
 export default function AutomationsPage() {
+  const router = useRouter()
+  useEffect(() => {
+    if (!FEATURES.automations) router.replace('/dashboard')
+  }, [router])
+  if (!FEATURES.automations) return null
+  return <AutomationsPageInner />
+}
+
+function AutomationsPageInner() {
   const [sequences, setSequences] = useState<AutomationSequence[]>([])
   const [loading, setLoading]     = useState(true)
   const [editing, setEditing]     = useState<AutomationSequence | null>(null)
