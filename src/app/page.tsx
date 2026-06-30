@@ -268,7 +268,7 @@ export default function LandingPage() {
             '@type': 'Organization',
             name: 'Tarhunna',
             url: 'https://tarhunna.net',
-            logo: 'https://tarhunna.net/icon.svg',
+            logo: 'https://tarhunna.net/tarhunna-mark.png',
             description:
               'AI receptionist and patient-communications platform for clinics, backed by a full CRM.',
             foundingDate: '2024',
