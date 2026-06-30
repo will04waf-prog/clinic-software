@@ -99,6 +99,27 @@ const SCENE_TOOLS: Record<SceneKey, string[]> = {
   outro:    [],
 }
 
+// Friendly "what Layla does" phrasing for the in-scene chips (instead of
+// the raw tool function-names).
+const TOOL_LABELS: Record<string, string> = {
+  get_context:            'Knows your clinic',
+  find_service:           'Finds the right service',
+  lookup_faq:             'Answers FAQs',
+  give_directions:        'Gives directions',
+  lookup_availability:    'Checks availability',
+  create_hold:            'Holds the slot',
+  confirm_booking:        'Books the appointment',
+  send_link_sms:          'Texts a link',
+  lookup_my_appointments: 'Finds your appointment',
+  reschedule_appointment: 'Reschedules',
+  cancel_appointment:     'Cancels',
+  pre_visit_instructions: 'Sends prep instructions',
+  confirm_appointment:    'Confirms appointments',
+  take_message:           'Takes messages',
+  transfer_to_human:      'Transfers to staff',
+  post_call_summary_email:'Emails a recap',
+}
+
 const ENTER: Record<SceneKey, string> = {
   ring:     'translateY(14px) scale(0.97)',
   talk:     'translateX(26px) scale(0.99)',
@@ -307,7 +328,7 @@ export function LaylaShowcase() {
         {/* Scene 5 — follow-up */}
         <div style={layer(inScene('followup'), 'followup')}>
           <p style={kicker}>After the call</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9, width: '100%', maxWidth: 460 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%', maxWidth: 460 }}>
             {[
               { Icon: Phone,          title: 'Reminder call placed', body: '“Hi, this is Layla confirming tomorrow’s visit.”' },
               { Icon: Voicemail,      title: 'Message taken',        body: 'Caller asked about financing — saved to the inbox.' },
@@ -385,7 +406,7 @@ function ToolChips({ tools, start, t }: { tools: string[]; start: number; t: num
         const on = t >= start + 500 + i * 650
         return (
           <span key={fn} style={{ ...toolChip, opacity: on ? 1 : 0, transform: on ? 'translateY(0)' : 'translateY(6px)' }}>
-            <span style={chipDot} />{fn}
+            <span style={chipDot} />{TOOL_LABELS[fn] ?? fn}
           </span>
         )
       })}
@@ -422,12 +443,12 @@ const callerBubble: React.CSSProperties = { ...bubbleBase, background: `linear-g
 const bookCard: React.CSSProperties = { width: '100%', maxWidth: 460, background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid rgba(2,195,154,0.22)', borderRadius: 18, padding: 18, textAlign: 'left', boxShadow: '0 18px 40px -24px rgba(11,32,39,0.4)' }
 const smsBubble: React.CSSProperties = { maxWidth: 420, background: '#fff', border: '1px solid rgba(2,195,154,0.22)', borderRadius: 18, borderBottomLeftRadius: 4, padding: '16px 18px', textAlign: 'left', boxShadow: '0 18px 40px -22px rgba(11,32,39,0.4)' }
 const crmChip: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 999, background: 'rgba(2,195,154,0.10)', border: '1px solid rgba(2,195,154,0.25)', fontSize: 13, fontWeight: 600, color: TEAL_DEEP }
-const followRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(2,195,154,0.18)', borderRadius: 13, transition: 'opacity .5s ease, transform .5s ease' }
+const followRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 13px', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(2,195,154,0.18)', borderRadius: 13, transition: 'opacity .5s ease, transform .5s ease' }
 const followIcon: React.CSSProperties = { width: 34, height: 34, borderRadius: 10, flexShrink: 0, display: 'grid', placeItems: 'center', color: TEAL_DEEP, background: 'rgba(2,195,154,0.12)' }
 const gridWrap: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 9, width: '100%', maxWidth: 600 }
 const toolCell: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 6px', background: 'rgba(255,255,255,0.75)', border: '1px solid rgba(11,32,39,0.08)', borderRadius: 13, textAlign: 'center', transition: 'opacity .35s ease, transform .35s ease, border-color .35s ease' }
-const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 7, marginTop: 20, minHeight: 26 }
-const toolChip: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, background: 'rgba(2,195,154,0.10)', border: '1px solid rgba(2,195,154,0.28)', color: TEAL_DEEP, fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)', transition: 'opacity .4s ease, transform .4s ease' }
+const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 7, marginTop: 14, minHeight: 26, maxWidth: 580 }
+const toolChip: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, background: 'rgba(2,195,154,0.10)', border: '1px solid rgba(2,195,154,0.28)', color: TEAL_DEEP, fontSize: 12.5, fontWeight: 600, transition: 'opacity .4s ease, transform .4s ease' }
 const chipDot: React.CSSProperties = { width: 5, height: 5, borderRadius: '50%', background: TEAL, flexShrink: 0 }
 const endOverlay: React.CSSProperties = { position: 'absolute', inset: 0, display: 'grid', placeItems: 'end center', paddingBottom: 18, pointerEvents: 'none', zIndex: 4 }
 const bigBtn: React.CSSProperties = { pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 999, border: 'none', cursor: 'pointer', color: '#fff', fontSize: 14, fontWeight: 600, background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})`, boxShadow: '0 10px 22px -10px rgba(2,128,144,0.7)' }
