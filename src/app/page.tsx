@@ -25,6 +25,7 @@ import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
 import { SmoothScrollProvider } from '@/components/marketing/smooth-scroll-provider'
 import { ParallaxGlow } from '@/components/marketing/parallax-glow'
+import { LaylaShowcase } from '@/components/marketing/layla-showcase'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — AI receptionist that books appointments, backed by a full CRM',
@@ -418,6 +419,26 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── See Layla in action ──────────────────────────────── */}
+        <section className="bg-[#F5EFE1] px-6 pt-14 pb-6 sm:pt-20">
+          <AnimatedSection className="mx-auto max-w-5xl text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-3 py-1">
+              <PhoneCall className="h-3.5 w-3.5 text-[#14241d]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#14241d]">See Layla in action</span>
+            </div>
+            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+              Watch Layla take a call — and book it
+            </h2>
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-500">
+              A real booking flow, start to finish: she answers, checks live availability, confirms on
+              the line, and texts the details. Press play for sound.
+            </p>
+          </AnimatedSection>
+          <div className="mx-auto max-w-5xl">
+            <LaylaShowcase />
           </div>
         </section>
 
