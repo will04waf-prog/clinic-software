@@ -1,0 +1,22 @@
+{
+  "projectId": "b60be31f-7606-4e8a-a890-e8e9cf7ffd0b",
+  "shape": "package",
+  "pkg": "@tarhunna/ui",
+  "globalName": "Tarhunna",
+  "srcDir": ".design-sync/synth-pkg/src",
+  "cssEntry": ".design-sync/synth-pkg/dist/styles.css",
+  "tsconfig": ".design-sync/synth-pkg/tsconfig.json",
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "primaryStory": "ConfirmAction",
+      "viewport": "640x480"
+    },
+    "DropdownMenu": {
+      "cardMode": "single",
+      "primaryStory": "RowActions",
+      "viewport": "480x420"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
