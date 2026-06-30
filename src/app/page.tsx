@@ -386,29 +386,30 @@ export default function LandingPage() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/15 px-4 py-1.5">
               <PhoneCall className="h-3.5 w-3.5 text-[#14241d]" />
               <span className="text-xs font-semibold uppercase tracking-wider text-[#14241d]">
-                Meet Layla — voice + SMS + CRM in one
+                Your front desk, answered — even when no one&apos;s there
               </span>
             </div>
             <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              An AI receptionist that actually <span className="text-[#14241d]">books appointments</span>.
+              Never lose another patient to a <span className="text-[#14241d]">missed call</span>.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
-              Layla picks up the phone, books appointments, texts the link, and writes back to inbound SMS in your voice —
-              so leads stop slipping while your front desk is on another call.
+              Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
+              confirmation — so a slammed front desk stops costing you booked revenue. Every call, text, and
+              booking lands in the CRM underneath.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
-                href="/signup"
+                href="/book-demo"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
               >
-                Start 14-day free trial
+                Book a 20-min demo
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/book-demo"
+                href="/signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F5EFE1] px-6 py-3 text-base font-semibold text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
               >
-                Book a 20-min demo
+                Start 14-day free trial
               </Link>
             </div>
             <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6">
@@ -420,6 +421,20 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* ── Stakes strip ─────────────────────────────────────── */}
+        {/* PLACEHOLDER STATS: "1 in 4 calls" and the Botox lifetime-value
+            framing are placeholders — replace with real, sourced figures
+            before relying on them publicly. */}
+        <section className="bg-[#F5EFE1] px-6 -mt-6 pb-2 sm:-mt-10">
+          <AnimatedSection className="mx-auto max-w-2xl text-center">
+            <p className="text-sm text-gray-500 leading-relaxed sm:text-base">
+              The average med spa misses <span className="font-medium text-[#14241d]">1 in 4 calls</span>.
+              At a Botox patient&apos;s lifetime value, recovering one missed call a week pays for Tarhunna
+              many times over.
+            </p>
+          </AnimatedSection>
         </section>
 
         {/* ── See Layla in action ──────────────────────────────── */}
