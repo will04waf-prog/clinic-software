@@ -28,27 +28,27 @@ const CREAM = '#F5EFE1'
 const VO_AUDIO_SRC = '/layla-vo.mp3'
 const MUSIC_AUDIO_SRC: string | null = null
 
-// Scene boundaries (ms) aligned to the ElevenLabs (Sarah) narration —
+// Scene boundaries (ms) aligned to the ElevenLabs (Jessica) narration —
 // cumulative per-line durations of public/layla-vo.mp3 (incl. 0.35s
-// inter-line pads): 6619 / 13563 / 20971 / 25454 / 30726.
+// inter-line pads): 5458 / 11984 / 19346 / 23457 / 29426.
 const T = {
-  ring:  [0,     6619],
-  talk:  [6619,  13563],
-  book:  [13563, 20971],
-  text:  [20971, 25454],
-  outro: [25454, 30726],
+  ring:  [0,     5458],
+  talk:  [5458,  11984],
+  book:  [11984, 19346],
+  text:  [19346, 23457],
+  outro: [23457, 29426],
 } as const
-const TOTAL = 30726
+const TOTAL = 29426
 
 type SceneKey = keyof typeof T
 type Mode = 'idle' | 'playing' | 'paused' | 'ended' | 'frozen'
 
 type Line = { who: 'caller' | 'layla'; at: number; text: string }
 const LINES: Line[] = [
-  { who: 'caller', at: 7100,  text: 'Hi — do you have anything for Botox this Thursday?' },
-  { who: 'layla',  at: 8800,  text: "We do. I've got 2:30 or 4:15 with Dr. Rivera — which works better?" },
-  { who: 'caller', at: 10500, text: '2:30 is perfect.' },
-  { who: 'layla',  at: 11800, text: "Great — I'm booking that now and I'll text you the details." },
+  { who: 'caller', at: 5900,  text: 'Hi — do you have anything for Botox this Thursday?' },
+  { who: 'layla',  at: 7500,  text: "We do. I've got 2:30 or 4:15 with Dr. Rivera — which works better?" },
+  { who: 'caller', at: 9100,  text: '2:30 is perfect.' },
+  { who: 'layla',  at: 10300, text: "Great — I'm booking that now and I'll text you the details." },
 ]
 
 const SLOTS = ['10:00', '11:30', '2:30', '4:15']
@@ -133,7 +133,7 @@ export function LaylaShowcase() {
 
   const inScene = (k: SceneKey) => t >= T[k][0] && t < T[k][1]
   const progress = Math.min(t / TOTAL, 1)
-  const callSecs = Math.min(Math.floor(t / 1000), 30)
+  const callSecs = Math.min(Math.floor(t / 1000), 29)
   const mmss = `0:${String(callSecs).padStart(2, '0')}`
   const bookEl = t - T.book[0]
   const bookPhase = bookEl < 1800 ? 'checking' : bookEl < 3600 ? 'holding' : 'booked'
