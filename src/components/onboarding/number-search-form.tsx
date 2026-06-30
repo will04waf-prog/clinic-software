@@ -23,10 +23,8 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  searchNumbersAction,
-  type NumberSearchResult,
-} from '@/app/onboarding/phone-number/actions'
+import { searchNumbersAction } from '@/app/onboarding/phone-number/actions'
+import { type NumberSearchResult } from '@/app/onboarding/phone-number/steps'
 
 interface NumberSearchFormProps {
   onSelect: (e164: string) => void

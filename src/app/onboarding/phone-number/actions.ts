@@ -48,44 +48,15 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { isDenied, OWNER_ONLY, requireRole } from '@/lib/auth/roles'
 import { getAppUrl } from '@/lib/voice-agent/app-url'
-
-// ── Step taxonomy ─────────────────────────────────────────────────
-//
-// Canonical step names match the strings the M1 migration comments
-// blessed and that M5's runner will dispatch on. These are also the
-// strings stored in provisioning_jobs.step.
-//
-// Ordering matters: the UI's stepper renders rows in this order and
-// the runner advances strictly in this order (vapi register requires
-// the twilio buy step to have written twilio_phone_sid back to the
-// org; a2p brand needs no upstream but is grouped after vapi so the
-// PSTN side is online first; campaign requires a brand SID).
-export const PROVISIONING_STEPS = [
-  'buy_twilio_number',
-  'register_vapi_phone',
-  'register_a2p_brand',
-  'register_a2p_campaign',
-] as const
-
-export type ProvisioningStep = (typeof PROVISIONING_STEPS)[number]
-export type ProvisioningJobStatus = 'pending' | 'in_progress' | 'succeeded' | 'failed'
-
-export interface NumberSearchResult {
-  e164:          string
-  friendly_name: string
-  region?:       string
-  locality?:     string
-  // Twilio's capabilities map varies — keep loose to avoid TS friction
-  // when the upstream adds new capability flags.
-  capabilities?: Record<string, boolean>
-}
-
-export interface ProvisioningStepRow {
-  step:       ProvisioningStep
-  status:     ProvisioningJobStatus | 'not_started'
-  last_error: string | null
-  updated_at: string | null
-}
+// Step taxonomy + the plain types/interfaces live in ./steps.ts —
+// a 'use server' file may only export async functions, so the
+// PROVISIONING_STEPS const (a runtime value) cannot be exported here.
+import {
+  PROVISIONING_STEPS,
+  type ProvisioningJobStatus,
+  type NumberSearchResult,
+  type ProvisioningStepRow,
+} from './steps'
 
 // ── Input validation ──────────────────────────────────────────────
 //

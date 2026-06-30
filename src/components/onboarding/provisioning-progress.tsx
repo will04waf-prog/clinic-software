@@ -31,12 +31,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { getProvisioningStatusAction } from '@/app/onboarding/phone-number/actions'
 import {
-  getProvisioningStatusAction,
   PROVISIONING_STEPS,
   type ProvisioningStep,
   type ProvisioningStepRow,
-} from '@/app/onboarding/phone-number/actions'
+} from '@/app/onboarding/phone-number/steps'
 
 interface ProvisioningProgressProps {
   onDone:   () => void
