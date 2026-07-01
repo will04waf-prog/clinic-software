@@ -392,9 +392,7 @@ export default function LandingPage() {
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
               Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
-              confirmation — so a slammed front desk stops costing you booked revenue. At a Botox patient&apos;s
-              lifetime value, recovering even one missed call a week pays for Tarhunna many times over. Every
-              call, text, and booking lands in the CRM underneath.
+              confirmation — so a slammed front desk never costs you another booked patient.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
