@@ -47,10 +47,10 @@ const MODULE: Record<SceneKey, string> = {
 }
 
 const KPIS = [
-  { label: 'New leads',      value: 38,   suffix: '',   Icon: Users },
-  { label: 'Booked',         value: 27,   suffix: '',   Icon: CalendarCheck },
-  { label: 'Calls recovered',value: 12,   suffix: '',   Icon: Phone },
-  { label: 'Revenue',        value: 18.4, suffix: 'k',  prefix: '$', Icon: TrendingUp },
+  { label: 'New leads',      value: 12,  suffix: '',   Icon: Users },
+  { label: 'Booked',         value: 8,   suffix: '',   Icon: CalendarCheck },
+  { label: 'Calls recovered',value: 5,   suffix: '',   Icon: Phone },
+  { label: 'Revenue',        value: 9.4, suffix: 'k',  prefix: '$', Icon: TrendingUp },
 ]
 const BARS = [34, 48, 41, 62, 55, 73, 68]
 
@@ -170,7 +170,6 @@ export function SoftwareShowcase() {
 
   // sub-scene progress helpers
   const sub = (k: SceneKey) => Math.max(0, t - T[k][0])
-  const kpiP = Math.min(sub('dash') / 1400, 1)            // 0..1 count-up
   const pipeMoved = sub('pipe') > 2600                     // Emma moves Contacted -> Consult
   const twinApproved = sub('twin') > 4600
 
@@ -197,8 +196,7 @@ export function SoftwareShowcase() {
           <Panel title="Dashboard" Icon={LayoutDashboard} isMobile={isMobile}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
               {KPIS.map((k, i) => {
-                const shown = k.value <= 50 ? Math.round(k.value * kpiP) : (k.value * kpiP)
-                const val = k.value < 50 && k.suffix === 'k' ? (k.value * kpiP).toFixed(1) : String(Math.round(shown))
+                const val = k.suffix === 'k' ? k.value.toFixed(1) : String(k.value)
                 return (
                   <div key={k.label} style={{ ...kpiTile, animation: `rise .5s ease ${i * 0.08}s both` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7c8a84', fontSize: 11.5, fontWeight: 600 }}><k.Icon size={14} aria-hidden />{k.label}</div>
@@ -211,7 +209,7 @@ export function SoftwareShowcase() {
               <div style={{ fontSize: 11.5, fontWeight: 600, color: '#7c8a84', marginBottom: 8 }}>Bookings · last 7 days</div>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7, height: 56 }}>
                 {BARS.map((h, i) => (
-                  <div key={i} style={{ flex: 1, height: `${h * Math.min(sub('dash') / 1200, 1)}%`, minHeight: 4, borderRadius: 5, background: i === BARS.length - 1 ? `linear-gradient(${TEAL}, ${TEAL_DEEP})` : 'rgba(2,128,144,0.28)', transition: 'height .5s ease' }} />
+                  <div key={i} style={{ flex: 1, height: `${h}%`, minHeight: 4, borderRadius: 5, background: i === BARS.length - 1 ? `linear-gradient(${TEAL}, ${TEAL_DEEP})` : 'rgba(2,128,144,0.28)', transition: 'height .5s ease' }} />
                 ))}
               </div>
             </div>

@@ -239,8 +239,12 @@ const FAQ_ITEMS = [
     a: 'Layla is grounded in three things you author: your service catalog, your providers\' weekly hours and overrides, and your own FAQ corpus that she reads verbatim. She refuses to quote prices, give post-care or medical advice, or accept a dictated phone number as identity — appointment lookups are gated on the caller\'s verified caller-ID.',
   },
   {
+    q: 'Will patients be able to tell Layla is AI?',
+    a: "Layla answers in a natural voice on your own clinic's phone number — no 'press 1' menus, no robocall stiffness, no shared shortcode. She greets, listens, asks real intake questions, and books on the line the way a trained front-desk hire would. If a call needs a human, she transfers to someone you nominate. Most callers experience it as a smooth front desk, not a robot.",
+  },
+  {
     q: 'Is Tarhunna HIPAA compliant?',
-    a: 'Business Associate Agreements are in place with every infrastructure provider behind the platform, and an in-app BAA attestation is required from the clinic owner before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest. We do not market the product as "HIPAA compliant" as a checkbox — compliance is shared between your clinic and the platform.',
+    a: "Business Associate Agreements are in place with every infrastructure provider behind the platform, data is encrypted at rest, and an in-app BAA attestation is required from the clinic owner before the voice agent will accept inbound or place outbound calls. Compliance is shared between your clinic and the platform — so rather than treating 'HIPAA compliant' as a marketing checkbox, we give you the controls and agreements that real compliance depends on.",
   },
   {
     q: 'Does Tarhunna replace my EMR?',
@@ -383,19 +387,14 @@ export default function LandingPage() {
                 An AI receptionist that answers every call, backed by a full CRM.
               </p>
             </div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/15 px-4 py-1.5">
-              <PhoneCall className="h-3.5 w-3.5 text-[#14241d]" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#14241d]">
-                Your front desk, answered — even when no one&apos;s there
-              </span>
-            </div>
             <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Never lose another patient to a <span className="text-[#14241d]">missed call</span>.
+              You&apos;re losing <span className="text-[#14241d]">1 in 4 calls</span> right now.
             </h1>
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
               Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
-              confirmation — so a slammed front desk stops costing you booked revenue. Every call, text, and
-              booking lands in the CRM underneath.
+              confirmation — so a slammed front desk stops costing you booked revenue. At a Botox patient&apos;s
+              lifetime value, recovering even one missed call a week pays for Tarhunna many times over. Every
+              call, text, and booking lands in the CRM underneath.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -421,20 +420,6 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-        </section>
-
-        {/* ── Stakes strip ─────────────────────────────────────── */}
-        {/* PLACEHOLDER STATS: "1 in 4 calls" and the Botox lifetime-value
-            framing are placeholders — replace with real, sourced figures
-            before relying on them publicly. */}
-        <section className="bg-[#F5EFE1] px-6 -mt-6 pb-2 sm:-mt-10">
-          <AnimatedSection className="mx-auto max-w-2xl text-center">
-            <p className="text-sm text-gray-500 leading-relaxed sm:text-base">
-              The average med spa misses <span className="font-medium text-[#14241d]">1 in 4 calls</span>.
-              At a Botox patient&apos;s lifetime value, recovering one missed call a week pays for Tarhunna
-              many times over.
-            </p>
-          </AnimatedSection>
         </section>
 
         {/* ── See Layla in action ──────────────────────────────── */}
