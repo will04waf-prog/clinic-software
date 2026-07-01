@@ -55,6 +55,11 @@ export async function GET(req: NextRequest) {
   // cheapest of the three because it filters on the partial index
   // ai_drafts_org_pending_idx (state='pending').
   const nowIso = new Date().toISOString()
+  // Bound the inbound scan (audit H1): this feed only powers the
+  // per-contact has_unread badge, so a recent window + cap is enough.
+  // The query was previously unbounded — it transferred and in-memory
+  // sorted the org's ENTIRE inbound history on every 20s inbox poll.
+  const inboundSince = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString()
   const [
     { data: contacts, error },
     { data: inbound, error: inboundError },
@@ -66,7 +71,9 @@ export async function GET(req: NextRequest) {
       .select('contact_id, created_at')
       .eq('organization_id', profile.organization_id)
       .eq('direction', 'inbound')
-      .order('created_at', { ascending: false }),
+      .gte('created_at', inboundSince)
+      .order('created_at', { ascending: false })
+      .limit(5000),
     supabase
       .from('ai_drafts')
       .select('contact_id')

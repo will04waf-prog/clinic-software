@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/resend'
+import { withCronLock } from '@/lib/cron-locks'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://tarhunna.net'
 
@@ -104,20 +104,38 @@ async function sendBatch(
 
       if (!owner?.email) continue
 
+      // Claim the reminder atomically (audit M4): only the tick that flips
+      // the sent-at column from NULL wins. A racing/overlapping tick's
+      // conditional UPDATE matches 0 rows and skips, so the email is sent
+      // exactly once — replacing the old "SELECT null → send → stamp"
+      // sequence that let two ticks both send.
+      const claimIso = new Date().toISOString()
+      const { data: claimed } = await supabaseAdmin
+        .from('organizations')
+        .update({ [sentAtColumn]: claimIso, updated_at: claimIso })
+        .eq('id', org.id)
+        .is(sentAtColumn, null)
+        .select('id')
+        .maybeSingle()
+      if (!claimed) continue
+
       const firstName = (owner.full_name ?? '').split(' ')[0] || 'there'
       const { subject, html } = buildEmail(firstName, org.name)
 
-      // TODO(idempotency): random key — no retry dedup yet for this site.
-      // Trial reminders dedup via per-org `trial_reminder_*_sent_at` columns,
-      // so a retry-from-the-same-tick would already be blocked at the SELECT.
-      // The key here only protects against accidental duplicate calls within
-      // Resend's 24h dedup window.
-      await sendEmail({ to: owner.email, subject, html, idempotencyKey: randomUUID() })
-
-      await supabaseAdmin
-        .from('organizations')
-        .update({ [sentAtColumn]: new Date().toISOString(), updated_at: new Date().toISOString() })
-        .eq('id', org.id)
+      try {
+        // Deterministic key: any accidental re-send inside Resend's 24h
+        // dedup window collapses instead of double-emailing the owner.
+        await sendEmail({ to: owner.email, subject, html, idempotencyKey: `trial:${sentAtColumn}:${org.id}` })
+      } catch (sendErr) {
+        // Release the claim so a later tick retries the send; the
+        // deterministic key keeps that retry from duplicating.
+        await supabaseAdmin
+          .from('organizations')
+          .update({ [sentAtColumn]: null })
+          .eq('id', org.id)
+          .eq(sentAtColumn, claimIso)
+        throw sendErr
+      }
 
     } catch (err: any) {
       console.error(`[trial-reminders] Failed for org ${org.id} (${sentAtColumn}):`, err.message)
@@ -128,6 +146,10 @@ async function sendBatch(
 // ── Main export ───────────────────────────────────────────────
 
 export async function sendTrialReminders() {
+  // Audit M4: this runs on the every-minute /api/cron. Serialize it with a
+  // cron lock so two overlapping ticks can't both send (the per-org CAS in
+  // sendBatch is the durable guard; the lock is the cheap stopgap).
+  return withCronLock('sendTrialReminders', 90, async () => {
   const now     = new Date()
   const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   const in3Days = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
@@ -174,4 +196,5 @@ export async function sendTrialReminders() {
     sendBatch(orgs1d     ?? [], email1d,       'trial_reminder_1d_sent_at'),
     sendBatch(orgsExpired ?? [], emailExpired, 'trial_expired_email_sent_at'),
   ])
+  })
 }

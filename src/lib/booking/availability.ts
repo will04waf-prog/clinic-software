@@ -53,7 +53,6 @@ import {
   parseHHMM,
   unionIntervals,
   weekdayForLocalDate,
-  type LocalParts,
   type MinuteInterval,
 } from './time-utils'
 
@@ -299,8 +298,3 @@ function makeIntervalFromHHMM(start: string | null, end: string | null): MinuteI
   if (e <= s) return null
   return { startMin: s, endMin: e }
 }
-
-// Re-export the LocalParts shape so callers (tests, future
-// admin UI previews) can build inputs without reaching into
-// time-utils directly.
-export type { LocalParts }

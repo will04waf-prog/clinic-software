@@ -1,0 +1,28 @@
+name: CI
+
+# Audit H2 — the repo previously had no automated gate beyond `next build`,
+# and every deploy is push-to-main → prod. This runs typecheck + lint + the
+# unit suite on every push and PR so booking / auth / SMS regressions fail
+# here instead of in production.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # NOTE: `npm run lint` is intentionally NOT a gate yet — the repo has
+      # ~7k pre-existing eslint errors (mostly no-explicit-any, plus the
+      # vendored ds-bundle/). Add it here once that debt is cleaned up so a
+      # red gate reflects new problems, not old ones.
