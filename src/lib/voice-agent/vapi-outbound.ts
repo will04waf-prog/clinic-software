@@ -42,7 +42,7 @@ export interface VapiOutboundConfig {
   phoneNumberId: string
 }
 
-export type VapiCallResult = { provider_id: string; status: string } | null
+export type VapiCallResult = { provider_id: string | null; status: string } | null
 
 export interface PlaceOutboundCallArgs {
   /** Vapi assistant id for the reminder bot. */
@@ -160,8 +160,14 @@ export async function placeOutboundCall(args: PlaceOutboundCallArgs): Promise<Va
 
   const json = await res.json().catch(() => ({})) as { id?: string; status?: string }
   if (!json.id) {
-    console.error('[vapi-outbound] Vapi 2xx but response missing id')
-    throw new Error('vapi_outbound_missing_id')
+    // Audit L2: the call was ALREADY accepted (2xx) — Vapi is dialing the
+    // patient. Throwing here left the cron row 'pending', which (with the
+    // non-overlapping hourly windows) strands the reminder: it reads as
+    // un-sent in the DB even though the patient was called. Return an
+    // "accepted, no id" result so the caller marks the row terminal
+    // (sent, null call_sid) instead of re-queuing / dropping it.
+    console.error('[vapi-outbound] Vapi 2xx but response missing id — treating as accepted')
+    return { provider_id: null, status: 'accepted_no_id' }
   }
 
   return {

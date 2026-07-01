@@ -28,6 +28,7 @@ import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-ag
 import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { notifyOwnerOfBooking } from '@/lib/booking/owner-notification'
+import { assertSlotBookable } from '@/lib/booking/assert-slot-bookable'
 
 export async function POST(req: Request) {
   if (!verifyVapiSignature(req)) {
@@ -173,6 +174,28 @@ export async function POST(req: Request) {
     }
     providerForUpdate = newProviderId
   }
+
+  // ── Availability re-check (audit M2 + M3) ──
+  // The tool only checked new_slot_start_utc is a future ISO instant.
+  // Ask the same engine the picker uses whether this exact instant is
+  // offerable, so the LLM can't be coaxed into booking at 3 AM, on a
+  // closed day, or inside the provider's configured buffer.
+  if (providerForUpdate && existing.service_id) {
+    const bookable = await assertSlotBookable(supabaseAdmin, {
+      organizationId: org.id,
+      providerId: providerForUpdate,
+      serviceId: existing.service_id,
+      startUtc: newStartDate,
+      excludeConsultationId: consultationId,
+    })
+    if (!bookable.ok) {
+      return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+        ok: true,
+        output: { rescheduled: false, reason: 'slot_unavailable' },
+      }))
+    }
+  }
+
   const nowIso = new Date().toISOString()
   // Concurrent-update guard: two near-simultaneous reschedule calls
   // for the same consultation (Vapi tool retry, double-click in a

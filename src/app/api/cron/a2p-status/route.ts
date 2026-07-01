@@ -38,6 +38,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { requireCronAuth } from '@/lib/cron/require-cron-auth'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { withCronLock } from '@/lib/cron-locks'
 import { getBrandStatus } from '@/lib/telephony/a2p'
@@ -248,13 +249,8 @@ export async function pollA2PStatuses(): Promise<JobOutcome> {
 }
 
 export async function POST(request: Request) {
-  const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = request.headers.get('authorization')
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const result = await pollA2PStatuses()
   return NextResponse.json({

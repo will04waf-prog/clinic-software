@@ -31,6 +31,7 @@ import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { HOLD_TTL_MS } from '@/lib/booking/types'
+import { assertSlotBookable } from '@/lib/booking/assert-slot-bookable'
 
 const PHONE_RE = /^[\d\s().+\-]{7,32}$/
 const NAME_RE  = /^[\p{L}\p{M}\s.'\-]{1,80}$/u
@@ -179,6 +180,23 @@ export async function holdBookingInternal(rawInput: unknown): Promise<HoldResult
     return { ok: false, reason: 'provider_cannot_perform_service' }
   }
   const durationMin = serviceRes.data.duration_min as number
+
+  // ── Availability re-check (audit M3) ──
+  // The EXCLUDE constraint blocks raw overlap but not the provider's
+  // buffer or availability rules, so a hand-crafted hold with a slot the
+  // picker never offered could land off-hours or exactly adjacent to
+  // another visit. Re-run the same engine the picker uses. (The public
+  // flow already showed a valid slot; this closes hand-crafted requests
+  // and a slot taken between offer and hold.)
+  const bookable = await assertSlotBookable(supabaseAdmin, {
+    organizationId: orgId,
+    providerId: input.providerId,
+    serviceId: input.serviceId,
+    startUtc: slotStartDate,
+  })
+  if (!bookable.ok) {
+    return { ok: false, reason: bookable.reason === 'lookup_failed' ? 'invalid_slot' : 'slot_taken' }
+  }
 
   // ── Dedup contact by phone OR email within the org. ──
   // Abandoned holds leave a contact row behind on purpose (the clinic

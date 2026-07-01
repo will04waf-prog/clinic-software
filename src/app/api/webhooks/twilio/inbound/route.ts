@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   const bodyLower = bodyRaw.trim().toLowerCase()
 
   if (!bodyRaw.trim()) {
-    console.info(`[twilio-inbound] empty body from=${fromRaw}`)
+    console.info(`[twilio-inbound] empty body from_tail=${(fromRaw ?? '').replace(/\D/g, '').slice(-4)}`)
     return emptyTwimlResponse()
   }
 
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   }
   const fromE164 = normalizePhone(fromRaw)
   if (!fromE164) {
-    console.warn(`[twilio-inbound] unparseable From="${fromRaw}" — dropping`)
+    console.warn(`[twilio-inbound] unparseable From_tail="${(fromRaw ?? '').replace(/\D/g, '').slice(-4)}" — dropping`)
     return emptyTwimlResponse()
   }
   const last10 = fromE164.replace(/\D/g, '').slice(-10)
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   }
 
   if (!orgId) {
-    console.warn(`[twilio-inbound] no org found for from=${fromE164} to=${toE164} — dropping`)
+    console.warn(`[twilio-inbound] no org found for from_tail=${(fromE164 ?? '').replace(/\D/g, '').slice(-4)} to=${toE164} — dropping`)
     return emptyTwimlResponse()
   }
 
@@ -125,10 +125,10 @@ export async function POST(request: Request) {
     )
     if (rpcError) {
       // Return 500 so Twilio retries on genuine DB failures.
-      console.error(`[twilio-inbound] opt RPC error from=${fromRaw} action=${optAction}:`, rpcError.message)
+      console.error(`[twilio-inbound] opt RPC error from_tail=${(fromRaw ?? '').replace(/\D/g, '').slice(-4)} action=${optAction}:`, rpcError.message)
       return NextResponse.json({ error: rpcError.message }, { status: 500 })
     }
-    console.info(`[twilio-inbound] opt action=${optAction} from=${fromRaw}`)
+    console.info(`[twilio-inbound] opt action=${optAction} from_tail=${(fromRaw ?? '').replace(/\D/g, '').slice(-4)}`)
   }
 
   // ── Dedup by MessageSid ────────────────────────────────────
@@ -203,12 +203,12 @@ export async function POST(request: Request) {
       .single()
 
     if (createError || !created) {
-      console.error(`[twilio-inbound] auto-create contact failed from=${fromE164}:`, createError?.message)
+      console.error(`[twilio-inbound] auto-create contact failed from_tail=${(fromE164 ?? '').replace(/\D/g, '').slice(-4)}:`, createError?.message)
       return NextResponse.json({ error: createError?.message ?? 'contact_create_failed' }, { status: 500 })
     }
     contactId = created.id
     createdContact = true
-    console.info(`[twilio-inbound] auto-created contact ${contactId} org=${orgId} from=${fromE164}`)
+    console.info(`[twilio-inbound] auto-created contact ${contactId} org=${orgId} from_tail=${(fromE164 ?? '').replace(/\D/g, '').slice(-4)}`)
   }
 
   // If we just created the contact AND the inbound is a STOP, the cross-org
@@ -274,7 +274,7 @@ export async function POST(request: Request) {
     },
   })
 
-  console.info(`[twilio-inbound] stored inbound msg org=${orgId} contact=${contactId} from=${fromE164}`)
+  console.info(`[twilio-inbound] stored inbound msg org=${orgId} contact=${contactId} from_tail=${(fromE164 ?? '').replace(/\D/g, '').slice(-4)}`)
 
   // AI Front-Desk Twin: fire-and-forget auto-draft for this inbound.
   // We never block the Twilio webhook on AI generation. The draft

@@ -39,17 +39,13 @@
  */
 
 import { NextResponse } from 'next/server'
+import { requireCronAuth } from '@/lib/cron/require-cron-auth'
 import { withCronLock } from '@/lib/cron-locks'
 import { reportUsageToStripe } from '@/lib/billing/metered-usage'
 
 export async function POST(request: Request) {
-  const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = request.headers.get('authorization')
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   // TTL 600s. The actual wall time is dominated by the number of
   // Stripe round trips (one per usage_event row, see metered-usage.ts
