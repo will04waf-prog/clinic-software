@@ -12,6 +12,7 @@ import { ScheduleRail } from '@/components/dashboard/morning/schedule-rail'
 import { WeekStrip } from '@/components/dashboard/morning/week-strip'
 import { AiTwinTile } from '@/components/dashboard/morning/ai-twin-tile'
 import { AnalyticsSections } from '@/components/dashboard/analytics/analytics-sections'
+import { SetupGuide } from '@/components/dashboard/setup-guide'
 import { PhoneNumberBanner } from '@/components/onboarding/phone-number-banner'
 import type { MorningResponse } from '@/components/dashboard/morning/types'
 
@@ -184,6 +185,10 @@ export default function DashboardPage() {
               org has vapi_phone_number_id IS NULL. Hidden for staff
               and for owners who've already provisioned. */}
           <PhoneNumberBanner shouldShow={showPhoneBanner} />
+          {/* Tier-aware activation guide. Self-fetches its own status and
+              renders only while setup is incomplete, independent of the
+              morning-briefing load below. */}
+          <SetupGuide />
           {loading && !data ? (
             <DashboardSkeleton />
           ) : error ? (
