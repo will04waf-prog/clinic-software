@@ -3,7 +3,7 @@
 // ============================================================
 
 export type Plan = 'trial' | 'starter' | 'professional' | 'scale' | 'pro' | 'canceled'
-export type PlanStatus = 'active' | 'past_due' | 'canceled'
+export type PlanStatus = 'active' | 'trial' | 'trial_expired' | 'past_due' | 'canceled' | 'suspended'
 export type UserRole = 'owner' | 'admin' | 'staff'
 export type ContactStatus = 'lead' | 'patient' | 'inactive'
 export type ConsultationStatus = 'hold' | 'scheduled' | 'confirmed' | 'completed' | 'no_show' | 'canceled' | 'rescheduled'

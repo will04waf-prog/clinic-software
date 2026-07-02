@@ -53,9 +53,14 @@ export async function POST(req: NextRequest) {
       // 2. Create organization
       const slug = slugify(clinic_name) + '-' + userId.slice(0, 6)
       const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      // plan_status MUST be 'trial' — the trial banner, the 7/3/1-day
+      // reminder emails, the expire-trials cron, the proxy lockout, and
+      // the Scale-equivalent-during-trial rule (org-tier.ts) all key on
+      // it. The schema default was 'active', which left every self-serve
+      // signup on un-expiring Professional access with no trial UX.
       const { data: org, error: orgError } = await supabaseAdmin
         .from('organizations')
-        .insert({ name: clinic_name, slug, trial_ends_at: trialEndsAt })
+        .insert({ name: clinic_name, slug, trial_ends_at: trialEndsAt, plan: 'trial', plan_status: 'trial' })
         .select('id')
         .single()
 

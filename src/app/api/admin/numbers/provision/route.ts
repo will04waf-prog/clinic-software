@@ -50,6 +50,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireRole, OWNER_ONLY, isDenied } from '@/lib/auth/roles'
+import { blockedReason } from '@/lib/billing/org-access'
 
 const bodySchema = z.object({
   // E.164 — same regex used elsewhere in the codebase for phone
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
   // round-trips for a column-by-column read that owner-RLS allows.
   const { data: org, error: orgErr } = await supabaseAdmin
     .from('organizations')
-    .select('id, name, call_agent_assistant_id, vapi_phone_number_id, twilio_phone_sid')
+    .select('id, name, call_agent_assistant_id, vapi_phone_number_id, twilio_phone_sid, plan_status, trial_ends_at')
     .eq('id', orgId)
     .single()
 
@@ -100,6 +101,17 @@ export async function POST(req: NextRequest) {
     // But surface 500 over 404 so the dashboard alerts on the unexpected case.
     console.error('[admin/numbers/provision] org lookup failed', { orgId, err: orgErr?.message })
     return NextResponse.json({ error: 'internal_error' }, { status: 500 })
+  }
+
+  // Plan lockout: buying a number commits the platform to recurring
+  // Twilio rent. The proxy exempts /onboarding so blocked owners can
+  // still navigate, which means this route must gate itself.
+  const lock = blockedReason(org.plan_status, org.trial_ends_at)
+  if (lock) {
+    return NextResponse.json(
+      { error: 'plan_locked', message: `Your plan is ${lock.replace('_', ' ')} — subscribe to provision a phone number.` },
+      { status: 403 },
+    )
   }
 
   if (!org.call_agent_assistant_id) {

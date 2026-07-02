@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { blockedReason } from '@/lib/billing/org-access'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -56,9 +57,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // ── Trial expiration enforcement ───────────────────────────
+  // ── Plan lockout enforcement (trial_expired / canceled / suspended) ──
   // Only check for logged-in users on protected routes.
-  // /settings and /billing must stay accessible so they can subscribe.
+  // /settings and /billing must stay accessible so they can (re)subscribe.
   if (user && !isPublic && pathname !== '/' &&
       !pathname.startsWith('/settings') &&
       !pathname.startsWith('/billing') &&
@@ -72,13 +73,7 @@ export async function proxy(request: NextRequest) {
       .single()
 
     const org = profileData?.organization as any
-    const trialExpired =
-      org?.plan_status === 'trial_expired' ||
-      (org?.plan_status === 'trial' &&
-       org?.trial_ends_at &&
-       new Date(org.trial_ends_at) < new Date())
-
-    if (trialExpired) {
+    if (blockedReason(org?.plan_status, org?.trial_ends_at)) {
       return NextResponse.redirect(new URL('/settings', request.url))
     }
   }

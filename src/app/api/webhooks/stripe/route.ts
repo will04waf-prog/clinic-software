@@ -127,6 +127,15 @@ export async function POST(req: NextRequest) {
         const tier    = priceId ? tierFromPriceId(priceId) : null
 
         const update: Record<string, unknown> = { plan_status: planStatus }
+        // Stripe-managed trials: when 'trialing' maps to plan_status
+        // 'trial', trial_ends_at must track the SUBSCRIPTION's trial end.
+        // Otherwise the org keeps its signup-era trial_ends_at (long
+        // past) and blockedReason()/expire-trials would treat a live
+        // subscriber as trial_expired — locking them out and silencing
+        // their reminder/automation sends.
+        if (planStatus === 'trial' && sub.trial_end) {
+          update.trial_ends_at = new Date(sub.trial_end * 1000).toISOString()
+        }
         if (tier) {
           update.plan = tier
           // Tier-gating safety: any downgrade from Scale to a lower

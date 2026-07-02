@@ -61,6 +61,7 @@ import { requireCronAuth } from '@/lib/cron/require-cron-auth'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { withCronLock } from '@/lib/cron-locks'
 import { placeOutboundCall, isVapiOutboundConfigured } from '@/lib/voice-agent/vapi-outbound'
+import { blockedReason } from '@/lib/billing/org-access'
 
 interface ContactRow {
   id:             string
@@ -86,6 +87,8 @@ interface OrgRow {
   call_agent_baa_attested_at:        string | null
   call_agent_reminder_assistant_id:  string | null
   twilio_phone_number:               string | null
+  plan_status:                       string | null
+  trial_ends_at:                     string | null
   // M1: per-org Vapi phone-number resource id. Replaces the global
   // VAPI_PHONE_NUMBER_ID env var that gated the whole platform.
   // Orgs where this is null are still provisioning — counted as
@@ -130,7 +133,7 @@ export async function sendVoiceReminders(): Promise<JobOutcome> {
         voice_reminder_enabled, voice_reminder_lead_hours,
         call_agent_enabled, call_agent_baa_attested_at,
         call_agent_reminder_assistant_id, twilio_phone_number,
-        vapi_phone_number_id
+        vapi_phone_number_id, plan_status, trial_ends_at
       `)
       .eq('voice_reminder_enabled', true)
       .eq('call_agent_enabled', true)
@@ -141,7 +144,14 @@ export async function sendVoiceReminders(): Promise<JobOutcome> {
       return outcome
     }
 
-    const eligibleOrgs = (orgs ?? []) as OrgRow[]
+    // Plan lockout: outbound reminder calls are the most expensive send
+    // in the product (billable Vapi + Twilio minutes) — never place them
+    // for canceled/suspended/lapsed-trial orgs.
+    const eligibleOrgs = ((orgs ?? []) as OrgRow[]).filter((o) => {
+      const lock = blockedReason(o.plan_status, o.trial_ends_at)
+      if (lock) console.log(`[voice-reminders] org ${o.id} plan ${lock}, skipping`)
+      return !lock
+    })
 
     if (!isVapiOutboundConfigured()) {
       // Bail loudly. The cron should not silently no-op on missing

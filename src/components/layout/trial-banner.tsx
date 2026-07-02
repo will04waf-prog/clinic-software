@@ -6,7 +6,10 @@ interface TrialBannerProps {
 }
 
 export function TrialBanner({ planStatus, trialEndsAt }: TrialBannerProps) {
-  if (planStatus === 'active') return null
+  // Trial statuses only. canceled/suspended/past_due orgs get their
+  // state from the billing card on /settings — rendering trial copy
+  // ("Your trial ends in null days") for a churned subscriber is wrong.
+  if (planStatus !== 'trial' && planStatus !== 'trial_expired') return null
 
   const now = new Date()
   const endsAt = trialEndsAt ? new Date(trialEndsAt) : null

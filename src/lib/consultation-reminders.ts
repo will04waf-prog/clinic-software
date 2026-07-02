@@ -28,6 +28,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
+import { blockedReason } from '@/lib/billing/org-access'
 import { renderSmsForConsultation, type SmsMessageType } from '@/lib/sms-messages'
 import { withCronLock } from '@/lib/cron-locks'
 import { isFeatureAllowedForPlan, planToTier } from '@/lib/billing/enforce-tier'
@@ -42,7 +43,7 @@ export async function sendConsultationReminders() {
     const window2End    = new Date(now.getTime() +  3 * 3600_000).toISOString()
 
     const orgSelect = `
-      name, timezone, plan,
+      name, timezone, plan, plan_status, trial_ends_at,
       sms_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
       sms_template_reminder_24h, sms_template_reminder_2h,
       phone, email
@@ -161,6 +162,15 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
     console.log(
       `[reminders] tier ${tier} does not allow automated reminders, skipping org ${consultation.organization_id}`,
     )
+    return
+  }
+
+  // Plan lockout: canceled/suspended/lapsed-trial orgs stop consuming
+  // paid channels (Twilio SMS + Resend email) entirely. Covers both the
+  // SMS and email sends below in one place.
+  const lock = blockedReason(org.plan_status, org.trial_ends_at)
+  if (lock) {
+    console.log(`[reminders] org ${consultation.organization_id} plan ${lock}, skipping`)
     return
   }
 
@@ -304,6 +314,15 @@ export async function sendConsultationSms({
     sms_template_confirmation?: string | null
     sms_template_reminder_24h?: string | null
     sms_template_reminder_2h?: string | null
+    /**
+     * Plan lockout inputs. The recurring reminder cron passes these so
+     * canceled/suspended/lapsed-trial orgs stop incurring Twilio spend.
+     * Patient-triggered confirmation callers (confirm-impl, reschedule,
+     * manual booking) intentionally omit them — a one-off confirmation
+     * for a booking the org just accepted should still send.
+     */
+    plan_status?: string | null
+    trial_ends_at?: string | null
   }
   contact: {
     id: string
@@ -345,6 +364,13 @@ export async function sendConsultationSms({
   // ── Guard: org SMS master switch ──────────────────────────────
   if (!org.sms_enabled) {
     await logSms({ ...logBase, body: '', status: 'skipped', error_message: 'sms disabled for org' })
+    return
+  }
+
+  // ── Guard: plan lockout (only when the caller supplied the fields) ──
+  const lock = blockedReason(org.plan_status, org.trial_ends_at)
+  if (lock) {
+    await logSms({ ...logBase, body: '', status: 'skipped', error_message: `org plan ${lock}` })
     return
   }
 

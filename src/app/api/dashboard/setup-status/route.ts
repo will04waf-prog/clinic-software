@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cached } from '@/lib/route-cache'
-import { planToTier } from '@/lib/billing/enforce-tier'
-import { TIER_LIMITS, TIER_DISPLAY_NAMES, type TierId } from '@/lib/billing/tiers'
+import { effectiveTierFor } from '@/lib/billing/org-tier'
+import { TIER_DISPLAY_NAMES } from '@/lib/billing/tiers'
 
 // Short cache. Setup signals change only when the owner completes a step
 // (adds a service, imports contacts, turns Layla on) — which almost always
@@ -52,7 +52,7 @@ async function buildSetupStatus(
   const [orgRes, servicesRes, hoursRes, contactsRes, voiceRes] = await Promise.all([
     supabase
       .from('organizations')
-      .select('slug, booking_enabled, sms_enabled, vapi_phone_number_id, call_agent_enabled, call_agent_baa_attested_at, faqs, plan')
+      .select('slug, booking_enabled, sms_enabled, vapi_phone_number_id, call_agent_enabled, call_agent_baa_attested_at, faqs, plan, plan_status, trial_ends_at')
       .eq('id', orgId)
       .single(),
     // head:true → COUNT only, no rows pulled back.
@@ -65,8 +65,12 @@ async function buildSetupStatus(
   const org = orgRes.data
   if (!org) return null
 
-  const tier: TierId = planToTier(org.plan)
-  const caps = TIER_LIMITS[tier]
+  // Effective tier, not raw plan — a plan_status='trial' org inside its
+  // window is Scale-equivalent (org-tier.ts), so trial owners must see
+  // the AI Twin + Layla groups unlocked, not "Unlock on Scale".
+  const et = effectiveTierFor(org.plan, org.plan_status, org.trial_ends_at)
+  const tier = et.tier
+  const caps = et.limits
 
   const faqs = org.faqs
   const faqCount = Array.isArray(faqs) ? faqs.length : 0

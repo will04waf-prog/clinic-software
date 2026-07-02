@@ -4,8 +4,12 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const patchSchema = z.object({
-  plan:         z.enum(['trial', 'starter', 'pro']).optional(),
-  plan_status:  z.enum(['active', 'past_due', 'canceled', 'suspended', 'trial']).optional(),
+  // Full allowlists — the Stripe webhook writes 'professional'/'scale'
+  // and expire-trials writes 'trial_expired'; the admin editor must be
+  // able to LOAD-and-SAVE those orgs (the form always posts both
+  // fields), or the operator can't rescue exactly the locked-out states.
+  plan:         z.enum(['trial', 'starter', 'pro', 'professional', 'scale', 'canceled']).optional(),
+  plan_status:  z.enum(['active', 'past_due', 'canceled', 'suspended', 'trial', 'trial_expired']).optional(),
   admin_notes:  z.string().max(5000).optional(),
 }).strict()
 

@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSMS, renderTemplate as renderSMS } from '@/lib/twilio'
 import { sendEmail, renderTemplate as renderEmail, wrapEmailHtml } from '@/lib/resend'
 import { withCronLock } from '@/lib/cron-locks'
+import { blockedReason } from '@/lib/billing/org-access'
 import type { TriggerType } from '@/types'
 
 interface EnrollOptions {
@@ -99,6 +100,10 @@ export async function processDueSteps() {
       `)
       .eq('status', 'active')
       .lte('next_step_at', new Date().toISOString())
+      // Oldest-due first. Without an ORDER BY the 50-row page is
+      // arbitrary, so any population of stuck-due rows could starve
+      // every other org's enrollments out of the batch indefinitely.
+      .order('next_step_at', { ascending: true })
       .limit(50)
 
     if (!enrollments) return
@@ -206,9 +211,26 @@ async function processEnrollmentStep(enrollment: any, supabase: any) {
   // Get org for clinic name
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, email, phone, sms_enabled')
+    .select('name, email, phone, sms_enabled, plan_status, trial_ends_at')
     .eq('id', enrollment.organization_id)
     .single()
+
+  // Plan lockout: canceled/suspended/lapsed-trial orgs stop consuming
+  // paid channels. current_step is NOT advanced — if the org resubscribes,
+  // the sequence resumes where it paused instead of silently skipping.
+  // next_step_at IS pushed forward 24h: without that, a blocked org's
+  // due enrollments would stay permanently due, re-fetched every tick,
+  // and could crowd healthy orgs out of the 50-row batch entirely.
+  // Cost: a resubscribed org's paused sequences resume within 24h.
+  const lock = blockedReason(org?.plan_status, org?.trial_ends_at)
+  if (lock) {
+    console.log(`[automation] org ${enrollment.organization_id} plan ${lock}, deferring enrollment ${enrollment.id} 24h`)
+    await supabase
+      .from('contact_sequence_enrollments')
+      .update({ next_step_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() })
+      .eq('id', enrollment.id)
+    return
+  }
 
   // Safe template defaults. If a contact has NULL first_name (auto-created
   // inbound-SMS contacts seed as "Unknown (SMS)" but legacy/imported rows

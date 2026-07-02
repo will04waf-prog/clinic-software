@@ -26,6 +26,7 @@
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { blockedReason } from '@/lib/billing/org-access'
 import {
   verifyTwilioSignature,
   newVoiceResponse,
@@ -61,15 +62,21 @@ export async function POST(req: Request) {
       id, name, slug, timezone,
       call_agent_enabled, call_agent_mode, call_agent_fallback_e164,
       call_agent_greeting, call_agent_business_hours,
-      call_agent_assistant_id, call_agent_baa_attested_at
+      call_agent_assistant_id, call_agent_baa_attested_at,
+      plan_status, trial_ends_at
     `)
     .eq('twilio_phone_number', toE164)
     .maybeSingle()
 
-  // Org not mapped, or agent disabled, or no BAA on file → hang up
-  // with a generic message. We deliberately don't say "this clinic
-  // hasn't set up..." (privacy + signal-leak).
-  if (!org || !org.call_agent_enabled || !org.call_agent_baa_attested_at) {
+  // Org not mapped, agent disabled, no BAA on file, or plan locked out
+  // (canceled/suspended/lapsed trial — every inbound Layla call burns
+  // billable Vapi + Twilio minutes) → hang up with a generic message.
+  // We deliberately don't say "this clinic hasn't set up..." (privacy +
+  // signal-leak).
+  if (
+    !org || !org.call_agent_enabled || !org.call_agent_baa_attested_at ||
+    blockedReason(org.plan_status, org.trial_ends_at)
+  ) {
     const r = newVoiceResponse()
     r.say('Sorry, this number isn\'t available right now. Please try again later.')
     r.hangup()
