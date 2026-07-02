@@ -28,26 +28,24 @@
  *     gate here just gives a clean 403 instead of an empty array
  *     when a staff session somehow calls the action.
  *
- * Why call the M2 routes via fetch rather than importing the helpers:
- *   - M2 owns the Twilio + Vapi REST wrappers and the search/provision
- *     routes; this milestone (M3) is the in-app UX. Going through the
- *     HTTP boundary keeps the contract single-sourced — if M2 changes
- *     its validation, error shape, or response payload, M3 picks it
- *     up automatically because we're consuming the same endpoint the
- *     super-admin tools also use (M6).
- *   - Cookies are forwarded so M2's own auth gate (owner-only at the
- *     route layer) re-validates the caller. We do not bypass with
- *     service-role here.
+ * These actions call the shared service in
+ * src/lib/telephony/number-provisioning-service.ts DIRECTLY — the
+ * same core the M2 HTTP routes wrap — after running their own
+ * requireRole(OWNER_ONLY) gate. They used to round-trip through the
+ * M2 routes over HTTPS with hand-forwarded cookies; that hop 401'd
+ * whenever anything dropped the Cookie header (e.g. a www→apex 307,
+ * on which fetch strips cookies per the cross-origin redirect rule),
+ * dead-ending owners at the number picker with a raw
+ * {"error":"Unauthorized"}. In-process calls can't lose the session.
  */
 
 'use server'
 
-import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { isDenied, OWNER_ONLY, requireRole } from '@/lib/auth/roles'
-import { getAppUrl } from '@/lib/voice-agent/app-url'
+import { searchNumbersForOrg, provisionNumberForOrg } from '@/lib/telephony/number-provisioning-service'
 // Step taxonomy + the plain types/interfaces live in ./steps.ts —
 // a 'use server' file may only export async functions, so the
 // PROVISIONING_STEPS const (a runtime value) cannot be exported here.
@@ -95,23 +93,6 @@ const provisionInputSchema = z.object({
   brandData: brandDataSchema,
 })
 
-// ── Helper: forward cookies to internal M2 routes ────────────────
-//
-// Next.js server actions can't share the request's incoming cookies
-// with fetch automatically — we have to copy them onto the outbound
-// header so M2's owner-only gate sees the same session.
-async function buildInternalHeaders(): Promise<HeadersInit> {
-  const cookieStore = await cookies()
-  const cookieHeader = cookieStore
-    .getAll()
-    .map(c => `${c.name}=${c.value}`)
-    .join('; ')
-  return {
-    'Content-Type': 'application/json',
-    Cookie: cookieHeader,
-  }
-}
-
 // ── Action 1: searchNumbersAction ────────────────────────────────
 export async function searchNumbersAction(
   input: { areaCode: string; country?: 'US' | 'CA' },
@@ -131,38 +112,24 @@ export async function searchNumbersAction(
   const gate = await requireRole(supabase, user.id, OWNER_ONLY)
   if (isDenied(gate)) return { ok: false, error: 'Only the clinic owner can search for numbers.' }
 
-  // Forward to M2's owner-gated search route. We could call the lib
-  // helper directly, but the round-trip keeps a single shape for the
-  // /admin/numbers/* clients to consume too.
-  try {
-    // M2's /api/admin/numbers/search validates with a .strict() camelCase
-    // zod schema and returns { results: [{e164, friendlyName, ...}] }.
-    // Keep this contract in lockstep with M2's schema; both sides drift
-    // independently otherwise.
-    const res = await fetch(`${getAppUrl()}/api/admin/numbers/search`, {
-      method:  'POST',
-      headers: await buildInternalHeaders(),
-      body:    JSON.stringify({ areaCode: parsed.data.areaCode, country: parsed.data.country }),
-      cache:   'no-store',
-    })
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      return { ok: false, error: text || `Search failed (HTTP ${res.status})` }
-    }
-
-    const json = await res.json() as { results?: Array<{ e164: string; friendlyName?: string; region?: string; locality?: string; capabilities?: Record<string, boolean> }> }
-    const numbers: NumberSearchResult[] = (json.results ?? []).map(r => ({
-      e164:          r.e164,
-      friendly_name: r.friendlyName ?? r.e164,
-      region:        r.region,
-      locality:      r.locality,
-      capabilities:  r.capabilities,
-    }))
-    return { ok: true, numbers }
-  } catch (err) {
-    return { ok: false, error: (err as Error).message ?? 'Network error' }
+  const outcome = await searchNumbersForOrg(gate.orgId, {
+    areaCode: parsed.data.areaCode,
+    country:  parsed.data.country,
+  })
+  if (!outcome.ok) {
+    return { ok: false, error: outcome.message ?? `Search failed (${outcome.error})` }
   }
+
+  const numbers: NumberSearchResult[] = outcome.results.map(r => ({
+    e164:          r.e164,
+    friendly_name: r.friendlyName ?? r.e164,
+    region:        r.region ?? undefined,
+    locality:      r.locality ?? undefined,
+    // Fresh literal: the UI type keeps a loose Record<string, boolean>
+    // while the Twilio wrapper returns fixed-key capabilities.
+    capabilities:  { voice: r.capabilities.voice, sms: r.capabilities.sms, mms: r.capabilities.mms },
+  }))
+  return { ok: true, numbers }
 }
 
 // ── Action 2: provisionNumberAction ──────────────────────────────
@@ -216,34 +183,15 @@ export async function provisionNumberAction(
     return { ok: false, error: `Could not save brand data: ${stampErr.message}` }
   }
 
-  // Now ask M2 to enqueue the provisioning chain. The route is
-  // expected to insert the lead row (buy_twilio_number) into
-  // provisioning_jobs and return its id; subsequent steps are chained
-  // by M5's runner as each upstream step writes back its outputs.
-  try {
-    const res = await fetch(`${getAppUrl()}/api/admin/numbers/provision`, {
-      method:  'POST',
-      headers: await buildInternalHeaders(),
-      // M2's body schema is .strict() — only { e164 } is accepted.
-      // brand_data has already been stamped on the org row above, so
-      // M4's a2p_brand_register step reads it from there. Don't send
-      // duplicate state through M2.
-      body:    JSON.stringify({
-        e164: parsed.data.e164,
-      }),
-      cache: 'no-store',
-    })
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      return { ok: false, error: text || `Provisioning failed to start (HTTP ${res.status})` }
-    }
-
-    const json = await res.json() as { job_id?: string | null }
-    return { ok: true, job_id: json.job_id ?? null }
-  } catch (err) {
-    return { ok: false, error: (err as Error).message ?? 'Network error' }
+  // Enqueue the provisioning chain via the shared service (same core
+  // the M2 route wraps). brand_data has already been stamped on the
+  // org row above, so M4's a2p_brand_register step reads it from
+  // there. Subsequent steps are chained by M5's runner.
+  const outcome = await provisionNumberForOrg(orgId, parsed.data.e164, user.id)
+  if (!outcome.ok) {
+    return { ok: false, error: outcome.message ?? `Provisioning failed to start (${outcome.error})` }
   }
+  return { ok: true, job_id: outcome.jobId }
 }
 
 // ── Action 3: getProvisioningStatusAction ────────────────────────

@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   // self-serve assistant seeding would 500 in production only.
   outputFileTracingIncludes: {
     "/api/admin/numbers/provision": ["./src/voice/prompts/*.md"],
+    // The onboarding wizard's server actions call the same seeding
+    // service in-process, so the page's lambda needs the prompts too.
+    "/onboarding/phone-number": ["./src/voice/prompts/*.md"],
   },
 };
 
