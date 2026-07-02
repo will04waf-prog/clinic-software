@@ -51,6 +51,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireRole, OWNER_ONLY, isDenied } from '@/lib/auth/roles'
 import { blockedReason } from '@/lib/billing/org-access'
+import { ensureInboundAssistant, ensureReminderAssistant } from '@/lib/voice-agent/seed-assistants'
 
 const bodySchema = z.object({
   // E.164 — same regex used elsewhere in the codebase for phone
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
   // round-trips for a column-by-column read that owner-RLS allows.
   const { data: org, error: orgErr } = await supabaseAdmin
     .from('organizations')
-    .select('id, name, call_agent_assistant_id, vapi_phone_number_id, twilio_phone_sid, plan_status, trial_ends_at')
+    .select('id, name, call_agent_assistant_id, call_agent_reminder_assistant_id, vapi_phone_number_id, twilio_phone_sid, plan_status, trial_ends_at')
     .eq('id', orgId)
     .single()
 
@@ -114,14 +115,37 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Self-serve seeding — this used to 409 with assistant_not_seeded
+  // until the operator ran scripts/seed-vapi-assistant.ts by hand,
+  // which dead-ended every self-serve owner at the buy step. The
+  // inbound assistant is REQUIRED (register_vapi_phone binds the
+  // number to it); the reminder assistant is best-effort — voice
+  // reminders are separately gated and the cron logs the gap.
   if (!org.call_agent_assistant_id) {
-    return NextResponse.json(
-      {
-        error: 'assistant_not_seeded',
-        message: 'Seed the inbound assistant first (scripts/seed-vapi-assistant.ts).',
-      },
-      { status: 409 },
-    )
+    try {
+      const seeded = await ensureInboundAssistant({ supabase: supabaseAdmin, orgId })
+      console.log(`[admin/numbers/provision] seeded inbound assistant ${seeded.assistantId} for org ${orgId}`)
+    } catch (err) {
+      console.error('[admin/numbers/provision] assistant seeding failed', { orgId, err: err instanceof Error ? err.message : err })
+      return NextResponse.json(
+        {
+          error: 'assistant_seed_failed',
+          message: 'Could not set up the voice assistant. Please try again in a minute — if it keeps failing, contact support.',
+        },
+        { status: 502 },
+      )
+    }
+  }
+  // Deliberately OUTSIDE the inbound-null guard: orgs whose inbound
+  // assistant was operator-seeded (all pre-self-serve orgs) would
+  // otherwise never get a reminder assistant, and a transient failure
+  // here gets another chance on any later provision attempt.
+  if (!org.call_agent_reminder_assistant_id) {
+    try {
+      await ensureReminderAssistant({ supabase: supabaseAdmin, orgId })
+    } catch (err) {
+      console.warn('[admin/numbers/provision] reminder-assistant seeding failed (non-fatal)', { orgId, err: err instanceof Error ? err.message : err })
+    }
   }
 
   if (org.vapi_phone_number_id) {
