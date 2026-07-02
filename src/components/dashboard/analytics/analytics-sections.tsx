@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { TrendChart, type AnalyticsRange, type TimeseriesPoint } from './trend-chart'
 import { FunnelStrip } from './funnel-strip'
 import { SourceBreakdown } from './source-breakdown'
+import { LaylaImpact, type LaylaImpactData } from './layla-impact'
 import type { LeadSource } from '@/types'
 
 interface AnalyticsResponse {
@@ -12,6 +13,7 @@ interface AnalyticsResponse {
   timeseries: TimeseriesPoint[]
   funnel: { key: string; label: string; value: number; sub: string }[]
   sources: { key: LeadSource | 'unknown'; count: number }[]
+  laylaImpact: LaylaImpactData
 }
 
 function SectionsSkeleton() {
@@ -108,6 +110,7 @@ export function AnalyticsSections() {
 
   return (
     <div className="flex flex-col gap-7">
+      <LaylaImpact data={data.laylaImpact} days={data.days} />
       <TrendChart data={data.timeseries} range={range} onRangeChange={setRange} />
       <FunnelStrip funnel={data.funnel} days={data.days} />
       <SourceBreakdown

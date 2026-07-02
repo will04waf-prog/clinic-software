@@ -65,7 +65,7 @@ async function buildAnalyticsPayload(
   const startLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1))
   const startIso = startLocal.toISOString()
 
-  const [contactsRes, messagesRes, consultsRes, patientsRes] = await Promise.all([
+  const [contactsRes, messagesRes, consultsRes, patientsRes, callLogsRes] = await Promise.all([
     // Every contact created in the range — used for timeseries +
     // source-breakdown.
     supabase
@@ -80,10 +80,11 @@ async function buildAnalyticsPayload(
       .select('contact_id')
       .eq('organization_id', orgId)
       .gte('created_at', startIso),
-    // Consultations created in the range — funnel step 3.
+    // Consultations created in the range — funnel step 3 (+ service
+    // price and status for the Layla ROI section).
     supabase
       .from('consultations')
-      .select('id, contact_id, status')
+      .select('id, contact_id, status, service:services(price_cents)')
       .eq('organization_id', orgId)
       .gte('created_at', startIso),
     // Contacts that moved to status='patient' in the range — funnel
@@ -96,6 +97,12 @@ async function buildAnalyticsPayload(
       .eq('organization_id', orgId)
       .eq('status', 'patient')
       .gte('created_at', startIso),
+    // Layla's calls in the range — powers the ROI / impact section.
+    supabase
+      .from('call_logs')
+      .select('direction, outcome, started_at, contact_id')
+      .eq('organization_id', orgId)
+      .gte('started_at', startIso),
   ])
 
   const contacts = contactsRes.data ?? []
@@ -155,6 +162,64 @@ async function buildAnalyticsPayload(
   const sources = Array.from(sourceCounts, ([key, count]) => ({ key, count }))
     .sort((a, b) => b.count - a.count)
 
+  // ── Layla impact / ROI ──────────────────────────────────
+  // call_logs rows exist only when Layla handled a call, so inbound
+  // counts are an unambiguous "calls Layla answered". booked_via is
+  // always 'public_page' (voice + web share it), so we can't split Layla
+  // vs web bookings at the source — we attribute revenue honestly two
+  // ways: total booked value, and the subset booked by patients Layla
+  // actually spoke with (a call in the range).
+  const calls = callLogsRes.data ?? []
+  const inboundCalls = calls.filter((c) => c.direction === 'inbound')
+  const outboundCalls = calls.filter((c) => c.direction === 'outbound')
+
+  const outcomeMap = new Map<string, number>()
+  for (const c of inboundCalls) {
+    const o = c.outcome ?? 'completed'
+    outcomeMap.set(o, (outcomeMap.get(o) ?? 0) + 1)
+  }
+  const callOutcomes = Array.from(outcomeMap, ([outcome, count]) => ({ outcome, count }))
+    .sort((a, b) => b.count - a.count)
+
+  const callBuckets = new Map<string, number>()
+  for (let i = 0; i < days; i++) {
+    callBuckets.set(toDateKey(new Date(startLocal.getTime() + i * 86_400_000)), 0)
+  }
+  for (const c of inboundCalls) {
+    const key = toDateKey(new Date(c.started_at))
+    if (callBuckets.has(key)) callBuckets.set(key, (callBuckets.get(key) ?? 0) + 1)
+  }
+  const callsPerDay = Array.from(callBuckets, ([date, count]) => ({ date, count }))
+
+  const svcPrice = (row: { service?: unknown }): number => {
+    const s = Array.isArray(row.service) ? row.service[0] : row.service
+    return (s as { price_cents?: number } | null)?.price_cents ?? 0
+  }
+  const consults = consultsRes.data ?? []
+  const activeConsults = consults.filter((c) => c.status !== 'canceled')
+  const inboundContactIds = new Set(
+    inboundCalls.map((c) => c.contact_id).filter(Boolean) as string[],
+  )
+  const laylaAssisted = activeConsults.filter((c) => c.contact_id && inboundContactIds.has(c.contact_id))
+
+  const completedCount = consults.filter((c) => c.status === 'completed').length
+  const noShowCount = consults.filter((c) => c.status === 'no_show').length
+  const noShowDenom = completedCount + noShowCount
+
+  const laylaImpact = {
+    callsAnswered:            inboundCalls.length,
+    reminderCallsPlaced:      outboundCalls.length,
+    messagesCaptured:         inboundCalls.filter((c) => c.outcome === 'voicemail').length,
+    transferredToStaff:       inboundCalls.filter((c) => c.outcome === 'transferred').length,
+    bookingsInRange:          activeConsults.length,
+    bookingRevenueCents:      activeConsults.reduce((sum, c) => sum + svcPrice(c), 0),
+    laylaAssistedBookings:    laylaAssisted.length,
+    laylaAssistedRevenueCents: laylaAssisted.reduce((sum, c) => sum + svcPrice(c), 0),
+    noShowRate:               noShowDenom > 0 ? noShowCount / noShowDenom : null,
+    callOutcomes,
+    callsPerDay,
+  }
+
   return {
     range,
     days,
@@ -162,5 +227,6 @@ async function buildAnalyticsPayload(
     timeseries,
     funnel,
     sources,
+    laylaImpact,
   }
 }
