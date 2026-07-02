@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireCronAuth } from '@/lib/cron/require-cron-auth'
 import { processDueSteps } from '@/lib/automation-engine'
 import { sendConsultationReminders } from '@/lib/consultation-reminders'
 import { expireTrials } from '@/lib/expire-trials'
@@ -11,13 +12,8 @@ import { expireInvitations } from '@/lib/expire-invitations'
 // Called by an external cron (e.g. Vercel Cron, GitHub Actions, cron-job.org)
 // Protect with a shared secret in the Authorization header.
 export async function POST(request: Request) {
-  const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = request.headers.get('authorization')
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  const denied = requireCronAuth(request)
+  if (denied) return denied
 
   const jobNames = [
     'process_due_steps',

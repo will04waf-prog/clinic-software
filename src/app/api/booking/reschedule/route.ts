@@ -35,6 +35,7 @@ import { verifyManageToken, signManageToken } from '@/lib/booking/manage-token'
 import { sendConsultationSms } from '@/lib/consultation-reminders'
 import { notifyOwnerOfBooking } from '@/lib/booking/owner-notification'
 import { mapBookingError } from '@/lib/booking/db-errors'
+import { assertSlotBookable } from '@/lib/booking/assert-slot-bookable'
 
 const rescheduleSchema = z.object({
   manage_token: z.string().min(8),
@@ -158,6 +159,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'invalid_provider', message: 'That provider cannot take this appointment.' }, { status: 400 })
     }
     newProviderId = parsed.data.provider_id
+  }
+
+  // ── Availability re-check (audit M2 + M3) ──
+  // Lead-time + horizon above bound HOW FAR from now, but say nothing
+  // about time-of-day, open days, or the provider's buffer. Ask the same
+  // engine the picker uses whether this exact instant is actually
+  // offerable, so a hand-crafted token POST can't land at 3 AM, on a
+  // closed day, or back-to-back inside the configured buffer.
+  if (newProviderId) {
+    const bookable = await assertSlotBookable(supabaseAdmin, {
+      organizationId: row.organization_id,
+      providerId: newProviderId,
+      serviceId: row.service_id,
+      startUtc: newScheduledAt,
+      now,
+      excludeConsultationId: consultationId,
+    })
+    if (!bookable.ok) {
+      return NextResponse.json(
+        { error: 'slot_unavailable', message: 'That time is not open for booking — please pick an available slot.' },
+        { status: 409 },
+      )
+    }
   }
 
   // Atomic move. The trigger recomputes end_at + time_range; the

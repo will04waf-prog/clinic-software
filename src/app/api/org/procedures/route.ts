@@ -17,7 +17,12 @@ export async function PATCH(req: NextRequest) {
   const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
   if (isDenied(gate)) return gate.response
 
-  const body = await req.json()
+  // Guard the parse (audit L6) — a malformed/empty body should be a clean
+  // 400, not an unhandled 500. Matches the pattern in the sibling org routes.
+  let body: unknown
+  try { body = await req.json() } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
+  }
   const parsed = patchSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
