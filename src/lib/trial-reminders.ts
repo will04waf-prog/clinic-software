@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/resend'
 import { withCronLock } from '@/lib/cron-locks'
+import { getOrgOwner } from '@/lib/org-owner'
 // Shared branded building blocks — extracted to email/branded.ts so the
 // welcome email + weekly digest render identically to these reminders.
 import { APP_URL, wrap as wrapBase, p, btn } from '@/lib/email/branded'
@@ -76,14 +77,10 @@ async function sendBatch(
 ) {
   for (const org of orgs) {
     try {
-      const { data: owner } = await supabaseAdmin
-        .from('profiles')
-        .select('email, full_name')
-        .eq('organization_id', org.id)
-        .eq('role', 'owner')
-        .maybeSingle()
-
-      if (!owner?.email) continue
+      // Shared helper (org-owner.ts): the old maybeSingle() here broke
+      // silently on two-owner orgs — no reminder emails, forever.
+      const owner = await getOrgOwner(org.id)
+      if (!owner) continue
 
       // Claim the reminder atomically (audit M4): only the tick that flips
       // the sent-at column from NULL wins. A racing/overlapping tick's

@@ -20,6 +20,7 @@ import { blockedReason } from '@/lib/billing/org-access'
 import { ensureInboundAssistant, ensureReminderAssistant } from '@/lib/voice-agent/seed-assistants'
 import { isTwilioConfigured } from '@/lib/twilio'
 import { searchAvailableLocal, TwilioApiError, type AvailablePhoneNumber } from '@/lib/telephony/twilio-numbers'
+import { makeRateLimiter } from '@/lib/public-rate-limit'
 
 export interface NumberSearchInput {
   areaCode: string
@@ -38,28 +39,9 @@ export type ProvisionOutcome =
 // ── Per-org search rate limit ────────────────────────────────────
 // Org-scoped (not IP-scoped) because Vercel invocations have
 // transient IPs; 10/min deters number-harvesting while leaving
-// headroom for a human picker. In-memory per instance — swap for KV
-// when multi-instance matters.
-interface Bucket {
-  count:   number
-  resetAt: number
-}
-const SEARCH_BUCKETS = new Map<string, Bucket>()
-const SEARCH_LIMIT     = 10
-const SEARCH_WINDOW_MS = 60 * 1000
-
-export function consumeSearchSlot(orgId: string, now: number = Date.now()): { ok: boolean; retryAfterSeconds: number } {
-  const existing = SEARCH_BUCKETS.get(orgId)
-  if (!existing || existing.resetAt <= now) {
-    SEARCH_BUCKETS.set(orgId, { count: 1, resetAt: now + SEARCH_WINDOW_MS })
-    return { ok: true, retryAfterSeconds: 0 }
-  }
-  if (existing.count >= SEARCH_LIMIT) {
-    return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)) }
-  }
-  existing.count += 1
-  return { ok: true, retryAfterSeconds: 0 }
-}
+// headroom for a human picker. Shared Bucket implementation lives in
+// public-rate-limit.ts (this module pioneered the shape).
+export const consumeSearchSlot = makeRateLimiter(10, 60 * 1000)
 
 /**
  * Search available local Twilio numbers for an org. Caller must have

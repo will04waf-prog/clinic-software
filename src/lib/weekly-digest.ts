@@ -24,6 +24,7 @@ import { withCronLock } from '@/lib/cron-locks'
 import { blockedReason } from '@/lib/billing/org-access'
 import { aggregateLaylaImpact, type LaylaImpactAgg } from '@/lib/analytics/layla-impact-agg'
 import { APP_URL, wrap, p, btn, statRow } from '@/lib/email/branded'
+import { getOrgOwner } from '@/lib/org-owner'
 
 const money = (cents: number) => `$${Math.round(cents / 100).toLocaleString()}`
 const plural = (n: number, s: string) => `${n} ${s}${n === 1 ? '' : 's'}`
@@ -136,13 +137,8 @@ export async function sendWeeklyDigests(): Promise<DigestOutcome> {
         }
 
         try {
-          // Owner as a LIST, oldest first — maybeSingle() errors out
-          // (data:null) when an org has promoted a second owner, which
-          // would silently skip the digest for that org forever.
-          const [ownerRes, consultsRes, callsRes, contactsRes] = await Promise.all([
-            supabaseAdmin.from('profiles').select('email, full_name')
-              .eq('organization_id', org.id).eq('role', 'owner')
-              .order('created_at', { ascending: true }).limit(1),
+          const [owner, consultsRes, callsRes, contactsRes] = await Promise.all([
+            getOrgOwner(org.id),
             supabaseAdmin.from('consultations')
               .select('contact_id, status, service:services(price_cents)')
               .eq('organization_id', org.id).gte('created_at', startIso),
@@ -154,8 +150,7 @@ export async function sendWeeklyDigests(): Promise<DigestOutcome> {
               .eq('organization_id', org.id).gte('created_at', startIso),
           ])
 
-          const owner = ownerRes.data?.[0]
-          if (!owner?.email) { await release(); continue }
+          if (!owner) { await release(); continue }
 
           const agg = aggregateLaylaImpact(consultsRes.data ?? [], callsRes.data ?? [])
           const newContacts = contactsRes.count ?? 0

@@ -402,6 +402,8 @@ export function BookingView({ slug }: { slug: string }) {
             slotsError={slotsError}
             onPick={pickSlot}
             onBack={backToServices}
+            slug={slug}
+            orgName={lookup.org.name}
           />
         )}
         {step === 'details' && service && selectedSlot && (
@@ -503,6 +505,105 @@ function ErrorCard({ title, body }: { title: string; body: string }) {
   )
 }
 
+/**
+ * No-times fallback — the old dead end ("call the clinic") lost the
+ * patient entirely. Now they can leave their details; the submission
+ * rides the existing /api/capture endpoint (dedup + automations +
+ * owner alert + patient ack) tagged origin:'waitlist'.
+ */
+export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; orgName: string; serviceName: string }) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [smsConsent, setSmsConsent] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit() {
+    if (!name.trim()) { setError('Please enter your name.'); return }
+    if (!phone.trim() && !email.trim()) { setError('Leave a phone number or email so the clinic can reach you.'); return }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const [first, ...restName] = name.trim().split(/\s+/)
+      const res = await fetch(`/api/capture/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name:  first,
+          last_name:   restName.join(' ') || undefined,
+          phone:       phone.trim() || undefined,
+          email:       email.trim() || undefined,
+          sms_consent: smsConsent,
+          origin:      'waitlist',
+          notes:       `Waitlist: wanted ${serviceName} but no online times were open.`,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? 'Something went wrong — please try again.')
+      }
+      setDone(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong — please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="rounded-2xl border border-[#02C39A]/30 bg-[#FAF6EC] p-6 text-center">
+        <CalendarCheck className="mx-auto h-6 w-6 text-[#02C39A]" />
+        <h3 className="mt-3 text-base font-semibold text-[#14241D]">You&apos;re on the list</h3>
+        <p className="mt-1 text-[13px] text-[#4A5A60]">
+          {orgName} has your details and will reach out as soon as a time opens up.
+        </p>
+      </div>
+    )
+  }
+
+  const inputCls = 'w-full rounded-lg border border-[#0B2027]/15 bg-white px-3 py-2 text-[14px] text-[#14241D] focus:border-[#02C39A] focus:outline-none focus:ring-1 focus:ring-[#02C39A]'
+
+  return (
+    <div className="rounded-2xl border border-[#0B2027]/10 bg-[#FAF6EC] p-5">
+      <h3 className="text-[15px] font-semibold text-[#14241D]">No times are open right now</h3>
+      <p className="mt-1 text-[13px] text-[#4A5A60]">
+        Leave your details and {orgName} will reach out as soon as something opens up.
+      </p>
+      <div className="mt-4 space-y-3">
+        <input type="text" value={name} onChange={e => setName(e.target.value)}
+          placeholder="Your name" aria-label="Your name" autoComplete="name" className={inputCls} />
+        <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+          placeholder="Phone" aria-label="Phone" autoComplete="tel" className={inputCls} />
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+          placeholder="Email (optional if you left a phone)" aria-label="Email (optional if you left a phone)"
+          autoComplete="email" className={inputCls} />
+        {phone.trim() !== '' && (
+          <label className="flex items-start gap-2 rounded-lg border border-[#0B2027]/10 bg-white p-3 text-[12px] text-[#4A5A60]">
+            <input type="checkbox" checked={smsConsent} onChange={e => setSmsConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[#0B2027]/30 text-[#02C39A] focus:ring-[#02C39A]" />
+            <span>
+              OK to text me from <strong>{orgName}</strong> about openings. Reply STOP to opt out.
+              Message and data rates may apply.
+            </span>
+          </label>
+        )}
+        {error && <p role="alert" aria-live="polite" className="text-[12.5px] text-red-600">{error}</p>}
+        <button
+          type="button"
+          onClick={submit}
+          disabled={submitting}
+          className="w-full rounded-lg bg-[#028090] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[#026B78] disabled:opacity-60 transition-colors"
+        >
+          {submitting ? 'Sending…' : 'Notify me when a time opens'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ServiceStep({
   services,
   onPick,
@@ -565,6 +666,8 @@ function SlotStep({
   slotsError,
   onPick,
   onBack,
+  slug,
+  orgName,
 }: {
   service: Service
   slotsByDay: Array<{ day: string; items: Slot[] }>
@@ -573,6 +676,8 @@ function SlotStep({
   slotsError: string | null
   onPick: (s: Slot) => void
   onBack: () => void
+  slug: string
+  orgName: string
 }) {
   return (
     <div className="space-y-4">
@@ -600,10 +705,7 @@ function SlotStep({
         <ErrorCard title="Couldn't load times" body={slotsError} />
       )}
       {!slotsLoading && !slotsError && slotsByDay.length === 0 && (
-        <ErrorCard
-          title="No times available"
-          body="Nothing's open in the next two weeks. Please reach out to the clinic directly."
-        />
+        <WaitlistForm slug={slug} orgName={orgName} serviceName={service.name} />
       )}
 
       <div className="space-y-4">

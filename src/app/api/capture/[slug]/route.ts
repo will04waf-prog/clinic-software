@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { enrollContact } from '@/lib/automation-engine'
 import { enqueueEnrollment, enrollmentJobsMode } from '@/lib/enrollment-jobs'
+import { makeRateLimiter } from '@/lib/public-rate-limit'
+import { notifyOwnerOfLead, sendLeadAck } from '@/lib/lead-notifications'
+
+// Public, unauthenticated endpoint that now triggers owner emails —
+// cap submissions per org so a form-spamming bot can't turn the
+// owner-alert feature into an inbox flood. 20/min is far above any
+// human clinic's real lead rate.
+const consumeCaptureSlot = makeRateLimiter(20, 60_000)
 
 const CaptureSchema = z.object({
   first_name:          z.string().min(1),
@@ -13,6 +22,8 @@ const CaptureSchema = z.object({
   procedure_interest:  z.array(z.string()).optional(),
   notes:               z.string().optional(),
   sms_consent:         z.boolean().optional().default(false),
+  /** 'waitlist' when submitted from the booking page's no-times state. */
+  origin:              z.enum(['intake', 'waitlist']).optional().default('intake'),
 })
 
 // GET — verify slug is valid (used by the form page to load org info)
@@ -45,13 +56,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, plan_status, trial_ends_at, sms_enabled')
     .eq('slug', slug)
     .single()
 
   if (!org) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await request.json()
+  const rl = consumeCaptureSlot(org.id)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many submissions — please try again in a minute.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+    )
+  }
+
+  let body: unknown
+  try { body = await request.json() } catch {
+    // Malformed JSON from bots — a clean 400, not an uncaught
+    // SyntaxError paging the operator via instrumentation.
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
   const parsed = CaptureSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
@@ -148,7 +172,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     organization_id: org.id,
     contact_id:      contactId,
     action:          'lead_captured',
-    metadata:        { source: 'web_form', slug },
+    // origin distinguishes booking-page waitlist leads from intake-form
+    // leads (contacts.source stays 'website' for both — the UI's source
+    // filters key on the LeadSource union).
+    metadata:        { source: 'web_form', slug, origin: parsed.data.origin },
   })
 
   // Durable enrollment: /api/cron drains the queue. Shadow mode keeps the
@@ -169,6 +196,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       organizationId: org.id,
     }).catch(console.error)
   }
+
+  // Close the two silences (new contacts only — dedup returns above):
+  // the owner hears about the lead, the patient hears they were heard.
+  // after() so neither send delays the form response; failures log.
+  const lead = {
+    contactId,
+    firstName:         parsed.data.first_name,
+    lastName:          parsed.data.last_name ?? null,
+    email:             email || null,
+    phone:             phone || null,
+    smsConsent:        sms_consent ?? false,
+    procedureInterest: parsed.data.procedure_interest ?? [],
+    notes:             parsed.data.notes ?? null,
+    origin:            parsed.data.origin === 'waitlist' ? 'booking page (no times were open)' : 'intake form',
+  }
+  after(async () => {
+    await notifyOwnerOfLead(org, lead).catch((err: unknown) =>
+      console.error('[capture] owner alert failed:', err instanceof Error ? err.message : err))
+    await sendLeadAck(org, lead).catch((err: unknown) =>
+      console.error('[capture] lead ack failed:', err instanceof Error ? err.message : err))
+  })
 
   return NextResponse.json({ ok: true }, { status: 201 })
 }

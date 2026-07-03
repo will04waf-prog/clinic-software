@@ -3,19 +3,38 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail, escapeHtml } from '@/lib/resend'
 import { wrap, p } from '@/lib/email/branded'
+import { makeRateLimiter } from '@/lib/public-rate-limit'
+
+// Public, unauthenticated, and every submission emails the admin —
+// this was the last unthrottled mail path on the marketing site.
+// Global key: there's no org to scope by, and genuine demo volume is
+// a handful per day; 10/min only stops scripted floods.
+const consumeDemoSlot = makeRateLimiter(10, 60_000)
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const rl = consumeDemoSlot('global')
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests — please try again in a minute.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+      )
+    }
 
-    const { name, clinic_name, email, phone, preferred_date, preferred_time, notes, source, page_path } = body
+    let body: unknown
+    try { body = await request.json() } catch {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+    }
+
+    const { name, clinic_name, email, phone, preferred_date, preferred_time, notes, source, page_path } =
+      body as Record<string, unknown>
 
     if (!name || !clinic_name || !email) {
       return NextResponse.json({ error: 'Name, clinic name, and email are required.' }, { status: 400 })
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(String(email))) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
     }
 
@@ -104,7 +123,7 @@ export async function POST(request: Request) {
             <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Contact</div>
             ${field('Name', String(name))}
             ${field('Email', String(email), `mailto:${String(email)}`)}
-            ${field('Phone', phone)}
+            ${field('Phone', phone ? String(phone) : null)}
           </div>
 
           <!-- Scheduling preference -->
@@ -123,8 +142,8 @@ export async function POST(request: Request) {
           <!-- Meta -->
           <div style="margin-bottom:24px;">
             <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Source</div>
-            ${field('Page', page_path)}
-            ${field('Referrer', source && source !== 'direct' ? source : null)}
+            ${field('Page', page_path ? String(page_path) : null)}
+            ${field('Referrer', source && source !== 'direct' ? String(source) : null)}
           </div>
 
           <!-- CTA -->
