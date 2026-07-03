@@ -26,10 +26,14 @@ import { resolve } from 'node:path'
 import { ALL_TOOLS } from '../../voice/tools/schemas'
 import { getAppUrl } from './app-url'
 
-// OpenAI's "alloy" — neutral, professional, always available with no
-// extra credentials. Override with VAPI_VOICE_PROVIDER + _ID env vars.
-const VOICE_PROVIDER = () => process.env.VAPI_VOICE_PROVIDER ?? 'openai'
-const VOICE_ID       = () => process.env.VAPI_VOICE_ID       ?? 'alloy'
+// Vapi-native "Savannah" — warm professional female ('Paige' is in
+// Vapi's LEGACY set and new assistants are rejected with it), and served from
+// Vapi's own edge so time-to-first-sound is far lower than the old
+// openai/alloy default (real-call feedback: replies dragged and
+// Layla filled the gaps with "give me a sec"). Override with
+// VAPI_VOICE_PROVIDER + _ID env vars.
+const VOICE_PROVIDER = () => process.env.VAPI_VOICE_PROVIDER ?? 'vapi'
+const VOICE_ID       = () => process.env.VAPI_VOICE_ID       ?? 'Savannah'
 
 // ─── Tool name → tool-endpoint path mappings ─────────────────────
 // The inbound receptionist ships every tool; the reminder bot ships a
@@ -173,6 +177,9 @@ export function buildInboundAssistantBody(org: OrgRow, appUrl: string, webhookSe
     },
     voice:       { provider: VOICE_PROVIDER(), voiceId: VOICE_ID() },
     transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en' },
+    // Vapi's default is a synthetic "office" ambience — real-call
+    // feedback: it reads as noise, not realism. Silence is cleaner.
+    backgroundSound: 'off',
     // Twilio plays the disclosure/consent opener via TwiML BEFORE
     // handing audio to Vapi, so the first Vapi utterance is a brief
     // bridge over the get_context roundtrip, not another greeting.
@@ -198,6 +205,7 @@ export function buildReminderAssistantBody(org: OrgRow, appUrl: string, webhookS
     },
     voice:       { provider: VOICE_PROVIDER(), voiceId: VOICE_ID() },
     transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en' },
+    backgroundSound: 'off',
     // Outbound: WE call THEM, so the first thing the patient hears IS
     // the assistant — identify and ask in one breath.
     firstMessage: 'Hi, this is Layla calling about your upcoming appointment — do you have a quick moment?',
