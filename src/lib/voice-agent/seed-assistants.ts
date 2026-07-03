@@ -180,10 +180,14 @@ export function buildInboundAssistantBody(org: OrgRow, appUrl: string, webhookSe
     // Vapi's default is a synthetic "office" ambience — real-call
     // feedback: it reads as noise, not realism. Silence is cleaner.
     backgroundSound: 'off',
-    // Twilio plays the disclosure/consent opener via TwiML BEFORE
-    // handing audio to Vapi, so the first Vapi utterance is a brief
-    // bridge over the get_context roundtrip, not another greeting.
-    firstMessage: 'One moment while I pull up the clinic\'s info...',
+    // Pipeline-provisioned numbers are answered by Vapi DIRECTLY (the
+    // register step binds the number to the assistant and Vapi
+    // rewrites the voice webhook) — there is no TwiML preamble. The
+    // old "One moment while I pull up the clinic's info..." opener
+    // assumed one, producing that line followed by dead air until the
+    // caller spoke first. Open like a receptionist instead; the brief
+    // recording line covers consent in the direct flow.
+    firstMessage: `Thanks for calling ${org.name}, this is Layla! Just so you know, this call may be recorded. What can I do for you today?`,
     serverUrl:        `${appUrl}/api/webhooks/vapi/call-end`,
     serverUrlSecret:  webhookSecret ?? undefined,
     // end-of-call-report must be subscribed explicitly or call_logs
