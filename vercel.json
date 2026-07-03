@@ -5,6 +5,7 @@
     { "path": "/api/cron/voice-reminder-staleness", "schedule": "*/30 * * * *" },
     { "path": "/api/cron/a2p-status", "schedule": "*/30 * * * *" },
     { "path": "/api/cron/provisioning", "schedule": "* * * * *" },
-    { "path": "/api/cron/report-usage", "schedule": "0 2 * * *" }
+    { "path": "/api/cron/report-usage", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/weekly-digest", "schedule": "0 14 * * 1" }
   ]
 }

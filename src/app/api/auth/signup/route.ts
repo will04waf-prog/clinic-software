@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { slugify } from '@/lib/utils'
+import { sendWelcomeEmail } from '@/lib/welcome-email'
 
 // Use the service role key so we can bypass RLS during org creation
 const supabaseAdmin = createClient(
@@ -94,6 +95,25 @@ export async function POST(req: NextRequest) {
         console.error('[signup] Stage seeding failed:', stagesError.message)
         throw new Error(stagesError.message)
       }
+
+      // 5. Day-0 welcome email via after() — the sanctioned post-
+      // response mechanism (a bare un-awaited promise gets frozen when
+      // the lambda suspends after the response, silently dropping the
+      // send AND its error log). Still non-fatal: a Resend hiccup must
+      // never fail the signup the owner just completed.
+      after(async () => {
+        try {
+          await sendWelcomeEmail({
+            orgId: orgId,
+            orgName: clinic_name,
+            ownerEmail: email,
+            ownerFullName: full_name,
+            trialEndsAt: trialEndsAt,
+          })
+        } catch (err) {
+          console.error('[signup] welcome email failed (non-fatal):', err instanceof Error ? err.message : err)
+        }
+      })
 
       return NextResponse.json({ ok: true })
 

@@ -1,6 +1,16 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+// Lazy client: the Resend constructor THROWS when the API key is
+// missing, and this module is now imported by the signup route — a
+// module-load throw would 500 every signup in any env without the
+// key (preview deploys, fresh local setups) even though email is
+// meant to be non-fatal there. Constructing at first send keeps the
+// failure scoped to the email call itself.
+let _resend: Resend | null = null
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY!)
+  return _resend
+}
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@tarhunna.com'
 
 export interface SendEmailParams {
@@ -19,7 +29,7 @@ export interface SendEmailParams {
 }
 
 export async function sendEmail({ to, subject, html, replyTo, idempotencyKey }: SendEmailParams) {
-  const { data, error } = await resend.emails.send(
+  const { data, error } = await getResend().emails.send(
     { from: fromEmail, to, subject, html, replyTo },
     { idempotencyKey },
   )
@@ -40,7 +50,12 @@ export function renderTemplate(template: string, vars: Record<string, string>) {
 // or `'`. Without this, a stray angle bracket would either break
 // the email rendering or, in the malicious-owner case, inject HTML
 // into another owner's notification (cross-org via shared template).
-function escapeHtml(s: string): string {
+// Exported: the branded lifecycle emails (welcome, digest, trial)
+// splice owner-controlled org/owner names and must escape them too —
+// signup requires no email verification, so an attacker signing up
+// with someone else's address + an HTML clinic_name would otherwise
+// land a Tarhunna-branded phishing email in that inbox.
+export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
