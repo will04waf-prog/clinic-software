@@ -16,7 +16,7 @@ import {
   Sparkles,
   ClipboardList,
   Users,
-  Workflow,
+  TrendingUp,
 } from 'lucide-react'
 import { SoftwareShowcase } from '@/components/marketing/software-showcase'
 import { SignatureLogo } from '@/components/ui/signature-logo'
@@ -150,9 +150,9 @@ const CRM_PIECES = [
     body: 'Drag leads through stages. Drag consultations to reschedule them. Tag and segment contacts, add notes, and invite staff with roles.',
   },
   {
-    icon: Workflow,
-    title: 'Automation sequences',
-    body: 'Multi-step email + SMS sequences off six triggers: new_lead, stage_changed, consultation_booked, consultation_completed, no_show, and old_lead_reactivation.',
+    icon: TrendingUp,
+    title: "See what Layla earns you",
+    body: "An owner dashboard that shows what she actually did: calls answered, messages taken, bookings made, and the booked revenue behind them — attributed honestly, not inflated.",
   },
   {
     icon: MessageSquareText,
@@ -199,7 +199,7 @@ const TIERS: readonly TierCard[] = [
     includes: [
       'Everything in Starter',
       'AI Twin SMS drafts — owner approves each send',
-      'Automation sequences (6 triggers)',
+      'AI Twin voice training — it learns your real reply style',
       'Editable 24h and 2h consultation reminder templates',
       'Bulk CSV import',
     ],
@@ -313,7 +313,7 @@ export default function LandingPage() {
             operatingSystem: 'Web',
             url: 'https://tarhunna.net',
             description:
-              'AI voice receptionist that answers, books, and reminds — backed by a full clinic CRM, two-way SMS, and automation sequences.',
+              'AI voice receptionist that answers, books, and reminds — backed by a full clinic CRM, two-way SMS, and automated consultation reminders.',
             offers: {
               '@type': 'Offer',
               price: '0',
@@ -393,6 +393,13 @@ export default function LandingPage() {
             <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
               Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
               confirmation — so a slammed front desk never costs you another booked patient.
+            </p>
+            {/* Source line for the H1 claim. Invoca's 2021 platform data
+                puts healthcare's average unanswered-call rate at 29%
+                (medical practices 31%) — "1 in 4" is deliberately the
+                conservative end of the measured range. */}
+            <p className="mt-3 text-xs text-gray-400">
+              Healthcare providers miss 29% of inbound calls on average — Invoca platform data, 2021.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
@@ -577,7 +584,7 @@ export default function LandingPage() {
               </h2>
               <p className="mt-3 text-[#F5EFE1]/70 max-w-2xl mx-auto">
                 Layla and the AI Twin sit on a real clinic CRM — contacts, kanban pipeline, consultations calendar,
-                tags, notes, activity timeline, automation sequences, and team seats. Multi-tenant isolation is
+                tags, notes, activity timeline, and team seats. Multi-tenant isolation is
                 enforced at the query layer and at Postgres RLS.
               </p>
             </AnimatedSection>

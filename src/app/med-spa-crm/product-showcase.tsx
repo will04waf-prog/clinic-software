@@ -23,7 +23,9 @@ const NAV_ITEMS = [
   { label: 'Leads',          icon: Users,           id: 'leads'         },
   { label: 'Pipeline',       icon: Kanban,          id: 'pipeline'      },
   { label: 'Consultations',  icon: CalendarCheck,   id: 'consultations' },
-  { label: 'Automations',    icon: Zap,             id: 'automations'   },
+  // 'Automations' label retired — the feature is flag-hidden in the
+  // product (src/lib/features.ts); the mock sidebar must not sell it.
+  { label: 'Reminders',      icon: Zap,             id: 'automations'   },
   { label: 'Settings',       icon: Settings,        id: 'settings'      },
 ]
 

@@ -49,9 +49,9 @@ const DEMO_AGENDA: Array<{
     tier: 'starter',
   },
   {
-    title: 'Automation sequences for the rest of the funnel',
+    title: 'Reminders that cut no-shows',
     detail:
-      'Multi-step email + SMS sequences triggered by new lead, stage change, no-show, or reactivation — plus the standard 24h and 2h consultation reminders.',
+      'Automated 24h and 2h consultation reminders by SMS and email — and on Scale, Layla places day-before reminder calls patients can confirm or reschedule by voice.',
     tier: 'professional',
   },
   {
@@ -180,7 +180,7 @@ export default function BookDemoPage() {
                   Pick a time
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  20 minutes. We&rsquo;ll confirm by email and send a calendar invite.
+                  20 minutes. We&rsquo;ll confirm your time by email within one business day.
                 </p>
               </div>
               <BookDemoForm />

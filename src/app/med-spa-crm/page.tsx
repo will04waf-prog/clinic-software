@@ -185,11 +185,11 @@ const FEATURE_BLOCKS: Array<{
   },
   {
     icon: Sparkles,
-    title: 'Automation sequences for the rest of the funnel',
+    title: 'Reminders that cut no-shows',
     oneLine:
-      'Multi-step email + SMS sequences triggered by new lead, stage change, no-show, or reactivation.',
+      'Automated 24h and 2h consultation reminders by SMS and email, with editable per-clinic templates.',
     body:
-      'Build sequences off six triggers: new_lead, stage_changed, consultation_booked, consultation_completed, no_show, and old_lead_reactivation. Mix email and SMS steps. Add the automated 24h and 2h consultation reminders on top, with editable per-org templates and master toggles. Set it once; let it run on every new lead.',
+      'Every booked consultation gets a confirmation, a 24-hour reminder, and a 2-hour reminder — SMS and email, with editable per-org templates and master toggles. On Scale, Layla adds day-before reminder calls patients can confirm or reschedule by voice. Set it once; every booking is covered.',
     tier: 'professional',
   },
   {
@@ -245,9 +245,9 @@ const TIERS = [
     headline: 'Everything in Starter, plus the texting half of the stack',
     includes: [
       'AI Twin drafts every inbound SMS reply for owner approval',
-      'Multi-step email + SMS automation sequences',
-      'Six event triggers including no-show and reactivation',
-      '24h and 2h consultation reminder SMS',
+      'AI Twin drafts include real open booking slots from your calendar',
+      '24h and 2h consultation reminder SMS and email',
+      'Editable per-clinic reminder templates and toggles',
       'Bulk CSV import and AI Twin voice training',
     ],
     highlight: true,
@@ -273,7 +273,7 @@ const TIERS = [
 const FAQ_ITEMS = [
   {
     q: 'Is Tarhunna a CRM for med spas?',
-    a: 'Yes. Tarhunna is a med spa CRM at its foundation — contacts, a kanban pipeline, a consultations calendar, tags, notes, an activity timeline, team seats with roles, and Postgres-level multi-tenant isolation. The CRM is on every plan. On top of that foundation, Professional adds AI-drafted SMS replies and automation sequences, and Scale adds Layla, the AI voice receptionist that answers your phone.',
+    a: 'Yes. Tarhunna is a med spa CRM at its foundation — contacts, a kanban pipeline, a consultations calendar, tags, notes, an activity timeline, team seats with roles, and Postgres-level multi-tenant isolation. The CRM is on every plan. On top of that foundation, Professional adds AI-drafted SMS replies and automated consultation reminders, and Scale adds Layla, the AI voice receptionist that answers your phone.',
   },
   {
     q: 'What is the AI receptionist and which plan does it come with?',
@@ -341,7 +341,7 @@ export default function MedSpaCRMPage() {
             name: 'Med Spa CRM with an AI Receptionist Built In — Tarhunna',
             url: 'https://tarhunna.net/med-spa-crm',
             description:
-              'A med spa CRM with Layla, an AI voice receptionist that answers every call and books appointments live. Backed by a full CRM, AI-drafted SMS replies, and automation sequences.',
+              'A med spa CRM with Layla, an AI voice receptionist that answers every call and books appointments live. Backed by a full CRM, AI-drafted SMS replies, and automated consultation reminders.',
             isPartOf: { '@type': 'WebSite', name: 'Tarhunna', url: 'https://tarhunna.net' },
           }),
         }}

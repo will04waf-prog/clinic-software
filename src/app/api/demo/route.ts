@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { sendEmail } from '@/lib/resend'
+import { sendEmail, escapeHtml } from '@/lib/resend'
+import { wrap, p } from '@/lib/email/branded'
 
 export async function POST(request: Request) {
   try {
@@ -48,7 +49,9 @@ export async function POST(request: Request) {
     console.log('[demo] email check — RESEND_API_KEY present:', apiKeyPresent)
 
     if (!adminEmail) {
-      console.warn('[demo] ADMIN_NOTIFY_EMAIL is not set — skipping admin notification')
+      // error, not warn — a demo request the operator never hears about
+      // is lost revenue, and error-level is what log filters surface.
+      console.error('[demo] ADMIN_NOTIFY_EMAIL is not set — demo request saved to DB but NO ONE was notified')
     } else {
       const submittedAt = new Date().toLocaleString('en-US', {
         timeZone: 'America/New_York',
@@ -57,9 +60,12 @@ export async function POST(request: Request) {
       })
 
       function field(label: string, value: string | null | undefined, href?: string) {
-        const display = value || '—'
-        const valueHtml = href && value
-          ? `<a href="${href}" style="color:#02C39A;text-decoration:none;">${display}</a>`
+        // Everything here is unauthenticated visitor input — escape it
+        // (and the href) before it lands in the operator's inbox HTML.
+        const display = value ? escapeHtml(value) : '—'
+        const safeHref = href ? escapeHtml(href) : href
+        const valueHtml = safeHref && value
+          ? `<a href="${safeHref}" style="color:#02C39A;text-decoration:none;">${display}</a>`
           : `<span style="color:${value ? '#111827' : '#9ca3af'};">${display}</span>`
         return `
           <div style="margin-bottom:16px;">
@@ -86,7 +92,7 @@ export async function POST(request: Request) {
         <!-- Header -->
         <tr><td style="background:#02C39A;border-radius:12px 12px 0 0;padding:24px 28px;">
           <div style="font-size:11px;font-weight:600;color:#9FE1CB;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">New Demo Request</div>
-          <div style="font-size:22px;font-weight:700;color:#ffffff;line-height:1.2;">${String(clinic_name)}</div>
+          <div style="font-size:22px;font-weight:700;color:#ffffff;line-height:1.2;">${escapeHtml(String(clinic_name))}</div>
           <div style="font-size:13px;color:#5CEAB8;margin-top:4px;">${submittedAt}</div>
         </td></tr>
 
@@ -111,7 +117,7 @@ export async function POST(request: Request) {
           <!-- Notes -->
           <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e5e7eb;">
             <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">Notes</div>
-            <div style="font-size:15px;color:#111827;line-height:1.6;white-space:pre-wrap;">${String(notes)}</div>
+            <div style="font-size:15px;color:#111827;line-height:1.6;white-space:pre-wrap;">${escapeHtml(String(notes))}</div>
           </div>` : ''}
 
           <!-- Meta -->
@@ -157,6 +163,29 @@ export async function POST(request: Request) {
         console.error('[demo] error message:', emailErr?.message)
         console.error('[demo] full error:', JSON.stringify(emailErr, null, 2))
       }
+    }
+
+    // ── Requester confirmation email ───────────────────────────
+    // The /book-demo page promises "We'll confirm your time by email"
+    // — this is that email. Non-fatal: the request is already saved.
+    try {
+      const safeFirst = escapeHtml(String(name).split(' ')[0] || 'there')
+      const safeClinic = escapeHtml(String(clinic_name))
+      const confirmHtml = wrap(`
+        ${p(`Hi ${safeFirst},`)}
+        ${p(`Thanks for requesting a demo for <strong>${safeClinic}</strong> — we got it.`)}
+        ${p(`We'll reply within one business day to confirm your 20-minute walkthrough. You'll see Layla answer a live call, book an appointment from real availability, and text the confirmation — then how the CRM and AI Twin SMS fit underneath.`)}
+        ${p(`<span style="font-size:13px;color:#6b7280;">Need to add anything (best times, questions)? Just reply to this email.</span>`)}
+      `, 'Tarhunna &middot; You&#39;re receiving this because you requested a demo at tarhunna.net.')
+
+      await sendEmail({
+        to: String(email),
+        subject: 'Your Tarhunna demo request is in — we\'ll confirm within a business day',
+        html: confirmHtml,
+        idempotencyKey: randomUUID(),
+      })
+    } catch (confirmErr: any) {
+      console.error('[demo] requester confirmation email failed (non-fatal):', confirmErr?.message)
     }
 
     return NextResponse.json({ ok: true }, { status: 201 })

@@ -51,7 +51,6 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'AI Twin draft includes real open booking slots from your live calendar',
     'AI Twin voice training — capture your real reply style',
     'AI Twin audit + flagging',
-    'Automation sequences off six triggers (new lead, stage change, booked, completed, no-show, reactivation)',
     'Automated 24h and 2h consultation reminder SMS',
     'Bulk CSV contact import',
   ],
@@ -84,7 +83,6 @@ const FEATURE_MATRIX: { feature: string; starter: boolean; professional: boolean
   { feature: 'AI Twin drafts every inbound SMS in your voice',  starter: false, professional: true,  scale: true  },
   { feature: 'AI Twin voice training + voice health metrics',   starter: false, professional: true,  scale: true  },
   { feature: 'AI Twin audit + flag',                            starter: false, professional: true,  scale: true  },
-  { feature: 'Automation sequences (6 triggers)',               starter: false, professional: true,  scale: true  },
   { feature: 'Automated 24h / 2h consultation reminders',       starter: false, professional: true,  scale: true  },
   { feature: 'Bulk CSV contact import',                         starter: false, professional: true,  scale: true  },
   // Scale-only — full Layla voice agent + autonomous SMS
@@ -339,7 +337,7 @@ export default function PricingPage() {
                 id="professional"
                 name="Professional"
                 accent="#028090"
-                blurb="AI Twin drafts every inbound SMS in your voice with real open slots in the body — you approve each send. Plus voice training, audit + flag, automation sequences, and 24h/2h consultation reminders. 2,500 contacts, 5 seats."
+                blurb="AI Twin drafts every inbound SMS in your voice with real open slots in the body — you approve each send. Plus voice training, audit + flag, and 24h/2h consultation reminders. 2,500 contacts, 5 seats."
               />
               <TierCallout
                 id="scale"
