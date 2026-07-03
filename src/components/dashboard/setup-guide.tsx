@@ -299,7 +299,9 @@ function buildGroups(status: SetupStatus): Group[] {
         key: 'twin',
         title: 'Add voice examples',
         description: 'Give the AI a few of your real replies so it learns your tone.',
-        href: '/ai-twin',
+        // NOT /ai-twin — that route has no index page (only /briefing +
+        // /audit); the voice-training card lives on /settings.
+        href: '/settings#ai-twin-training',
         done: s.aiTwinTrained,
       },
     ],

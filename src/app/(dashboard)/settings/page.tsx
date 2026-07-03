@@ -118,8 +118,11 @@ export default async function SettingsPage() {
         }} />
 
         {/* Voice training (Phase 2 W6). Loads via /api/org/voice-profile
-            + /api/org/voice-examples, so no server prefetch needed. */}
-        <AiVoiceTrainingCard />
+            + /api/org/voice-examples, so no server prefetch needed.
+            The anchor is the SetupGuide's "Add voice examples" target. */}
+        <div id="ai-twin-training" className="scroll-mt-24">
+          <AiVoiceTrainingCard />
+        </div>
 
         {/* Voice training health (Phase 2 W8). Loads via /api/org/voice-health
             — surfaces edit-pattern signals + recommendations. */}
