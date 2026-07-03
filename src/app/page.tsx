@@ -394,12 +394,14 @@ export default function LandingPage() {
               Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
               confirmation — so a slammed front desk never costs you another booked patient.
             </p>
-            {/* Source line for the H1 claim. Invoca's 2021 platform data
-                puts healthcare's average unanswered-call rate at 29%
-                (medical practices 31%) — "1 in 4" is deliberately the
-                conservative end of the measured range. */}
+            {/* Proof line under the H1. The headline's "1 in 4" is the
+                conservative end of the measured range (Invoca 2021
+                platform data: healthcare average 29%, medical practices
+                31%; Call Box 2022: 34% of patient appointment calls
+                don't convert) — but the VISIBLE citation is the freshest
+                strong source, framed on the consequence. */}
             <p className="mt-3 text-xs text-gray-400">
-              Healthcare providers miss 29% of inbound calls on average — Invoca platform data, 2021.
+              82% of callers who can&apos;t reach a business say they&apos;ll call a competitor next — CallRail consumer survey, 2025.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
