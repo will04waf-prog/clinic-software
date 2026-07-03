@@ -62,6 +62,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { withCronLock } from '@/lib/cron-locks'
 import { placeOutboundCall, isVapiOutboundConfigured } from '@/lib/voice-agent/vapi-outbound'
 import { blockedReason } from '@/lib/billing/org-access'
+import { alertOperator } from '@/lib/ops-alert'
 
 interface ContactRow {
   id:             string
@@ -357,11 +358,19 @@ export async function POST(request: Request) {
   if (denied) return denied
 
   const result = await sendVoiceReminders()
+  if (!result.ok) {
+    // Billable patient calls — the operator must hear about failures.
+    await alertOperator({
+      key: 'cron-voice-reminders',
+      subject: 'voice-reminders cron reported failure',
+      body: `Outcome: ${JSON.stringify(result)}\nHourly cron — repeats at most hourly while failing.`,
+    })
+  }
   return NextResponse.json({
     ok: result.ok,
     ran_at: new Date().toISOString(),
     voice_reminders: result,
-  })
+  }, { status: result.ok ? 200 : 500 })
 }
 
 // Manual trigger during dev. Matches the existing /api/cron pattern.

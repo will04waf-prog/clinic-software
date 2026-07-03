@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/cron/require-cron-auth'
 import { sendWeeklyDigests } from '@/lib/weekly-digest'
+import { alertOperator } from '@/lib/ops-alert'
 
 export const maxDuration = 300
 
@@ -18,5 +19,12 @@ export async function GET(request: Request) {
   if (denied) return denied
 
   const outcome = await sendWeeklyDigests()
+  if (!outcome.ok) {
+    await alertOperator({
+      key: 'cron-weekly-digest',
+      subject: `weekly digest: ${outcome.errors} org(s) failed`,
+      body: `Outcome: ${JSON.stringify(outcome)}\nWeekly cron (Mondays) — failed orgs get no digest this week unless re-run.`,
+    })
+  }
   return NextResponse.json(outcome, { status: outcome.ok ? 200 : 500 })
 }

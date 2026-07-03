@@ -40,6 +40,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { alertOperator } from '@/lib/ops-alert'
 
 export interface ProvisioningJob {
   id:              string
@@ -255,7 +256,7 @@ export interface FailArgs {
 export async function fail(args: FailArgs): Promise<void> {
   const { data: row, error: rowErr } = await supabaseAdmin
     .from('provisioning_jobs')
-    .select('attempts')
+    .select('attempts, organization_id, step')
     .eq('id', args.jobId)
     .maybeSingle()
   if (rowErr || !row) {
@@ -274,6 +275,17 @@ export async function fail(args: FailArgs): Promise<void> {
     .eq('id', args.jobId)
   if (updErr) {
     throw new Error(`fail update failed for ${args.jobId}: ${updErr.message}`)
+  }
+
+  // Terminal failure = a clinic's phone-number setup died after all
+  // retries. The wizard stepper shows it, but the owner may have
+  // closed the tab — the operator must hear about it unprompted.
+  if (exhausted) {
+    await alertOperator({
+      key: `provisioning-exhausted:${row.organization_id}:${row.step}`,
+      subject: `phone provisioning failed permanently: ${row.step}`,
+      body: `Org ${row.organization_id} — step ${row.step} exhausted after ${row.attempts} attempts.\nLast error: ${trimmed.slice(0, 500)}\nRe-enqueue from the admin dashboard once the cause is fixed.`,
+    })
   }
 }
 

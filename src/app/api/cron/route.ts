@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/cron/require-cron-auth'
+import { alertOperator } from '@/lib/ops-alert'
 import { processDueSteps } from '@/lib/automation-engine'
 import { sendConsultationReminders } from '@/lib/consultation-reminders'
 import { expireTrials } from '@/lib/expire-trials'
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
   ])
 
   const jobs: Record<string, unknown> = {}
+  const failures: { name: string; message: string }[] = []
   settled.forEach((res, i) => {
     const name = jobNames[i]
     if (res.status === 'fulfilled') {
@@ -46,8 +48,27 @@ export async function POST(request: Request) {
       const message = res.reason instanceof Error ? res.reason.message : String(res.reason)
       console.error(`[cron] job ${name} failed:`, message)
       jobs[name] = { error: message }
+      failures.push({ name, message })
     }
   })
+
+  // Nothing fails silently: any thrown job pages the operator and the
+  // run reports 500 so the Vercel cron dashboard shows red instead of
+  // a green lie. FIXED key — one alert per hour TOTAL, whatever the
+  // failing set is. (Keying per failing-set multiplies the budget when
+  // the set flaps: a degraded DB failing random subsets each minute
+  // would mint a fresh key most ticks → the 60-emails/hour storm the
+  // throttle exists to prevent. A set change mid-hour just hits
+  // Resend's idempotency conflict and is dropped — next hour's email
+  // carries the current set.)
+  if (failures.length > 0) {
+    await alertOperator({
+      key: 'cron-main',
+      subject: `main cron: ${failures.length} job${failures.length === 1 ? '' : 's'} failing`,
+      body: failures.map((f) => `${f.name}: ${f.message}`).join('\n')
+        + '\nRuns every minute — this alert repeats at most hourly while failures persist.',
+    })
+  }
 
   const enrollmentSlot = settled[4]
   const draftsSlot = settled[5]
@@ -60,7 +81,7 @@ export async function POST(request: Request) {
   const invitesResult = invitesSlot.status === 'fulfilled' ? invitesSlot.value : null
 
   return NextResponse.json({
-    ok: true,
+    ok: failures.length === 0,
     ran_at: new Date().toISOString(),
     enrollment_jobs: enrollmentResult,
     drafts_expired: draftsResult?.expired ?? null,
@@ -68,7 +89,7 @@ export async function POST(request: Request) {
     invitations_expired: invitesResult?.expired ?? null,
     invitations_error: invitesResult?.error,
     jobs,
-  })
+  }, { status: failures.length === 0 ? 200 : 500 })
 }
 
 // Allow GET for easy manual triggering during development
