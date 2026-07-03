@@ -52,7 +52,7 @@ async function buildSetupStatus(
   const [orgRes, servicesRes, hoursRes, contactsRes, voiceRes] = await Promise.all([
     supabase
       .from('organizations')
-      .select('slug, booking_enabled, sms_enabled, vapi_phone_number_id, call_agent_enabled, call_agent_baa_attested_at, faqs, plan, plan_status, trial_ends_at')
+      .select('slug, booking_enabled, sms_enabled, vapi_phone_number_id, call_agent_enabled, call_agent_baa_attested_at, faqs, plan, plan_status, trial_ends_at, address_line1, city')
       .eq('id', orgId)
       .single(),
     // head:true → COUNT only, no rows pulled back.
@@ -94,6 +94,9 @@ async function buildSetupStatus(
       aiTwinTrained: (voiceRes.count ?? 0) > 0,
       // Layla voice
       hasPhoneNumber: org.vapi_phone_number_id != null,
+      // Without an address, Layla's give_directions tool dead-ends on
+      // "where are you located?" — one of the most common call intents.
+      hasAddress: org.address_line1 != null && org.city != null,
       hasFaqs: faqCount > 0,
       baaAttested: org.call_agent_baa_attested_at != null,
       laylaLive: org.call_agent_enabled === true,

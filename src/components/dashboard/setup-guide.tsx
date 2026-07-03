@@ -20,6 +20,7 @@ interface SetupStatus {
     smsLive: boolean
     aiTwinTrained: boolean
     hasPhoneNumber: boolean
+    hasAddress: boolean
     hasFaqs: boolean
     baaAttested: boolean
     laylaLive: boolean
@@ -321,6 +322,13 @@ function buildGroups(status: SetupStatus): Group[] {
         description: 'Provision the number Layla answers, then forward your clinic line to it.',
         href: '/settings/call-agent',
         done: s.hasPhoneNumber,
+      },
+      {
+        key: 'address',
+        title: 'Add your clinic address',
+        description: '"Where are you located?" is a top call — give Layla the answer and directions.',
+        href: '/settings/call-agent',
+        done: s.hasAddress,
       },
       {
         key: 'faqs',
