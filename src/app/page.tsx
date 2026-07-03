@@ -419,6 +419,30 @@ export default function LandingPage() {
                 Start 14-day free trial
               </Link>
             </div>
+            {/* Live demo line — the strongest proof on the page. Layla
+                answers this number as the fictional demo clinic
+                (Tarhunna Aesthetics); every visitor can hear the product
+                before reading another word. */}
+            <a
+              href="tel:+13019622856"
+              className="group mx-auto mt-8 flex w-fit max-w-full items-center gap-3 rounded-2xl border border-brand-500/40 bg-brand-500/[0.07] px-5 py-3.5 transition-colors hover:border-brand-500/70 hover:bg-brand-500/[0.12]"
+            >
+              <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/15">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500/30 [animation-duration:2.2s]" />
+                <PhoneCall className="relative h-4 w-4 text-[#028090]" />
+              </span>
+              <span className="text-left">
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#028090]">
+                  Live demo — Layla will answer
+                </span>
+                <span className="block text-lg font-extrabold tracking-tight text-gray-900 sm:text-xl">
+                  (301) 962-2856
+                </span>
+                <span className="block text-[12px] text-gray-500">
+                  Call now. Try to book Botox. Ask for directions. She&apos;s real.
+                </span>
+              </span>
+            </a>
             <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6">
               {['No credit card required', 'Setup in less than 20 minutes', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
