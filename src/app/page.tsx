@@ -212,6 +212,7 @@ const TIERS: readonly TierCard[] = [
     includes: [
       'Everything in Professional',
       'Layla — full inbound AI voice receptionist (16 tools)',
+      "Layla's local phone number included — no per-number fees",
       'Outbound AI reminder calls 4–72h ahead',
       'AI Twin SMS sends autonomously',
       'Call logs with transcript, disposition, recording URL',

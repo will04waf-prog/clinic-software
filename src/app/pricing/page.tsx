@@ -58,6 +58,7 @@ const TIER_FEATURES: Record<TierId, string[]> = {
     'Unlimited contacts, unlimited seats',
     'Everything in Professional',
     'Layla — AI voice receptionist that answers your phone 24/7 or after-hours',
+    "Layla's local phone number included — no per-number fees",
     'Layla books, reschedules, cancels, transfers to a human, and takes messages live on the call',
     'Outbound AI reminder calls 4–72h before each visit (confirm / reschedule / cancel by voice)',
     'Voice messages inbox + full call logs with transcripts, dispositions, and recordings',
