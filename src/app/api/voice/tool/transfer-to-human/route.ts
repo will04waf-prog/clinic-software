@@ -171,13 +171,58 @@ export async function POST(req: Request) {
     }))
   }
 
-  // ── Success: directive for the Vapi/Twilio bridge to dial out. ──
+  // ── Execute the transfer via Vapi Live Call Control. ──
+  // A function-tool RESULT cannot move a call — returning
+  // transferred:true without this POST was exactly the bug that
+  // shipped originally: Layla announced the transfer and the call
+  // never went anywhere. The payload's monitor.controlUrl is the
+  // live-call control endpoint; POSTing {type:'transfer'} to it is
+  // what actually bridges the caller to the fallback number.
+  const controlUrlRaw = (body as { message?: { call?: { monitor?: { controlUrl?: string } } } })
+    ?.message?.call?.monitor?.controlUrl
+  // SSRF guard: the URL comes from a signature-verified Vapi payload,
+  // but if VAPI_WEBHOOK_SECRET were ever unset (verify fails open with
+  // a warning), a forged payload could point us at internal targets —
+  // only ever POST to Vapi-owned hosts.
+  const controlUrl =
+    typeof controlUrlRaw === 'string' && /^https:\/\/[^/]*\.vapi\.ai\//.test(controlUrlRaw)
+      ? (controlUrlRaw.endsWith('/control') ? controlUrlRaw : `${controlUrlRaw}/control`)
+      : null
+
+  let executed = false
+  let failCode: string | null = controlUrl ? null : 'no_control_url'
+  if (controlUrl) {
+    try {
+      const ctl = await fetch(controlUrl, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type:        'transfer',
+          destination: { type: 'number', number: fallback },
+          content:     'One moment — connecting you now.',
+        }),
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (ctl.ok) {
+        executed = true
+      } else {
+        failCode = `control_post_${ctl.status}`
+        console.error(`[voice/transfer-to-human] control POST rejected: ${ctl.status}`)
+      }
+    } catch (err) {
+      failCode = 'control_post_failed'
+      console.error('[voice/transfer-to-human] control POST failed:', err instanceof Error ? err.message : err)
+    }
+  }
+
+  // Audit reflects what ACTUALLY happened, not what we intended.
   try {
     await supabaseAdmin.from('activity_log').insert({
       organization_id: org.id,
       action:          'voice_transferred',
       metadata: {
-        transferred:    true,
+        transferred:    executed,
+        ...(failCode ? { downgrade_reason: failCode } : {}),
         reason,
         caller_name:    callerName,
         summary,
@@ -187,6 +232,17 @@ export async function POST(req: Request) {
     })
   } catch {
     console.error('[voice/transfer-to-human] activity_log insert failed (transfer branch)')
+  }
+
+  if (!executed) {
+    return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
+      ok: true,
+      output: {
+        transferred: false,
+        reason: 'transfer_failed',
+        guidance: 'Apologize briefly, then call the take_message tool to capture a callback.',
+      },
+    }))
   }
 
   return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
