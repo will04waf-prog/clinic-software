@@ -39,9 +39,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No organization found' }, { status: 404 })
   }
 
-  // Already active → should use portal, not start a new checkout
+  // Already active → a second checkout would create a SECOND
+  // subscription. Instead, hand back a billing-portal session so the
+  // pricing page's plan buttons become the upgrade/downgrade path.
+  // Deep-link straight into the portal's plan picker when the portal
+  // configuration allows it; fall back to the plain portal home if
+  // switching isn't enabled in Stripe yet.
   if (org.stripe_subscription_id && org.plan_status === 'active') {
-    return NextResponse.json({ error: 'Already subscribed — use Manage Billing to make changes.' }, { status: 409 })
+    if (!org.stripe_customer_id) {
+      // Data inconsistency (subscription without customer) — surface
+      // the old guidance rather than 500ing.
+      return NextResponse.json({ error: 'Already subscribed — use Manage Billing to make changes.' }, { status: 409 })
+    }
+    const origin = new URL(req.url).origin
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer:   org.stripe_customer_id,
+        return_url: `${origin}/settings`,
+        flow_data: {
+          type: 'subscription_update',
+          subscription_update: { subscription: org.stripe_subscription_id },
+        },
+      })
+      return NextResponse.json({ url: session.url })
+    } catch {
+      const session = await stripe.billingPortal.sessions.create({
+        customer:   org.stripe_customer_id,
+        return_url: `${origin}/settings`,
+      })
+      return NextResponse.json({ url: session.url })
+    }
   }
 
   const origin  = new URL(req.url).origin
