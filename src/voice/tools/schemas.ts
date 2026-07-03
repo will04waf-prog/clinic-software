@@ -238,7 +238,7 @@ export const TOOL_SEND_LINK_SMS: VapiTool = {
         consultation_id: {
           type: 'string',
           description:
-            "UUID of the consultation to manage. REQUIRED when link_kind='manage' (enforced by the schema's allOf/if/then below — the LLM will be rejected before the tool fires if missing). Use the value from a prior lookup_my_appointments result.",
+            "UUID of the consultation to manage. REQUIRED when link_kind='manage' — the route rejects manage links without it. Use the value from a prior lookup_my_appointments result.",
         },
         service_slug: {
           type: 'string',
@@ -247,22 +247,13 @@ export const TOOL_SEND_LINK_SMS: VapiTool = {
         },
       },
       required: ['link_kind', 'consent_confirmed'],
-      // Conditional requirement: consultation_id is mandatory iff
-      // link_kind='manage'. Expressed as JSON Schema allOf+if/then so
-      // a tool-call without it is rejected by the validator before the
-      // route runs. The route still does a defense-in-depth check on
-      // presence + uuid format (older Vapi clients may not honor
-      // conditional requireds, and we never trust the validator alone
-      // for PHI-bearing paths).
-      allOf: [
-        {
-          if: {
-            properties: { link_kind: { const: 'manage' } },
-            required: ['link_kind'],
-          },
-          then: { required: ['consultation_id'] },
-        },
-      ],
+      // NOTE: consultation_id is mandatory iff link_kind='manage'. This
+      // used to be a JSON-Schema allOf+if/then conditional, but Vapi's
+      // assistant API now REJECTS allOf inside tool parameters (400:
+      // "parameters.property allOf should not exist"), which broke every
+      // NEW assistant creation. The conditional lives in the tool
+      // description + the route's own presence/uuid check — which was
+      // always the real guard for this PHI-bearing path.
     },
   },
 }
