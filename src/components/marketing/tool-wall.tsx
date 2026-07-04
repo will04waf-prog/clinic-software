@@ -382,19 +382,41 @@ export function ToolWall() {
 
       {/* ── Mobile: the same show, phone-native ───────────────── */}
       <div className="lg:hidden">
-        {/* Slim sticky counter — the live tick IS the animation while
-            the reader scrolls the conversation. */}
+        {/* Sticky mini-wall — the live show while the reader scrolls:
+            all 16 tool icons ride under the header and flip gray→mint
+            (with the .pop-in blip) the moment their line fires. The
+            labeled grid below the transcript stays as the payoff. */}
         <div className="sticky top-16 z-10 mb-6 flex justify-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#02C39A]/30 bg-[#F5EFE1]/90 px-4 py-1.5 text-xs font-semibold text-[#026B78] shadow-sm backdrop-blur-sm">
-            <span aria-hidden className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#02C39A]/40 [animation-duration:2.2s] motion-reduce:animate-none" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#02C39A]" />
+          <div className="flex w-fit max-w-full flex-col items-center gap-1.5 rounded-2xl border border-[#02C39A]/30 bg-[#F5EFE1]/90 px-3.5 py-2 shadow-sm backdrop-blur-sm">
+            <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#026B78]">
+              <span aria-hidden className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#02C39A]/40 [animation-duration:2.2s] motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#02C39A]" />
+              </span>
+              Tools fired
+              <span className="tabular-nums text-sm font-bold normal-case tracking-normal text-[#0B2027]">
+                {mobileLit.size} <span className="text-xs font-medium text-gray-500">of 16</span>
+              </span>
             </span>
-            Tools fired
-            <span className="tabular-nums text-sm font-bold text-[#0B2027]">
-              {mobileLit.size} <span className="text-xs font-medium text-gray-500">of 16</span>
-            </span>
-          </span>
+            <div aria-hidden className="flex items-center gap-[5px]">
+              {TOOLS.map(({ fn, Icon }) => {
+                const on = mobileLit.has(fn)
+                return (
+                  <span
+                    key={fn}
+                    className={`transition-colors duration-300 motion-reduce:transition-none ${
+                      on ? 'text-[#028090]' : 'text-[#0B2027]/20'
+                    }`}
+                  >
+                    {/* key swap replays .pop-in on each unlit→lit flip */}
+                    <span key={on ? 'lit' : 'dim'} className={on ? 'pop-in inline-flex' : 'inline-flex'}>
+                      <Icon size={14} strokeWidth={2.4} />
+                    </span>
+                  </span>
+                )
+              })}
+            </div>
+          </div>
         </div>
         <ol
           ref={mobileOlRef}
