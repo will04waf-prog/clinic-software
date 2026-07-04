@@ -10,6 +10,7 @@ import { expireDrafts } from '@/lib/expire-drafts'
 import { expireBookingHolds } from '@/lib/booking/expire-holds'
 import { expireInvitations } from '@/lib/expire-invitations'
 import { sendNoShowRecovery } from '@/lib/no-show-recovery'
+import { sendWinbacks } from '@/lib/billing-lifecycle-emails'
 
 // Called by an external cron (e.g. Vercel Cron, GitHub Actions, cron-job.org)
 // Protect with a shared secret in the Authorization header.
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
     'expire_holds',
     'expire_invitations',
     'no_show_recovery',
+    'winbacks',
   ] as const
 
   const settled = await Promise.allSettled([
@@ -39,6 +41,7 @@ export async function POST(request: Request) {
     expireBookingHolds(),
     expireInvitations(),
     sendNoShowRecovery(),
+    sendWinbacks(),
   ])
 
   const jobs: Record<string, unknown> = {}

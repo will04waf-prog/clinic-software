@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { after } from 'next/server'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { tierFromPriceId } from '@/lib/billing/tiers'
+import { sendPaymentFailedEmail, sendSubscriptionCanceledEmail } from '@/lib/billing-lifecycle-emails'
 
 // Map Stripe subscription statuses → Tarhunna plan_status values
 const STRIPE_STATUS_MAP: Record<string, string> = {
@@ -77,6 +79,10 @@ export async function POST(req: NextRequest) {
           stripe_customer_id:     customerId,
           stripe_subscription_id: subscriptionId,
           plan_status:            'active',
+          // Fresh subscription = clean churn slate: if they cancel
+          // again later, the win-back sweep can fire again.
+          canceled_at:            null,
+          winback_sent_at:        null,
           updated_at:             new Date().toISOString(),
         }
         if (tier) {
@@ -106,13 +112,22 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // ── Payment failed → mark past_due ────────────────────────────
+      // ── Payment failed → mark past_due + dunning email ───────────
       case 'invoice.payment_failed': {
         const invoice = event.data.object as any
         const subId   = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
         if (!subId) break
 
         await updateOrgBySubscription(subId, { plan_status: 'past_due' })
+        // One email per real retry attempt (idempotency embeds
+        // invoice id + attempt). after(): Stripe gets its 200 before
+        // the Resend HTTP call runs — a slow email must never push
+        // this handler past Stripe's delivery timeout (redelivery
+        // would re-run the whole event switch).
+        after(() => sendPaymentFailedEmail(subId, {
+          id: String(invoice.id ?? 'unknown'),
+          attempt: Number(invoice.attempt_count ?? 1),
+        }))
         break
       }
 
@@ -164,6 +179,8 @@ export async function POST(req: NextRequest) {
         const sub = event.data.object as Stripe.Subscription
         await updateOrgBySubscription(sub.id, {
           plan_status: 'canceled',
+          // canceled_at anchors the 14-day churn win-back sweep.
+          canceled_at: new Date().toISOString(),
           // Cancellation forces autonomous send off — the org loses
           // access at the proxy layer, but we don't want a stale
           // "enabled" toggle waiting if they re-subscribe later.
@@ -171,6 +188,9 @@ export async function POST(req: NextRequest) {
           ai_twin_auto_send_rollout_pct: 100,
           ai_twin_auto_send_shadow_mode: false,
         })
+        // Immediate "subscription ended" email (data-is-safe framing +
+        // resubscribe CTA). after() for the same timeout reason.
+        after(() => sendSubscriptionCanceledEmail(sub.id))
         break
       }
 
