@@ -19,8 +19,11 @@
  *     (precomputed in CUMULATIVE — no per-scroll set math).
  *   - A cell transitioning unlit→lit remounts its icon (key swap) with
  *     the existing .pop-in utility for a tiny "tool call" blip.
- *   - Mobile (< lg): no sticky pane — each line reveals its tool chips
- *     inline, one-shot, in reading order.
+ *   - Mobile (< lg): the same show in phone-native form — a slim sticky
+ *     "Tools fired · N of 16" counter ticks as each line is read
+ *     (one-shot, monotonic: a linear reading flow doesn't reverse),
+ *     each line reveals its tool chips inline, and the full 16-cell
+ *     wall sits at the end of the transcript as the lit-up payoff.
  *
  * Reduced motion: everything renders lit and full-opacity, observers
  * never attach (.pop-in is already no-op'd in globals.css).
@@ -153,39 +156,16 @@ function Bubble({ line }: { line: TranscriptLine }) {
   )
 }
 
-/** Mobile line: bubble + inline tool chips that fade-slide in the
- *  first time the line enters the viewport (one-shot, like
- *  AnimatedSection — no reversal needed in a linear reading flow). */
-function MobileLine({ line, forceVisible }: { line: TranscriptLine; forceVisible: boolean }) {
-  const ref = useRef<HTMLLIElement>(null)
-  const [entered, setEntered] = useState(false)
-  // Derived, not set in the effect: reduced motion shows chips at once.
-  const seen = entered || forceVisible
-
-  useEffect(() => {
-    if (forceVisible || entered) return
-    const el = ref.current
-    if (!el) return
-    if (typeof IntersectionObserver === 'undefined') {
-      setEntered(true)
-      return
-    }
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setEntered(true)
-          obs.disconnect()
-        }
-      },
-      { rootMargin: '0px 0px -12% 0px' },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [forceVisible, entered])
-
+/** Mobile line: bubble + inline tool chips that fade-slide in once the
+ *  line has been read. `seen` comes from the parent's scroll tracker,
+ *  NOT a per-line IntersectionObserver: a fast flick can carry a line
+ *  from below the viewport to above it between observer snapshots, so
+ *  it never intersects and a one-shot observer never fires — position
+ *  is the reliable source of truth, intersection isn't. */
+function MobileLine({ line, seen }: { line: TranscriptLine; seen: boolean }) {
   const isLayla = line.who === 'layla'
   return (
-    <li ref={ref} className="min-w-0">
+    <div className="min-w-0">
       <div className={`flex items-end gap-2.5 ${isLayla ? 'justify-start' : 'justify-end'}`}>
         <Bubble line={line} />
       </div>
@@ -208,7 +188,59 @@ function MobileLine({ line, forceVisible }: { line: TranscriptLine; forceVisible
           ))}
         </ul>
       )}
-    </li>
+    </div>
+  )
+}
+
+/** The 16-cell wall — shared by the desktop sticky pane and the mobile
+ *  end-of-transcript payoff. `cols` differs: desktop always has ~490px,
+ *  mobile follows the LaylaShowcase-finale precedent of 2-up. */
+function WallPanel({ lit, gridClass }: { lit: ReadonlySet<string>; gridClass: string }) {
+  return (
+    <div className="rounded-2xl border border-[#0B2027]/10 bg-white/60 p-4 shadow-sm xl:p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#026B78]">
+          <span aria-hidden className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#02C39A]/40 [animation-duration:2.2s] motion-reduce:animate-none" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#02C39A]" />
+          </span>
+          Tools fired
+        </span>
+        <span className="text-sm font-bold tabular-nums text-[#0B2027]">
+          {lit.size} <span className="font-medium text-gray-500">of 16</span>
+        </span>
+      </div>
+      <ul role="list" className={`grid gap-2.5 ${gridClass}`}>
+        {TOOLS.map(({ fn, label, Icon }) => {
+          const on = lit.has(fn)
+          return (
+            <li
+              key={fn}
+              className={`flex flex-col items-center gap-1.5 rounded-xl border px-1 py-3 text-center transition-[border-color,background-color,opacity] duration-300 motion-reduce:transition-none ${
+                on ? 'border-[#02C39A]/60 bg-white' : 'border-gray-200 bg-[#FAF6EC] opacity-60'
+              }`}
+            >
+              {/* key swap remounts the icon so .pop-in replays on
+                  every unlit→lit transition (and only then). */}
+              <span key={on ? 'lit' : 'dim'} className={on ? 'pop-in' : undefined}>
+                <Icon size={17} className="text-[#028090]" aria-hidden />
+              </span>
+              {/* Unlit label is gray-950, not ink: composited
+                  through the cell's opacity-60 over cream, ink
+                  lands at ~4.4:1 (AA fail at 11.5px) while
+                  gray-950 holds ~5.3:1. */}
+              <span
+                className={`text-[11.5px] font-semibold leading-tight transition-colors duration-300 motion-reduce:transition-none ${
+                  on ? 'text-[#0B2027]' : 'text-gray-950'
+                }`}
+              >
+                {label}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -218,7 +250,56 @@ export function ToolWall() {
   // Index of the furthest transcript line whose center-band has been
   // crossed downward; -1 = nothing crossed yet (SSR / top of section).
   const [active, setActive] = useState(-1)
+  // Mobile twin: furthest line the reader has reached, measured from
+  // scroll position. Monotonic on purpose — a linear reading flow
+  // doesn't reverse.
+  const [mobileActive, setMobileActive] = useState(-1)
   const lineRefs = useRef<(HTMLLIElement | null)[]>([])
+  const mobileOlRef = useRef<HTMLOListElement>(null)
+  const mobileLineRefs = useRef<(HTMLLIElement | null)[]>([])
+
+  // Mobile tracker: one passive scroll listener, rAF-throttled, walks
+  // line positions. Unlike an IntersectionObserver it can't miss lines
+  // during a fast flick (a line that jumps from below the viewport to
+  // above it between snapshots never "intersects" at all).
+  useEffect(() => {
+    if (reduced || isLg) return
+    const ol = mobileOlRef.current
+    if (!ol) return
+    let raf = 0
+    const measure = () => {
+      raf = 0
+      const cutoff = window.innerHeight * 0.88
+      const rect = ol.getBoundingClientRect()
+      if (rect.top > window.innerHeight) return // not reached yet
+      if (rect.bottom < cutoff) {
+        // Scrolled clear past the transcript — everything is read.
+        setMobileActive(TRANSCRIPT.length - 1)
+        return
+      }
+      let furthest = -1
+      for (let i = 0; i < mobileLineRefs.current.length; i++) {
+        const el = mobileLineRefs.current[i]
+        if (!el) continue
+        if (el.getBoundingClientRect().top < cutoff) furthest = i
+        else break
+      }
+      if (furthest >= 0) {
+        setMobileActive((c) => Math.max(c, furthest))
+      }
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(measure)
+    }
+    measure()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [reduced, isLg])
 
   useEffect(() => {
     // Below lg the desktop transcript is display:none, so its lines
@@ -272,6 +353,8 @@ export function ToolWall() {
 
   const activeIdx = reduced ? TRANSCRIPT.length - 1 : active
   const lit = activeIdx >= 0 ? CUMULATIVE[activeIdx] : EMPTY
+  const mobileIdx = reduced ? TRANSCRIPT.length - 1 : mobileActive
+  const mobileLit = mobileIdx >= 0 ? CUMULATIVE[mobileIdx] : EMPTY
 
   return (
     <div>
@@ -293,59 +376,43 @@ export function ToolWall() {
         </ol>
 
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-2xl border border-[#0B2027]/10 bg-white/60 p-4 shadow-sm xl:p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#026B78]">
-                <span aria-hidden className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#02C39A]/40 [animation-duration:2.2s] motion-reduce:animate-none" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#02C39A]" />
-                </span>
-                Tools fired
-              </span>
-              <span className="text-sm font-bold tabular-nums text-[#0B2027]">
-                {lit.size} <span className="font-medium text-gray-500">of 16</span>
-              </span>
-            </div>
-            <ul role="list" className="grid grid-cols-4 gap-2.5">
-              {TOOLS.map(({ fn, label, Icon }) => {
-                const on = lit.has(fn)
-                return (
-                  <li
-                    key={fn}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-1 py-3 text-center transition-[border-color,background-color,opacity] duration-300 motion-reduce:transition-none ${
-                      on ? 'border-[#02C39A]/60 bg-white' : 'border-gray-200 bg-[#FAF6EC] opacity-60'
-                    }`}
-                  >
-                    {/* key swap remounts the icon so .pop-in replays on
-                        every unlit→lit transition (and only then). */}
-                    <span key={on ? 'lit' : 'dim'} className={on ? 'pop-in' : undefined}>
-                      <Icon size={17} className="text-[#028090]" aria-hidden />
-                    </span>
-                    {/* Unlit label is gray-950, not ink: composited
-                        through the cell's opacity-60 over cream, ink
-                        lands at ~4.4:1 (AA fail at 11.5px) while
-                        gray-950 holds ~5.3:1. */}
-                    <span
-                      className={`text-[11.5px] font-semibold leading-tight transition-colors duration-300 motion-reduce:transition-none ${
-                        on ? 'text-[#0B2027]' : 'text-gray-950'
-                      }`}
-                    >
-                      {label}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
+          <WallPanel lit={lit} gridClass="grid-cols-4" />
         </div>
       </div>
 
-      {/* ── Mobile: linear transcript with inline tool chips ──── */}
-      <ol role="list" aria-label="Sample call transcript" className="space-y-7 lg:hidden">
-        {TRANSCRIPT.map((line, i) => (
-          <MobileLine key={i} line={line} forceVisible={reduced} />
-        ))}
-      </ol>
+      {/* ── Mobile: the same show, phone-native ───────────────── */}
+      <div className="lg:hidden">
+        {/* Slim sticky counter — the live tick IS the animation while
+            the reader scrolls the conversation. */}
+        <div className="sticky top-16 z-10 mb-6 flex justify-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#02C39A]/30 bg-[#F5EFE1]/90 px-4 py-1.5 text-xs font-semibold text-[#026B78] shadow-sm backdrop-blur-sm">
+            <span aria-hidden className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#02C39A]/40 [animation-duration:2.2s] motion-reduce:animate-none" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#02C39A]" />
+            </span>
+            Tools fired
+            <span className="tabular-nums text-sm font-bold text-[#0B2027]">
+              {mobileLit.size} <span className="text-xs font-medium text-gray-500">of 16</span>
+            </span>
+          </span>
+        </div>
+        <ol
+          ref={mobileOlRef}
+          role="list"
+          aria-label="Sample call transcript"
+          className="space-y-7"
+        >
+          {TRANSCRIPT.map((line, i) => (
+            <li key={i} ref={(el) => { mobileLineRefs.current[i] = el }} className="list-none">
+              <MobileLine line={line} seen={reduced || i <= mobileIdx} />
+            </li>
+          ))}
+        </ol>
+        {/* The payoff: by the closing line every cell is lit. */}
+        <div className="mt-8">
+          <WallPanel lit={mobileLit} gridClass="grid-cols-2 sm:grid-cols-4" />
+        </div>
+      </div>
     </div>
   )
 }
