@@ -4,6 +4,7 @@ import { BarChart, Bar, ResponsiveContainer, XAxis, Tooltip } from 'recharts'
 import {
   PhoneCall, PhoneOutgoing, TrendingUp, CalendarCheck, type LucideIcon,
 } from 'lucide-react'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 
 export interface LaylaImpactData {
   callsAnswered: number
@@ -32,7 +33,7 @@ const OUTCOME_LABELS: Record<string, string> = {
 const money = (cents: number) => `$${Math.round(cents / 100).toLocaleString()}`
 
 function Stat({ icon: Icon, value, label, sub }: {
-  icon: LucideIcon; value: string; label: string; sub?: string
+  icon: LucideIcon; value: React.ReactNode; label: string; sub?: string
 }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
@@ -42,7 +43,7 @@ function Stat({ icon: Icon, value, label, sub }: {
         </span>
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</span>
       </div>
-      <div className="mt-3 text-3xl font-extrabold tracking-tight text-[#14241d]">{value}</div>
+      <div className="mt-3 text-3xl font-extrabold tracking-tight text-[#14241d] [font-variant-numeric:tabular-nums]">{value}</div>
       {sub && <p className="mt-1 text-xs text-gray-500 leading-snug">{sub}</p>}
     </div>
   )
@@ -85,13 +86,13 @@ export function LaylaImpact({ data, days }: { data: LaylaImpactData; days: numbe
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat icon={PhoneCall} value={data.callsAnswered.toLocaleString()} label="Calls answered"
+            <Stat icon={PhoneCall} value={<AnimatedNumber value={data.callsAnswered} />} label="Calls answered"
               sub={`${data.messagesCaptured} message${pl(data.messagesCaptured)} taken · ${data.transferredToStaff} transferred`} />
-            <Stat icon={TrendingUp} value={money(data.bookingRevenueCents)} label="Booking value"
+            <Stat icon={TrendingUp} value={<AnimatedNumber value={data.bookingRevenueCents} format={money} />} label="Booking value"
               sub={`${data.bookingsInRange} consultation${pl(data.bookingsInRange)} booked`} />
-            <Stat icon={CalendarCheck} value={data.laylaAssistedBookings.toLocaleString()} label="Booked after a call"
+            <Stat icon={CalendarCheck} value={<AnimatedNumber value={data.laylaAssistedBookings} />} label="Booked after a call"
               sub={`${money(data.laylaAssistedRevenueCents)} from callers Layla spoke with`} />
-            <Stat icon={PhoneOutgoing} value={data.reminderCallsPlaced.toLocaleString()} label="Reminder calls"
+            <Stat icon={PhoneOutgoing} value={<AnimatedNumber value={data.reminderCallsPlaced} />} label="Reminder calls"
               sub={data.noShowRate != null ? `${Math.round(data.noShowRate * 100)}% no-show rate` : 'day-before confirmations'} />
           </div>
 

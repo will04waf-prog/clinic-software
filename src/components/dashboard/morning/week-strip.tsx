@@ -44,18 +44,18 @@ export function WeekStrip({ week }: Props) {
       </header>
 
       <div className="grid gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {week.map((p, i) => <WeekCell key={i} p={p} />)}
+        {week.map((p, i) => <WeekCell key={i} p={p} idx={i} />)}
       </div>
     </section>
   )
 }
 
-function WeekCell({ p }: { p: WeekPrimitive }) {
+function WeekCell({ p, idx }: { p: WeekPrimitive; idx: number }) {
   const Icon = ICONS[p.icon] ?? Zap
   const isUp = p.delta.dir === 'up'
   const DeltaArrow = isUp ? ArrowUp : ArrowDown
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] bg-white px-[17px] pb-4 pt-[15px] shadow-[0_1px_2px_rgba(11,32,39,0.05)]">
+    <div className="rise flex flex-col gap-2 rounded-[14px] bg-white px-[17px] pb-4 pt-[15px] shadow-[0_1px_2px_rgba(11,32,39,0.05)] transition-shadow hover:shadow-[0_4px_16px_-6px_rgba(11,32,39,0.10)]" style={{ '--stagger': idx } as React.CSSProperties}>
       <div className="flex items-center justify-between">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#02C39A]/15">
           <Icon className="h-4 w-4 text-[#04B08C]" />

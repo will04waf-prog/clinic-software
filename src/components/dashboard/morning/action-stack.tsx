@@ -78,8 +78,8 @@ export function ActionStack({ actions }: Props) {
         <EmptyState />
       ) : (
         <ul className="flex flex-col gap-3">
-          {actions.map(a => (
-            <ActionCard key={a.id} action={a} />
+          {actions.map((a, i) => (
+            <ActionCard key={a.id} action={a} idx={i} />
           ))}
         </ul>
       )}
@@ -87,9 +87,9 @@ export function ActionStack({ actions }: Props) {
   )
 }
 
-function ActionCard({ action }: { action: ActionRow }) {
+function ActionCard({ action, idx }: { action: ActionRow; idx: number }) {
   return (
-    <li className="relative flex items-center gap-[15px] rounded-[14px] bg-white px-5 py-[18px] pl-[24px] shadow-[0_1px_2px_rgba(11,32,39,0.05)] transition-shadow hover:shadow-[0_4px_16px_-6px_rgba(11,32,39,0.12)]">
+    <li className="rise relative flex items-center gap-[15px] rounded-[14px] bg-white px-5 py-[18px] pl-[24px] shadow-[0_1px_2px_rgba(11,32,39,0.05)] transition-[box-shadow,transform] duration-200 hover:-translate-y-[1px] hover:shadow-[0_4px_16px_-6px_rgba(11,32,39,0.12)]" style={{ '--stagger': Math.min(idx, 8) } as React.CSSProperties}>
       {/* Urgency rail */}
       <span
         className={cn(

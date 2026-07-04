@@ -382,16 +382,16 @@ export default function LandingPage() {
         <section className="relative overflow-hidden bg-[#F5EFE1] px-6 py-20 sm:py-28">
           <ParallaxGlow />
           <div className="relative z-10 mx-auto max-w-3xl text-center">
-            <div className="mb-3 flex flex-col items-center gap-2">
+            <div className="rise mb-3 flex flex-col items-center gap-2" style={{ '--stagger': 0 } as React.CSSProperties}>
               <SignatureLogo size="xl" variant="light-bg" animated />
               <p className="text-xs font-semibold uppercase tracking-widest text-[#14241d]">
                 An AI receptionist that answers every call, backed by a full CRM.
               </p>
             </div>
-            <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+            <h1 className="rise text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl" style={{ '--stagger': 1 } as React.CSSProperties}>
               You&apos;re losing <span className="text-[#14241d]">1 in 4 calls</span> right now.
             </h1>
-            <p className="mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto">
+            <p className="rise mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto" style={{ '--stagger': 2 } as React.CSSProperties}>
               Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
               confirmation — so a slammed front desk never costs you another booked patient.
             </p>
@@ -401,10 +401,10 @@ export default function LandingPage() {
                 31%; Call Box 2022: 34% of patient appointment calls
                 don't convert) — but the VISIBLE citation is the freshest
                 strong source, framed on the consequence. */}
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="rise mt-3 text-xs text-gray-400" style={{ '--stagger': 3 } as React.CSSProperties}>
               82% of callers who can&apos;t reach a business say they&apos;ll call a competitor next — CallRail consumer survey, 2025.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <div className="rise mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center" style={{ '--stagger': 4 } as React.CSSProperties}>
               <Link
                 href="/book-demo"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
@@ -425,7 +425,8 @@ export default function LandingPage() {
                 before reading another word. */}
             <a
               href="tel:+13019622856"
-              className="group mx-auto mt-8 flex w-fit max-w-full items-center gap-3 rounded-2xl border border-brand-500/40 bg-brand-500/[0.07] px-5 py-3.5 transition-colors hover:border-brand-500/70 hover:bg-brand-500/[0.12]"
+              style={{ '--stagger': 5 } as React.CSSProperties}
+              className="rise group mx-auto mt-8 flex w-fit max-w-full items-center gap-3 rounded-2xl border border-brand-500/40 bg-brand-500/[0.07] px-5 py-3.5 transition-colors hover:border-brand-500/70 hover:bg-brand-500/[0.12]"
             >
               <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/15">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500/30 [animation-duration:2.2s]" />
@@ -443,7 +444,7 @@ export default function LandingPage() {
                 </span>
               </span>
             </a>
-            <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6">
+            <div className="rise mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6" style={{ '--stagger': 6 } as React.CSSProperties}>
               {['No credit card required', 'Setup in less than 20 minutes', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
                   <CheckCircle className="h-4 w-4 text-brand-500 shrink-0" />
@@ -755,7 +756,7 @@ export default function LandingPage() {
                     {q}
                     <ChevronDown className="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180" />
                   </summary>
-                  <p className="pb-5 text-sm text-gray-500 leading-relaxed">{a}</p>
+                  <p className="faq-body pb-5 text-sm text-gray-500 leading-relaxed">{a}</p>
                 </details>
               ))}
             </div>
@@ -799,7 +800,7 @@ export default function LandingPage() {
             <p className="mt-4 text-[#F5EFE1]/70">
               14-day free trial. No credit card required. Set up in less than 20 minutes.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <div className="rise mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center" style={{ '--stagger': 4 } as React.CSSProperties}>
               <Link
                 href="/signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"

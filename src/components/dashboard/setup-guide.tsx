@@ -208,7 +208,7 @@ function GroupBlock({ group }: { group: Group }) {
               }`}
             >
               {step.done
-                ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#02C39A]" />
+                ? <CheckCircle2 className="pop-in mt-0.5 h-5 w-5 shrink-0 text-[#02C39A]" />
                 : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-gray-300" />}
               <div className="min-w-0 flex-1">
                 <p className={`text-sm font-semibold ${

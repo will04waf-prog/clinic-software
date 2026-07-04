@@ -390,6 +390,9 @@ export function BookingView({ slug }: { slug: string }) {
       />
 
       <main className="mx-auto w-full max-w-2xl px-5 py-8">
+        {/* key={step} remounts the wrapper on every step change so the
+            step-in slide plays; reduced-motion disables it globally. */}
+        <div key={step} className="step-in">
         {step === 'service' && (
           <ServiceStep services={lookup.services} onPick={pickService} />
         )}
@@ -439,6 +442,7 @@ export function BookingView({ slug }: { slug: string }) {
             timeFmt={timeFmt}
           />
         )}
+        </div>
       </main>
     </FullPage>
   )
@@ -485,7 +489,11 @@ function Header({
           </p>
         </div>
         {showCountdown && secondsLeft > 0 && (
-          <div className="flex items-center gap-1.5 rounded-full bg-[#02C39A]/15 px-3 py-1 text-[11.5px] font-semibold text-[#04B08C]">
+          <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-semibold transition-colors duration-500 ${
+            secondsLeft <= 60
+              ? 'urgent-pulse bg-[#B5710F]/15 text-[#9A5F0B]'
+              : 'bg-[#02C39A]/15 text-[#04B08C]'
+          }`}>
             <Clock className="h-3 w-3" />
             Held {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
           </div>
@@ -554,7 +562,7 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-[#02C39A]/30 bg-[#FAF6EC] p-6 text-center">
+      <div className="pop-in rounded-2xl border border-[#02C39A]/30 bg-[#FAF6EC] p-6 text-center">
         <CalendarCheck className="mx-auto h-6 w-6 text-[#02C39A]" />
         <h3 className="mt-3 text-base font-semibold text-[#14241D]">You&apos;re on the list</h3>
         <p className="mt-1 text-[13px] text-[#4A5A60]">
@@ -720,7 +728,7 @@ function SlotStep({
                   key={s.startUtc}
                   type="button"
                   onClick={() => onPick(s)}
-                  className="rounded-lg border border-[#02C39A]/30 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-[#04B08C] transition-colors hover:bg-[#02C39A]/10"
+                  className="rounded-lg border border-[#02C39A]/30 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-[#04B08C] transition-[background-color,transform,border-color] duration-150 hover:bg-[#02C39A]/10 hover:border-[#02C39A]/60 active:scale-95"
                 >
                   {timeFmt.format(new Date(s.startUtc))}
                 </button>
@@ -904,8 +912,8 @@ function DoneStep({
   const provider = providers.find(p => p.id === providerId) ?? null
   return (
     <div className="mt-4 space-y-5 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#02C39A]/15">
-        <Check className="h-6 w-6 text-[#04B08C]" />
+      <div className="pop-in mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#02C39A]/15">
+        <Check className="pop-in h-6 w-6 text-[#04B08C]" style={{ animationDelay: '120ms' }} />
       </div>
       <div>
         <h2 className="text-[18px] font-semibold text-[#14241D]">You're booked</h2>

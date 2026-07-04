@@ -199,14 +199,16 @@ export default function DashboardPage() {
           ) : data ? (
             <>
               {/* ① Hero */}
-              {heroVariant === 'waiting' ? (
-                <WaitingHero waiting={data.waiting} generatedAt={data.generatedAt} />
-              ) : (
-                <BriefHero brief={data.brief} generatedAt={data.generatedAt} />
-              )}
+              <div className="rise" style={{ '--stagger': 0 } as React.CSSProperties}>
+                {heroVariant === 'waiting' ? (
+                  <WaitingHero waiting={data.waiting} generatedAt={data.generatedAt} />
+                ) : (
+                  <BriefHero brief={data.brief} generatedAt={data.generatedAt} />
+                )}
+              </div>
 
               {/* ② Two-column grid: action stack | up-next + nudge */}
-              <div className="grid gap-6 lg:grid-cols-[1.72fr_1fr]">
+              <div className="rise grid gap-6 lg:grid-cols-[1.72fr_1fr]" style={{ '--stagger': 1 } as React.CSSProperties}>
                 <ActionStack actions={data.actions} />
                 <div className="flex flex-col gap-4">
                   <UpNextCard upNext={data.upNext} />
@@ -216,13 +218,13 @@ export default function DashboardPage() {
 
               {/* ②a AI Twin metrics — lazy-loaded; only fetches once
                   the tile nears the viewport. */}
-              <AiTwinTile />
+              <div className="rise" style={{ '--stagger': 2 } as React.CSSProperties}><AiTwinTile /></div>
 
               {/* ③ Schedule rail */}
-              <ScheduleRail schedule={data.schedule} dateLabel={dateLabel} />
+              <div className="rise" style={{ '--stagger': 3 } as React.CSSProperties}><ScheduleRail schedule={data.schedule} dateLabel={dateLabel} /></div>
 
               {/* ④ Week strip */}
-              <WeekStrip week={data.week} />
+              <div className="rise" style={{ '--stagger': 4 } as React.CSSProperties}><WeekStrip week={data.week} /></div>
 
               {/* ⑤ Performance divider + analytics sections.
                   /analytics no longer exists as a separate route — the
