@@ -26,6 +26,14 @@ import { AnimatedCard } from '@/components/marketing/animated-card'
 import { SmoothScrollProvider } from '@/components/marketing/smooth-scroll-provider'
 import { ParallaxGlow } from '@/components/marketing/parallax-glow'
 import { LaylaShowcase } from '@/components/marketing/layla-showcase'
+import { HearLayla } from '@/components/marketing/hear-layla'
+import { TalkToLayla } from '@/components/marketing/talk-to-layla'
+import { NightAwareLine } from '@/components/marketing/night-aware-line'
+import { StickyCallPill } from '@/components/marketing/sticky-call-pill'
+import { MagneticCta } from '@/components/marketing/magnetic-cta'
+import { ImpactLedger } from '@/components/marketing/impact-ledger'
+import { ToolWall } from '@/components/marketing/tool-wall'
+import { FaqMomentum } from '@/components/marketing/faq-momentum'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — AI receptionist that books appointments, backed by a full CRM',
@@ -64,26 +72,6 @@ const TIER_CLASS: Record<Tier, string> = {
   scale: 'bg-brand-500/15 text-[#026B78] border-brand-500/40',
   any: 'bg-gray-100 text-gray-600 border-gray-200',
 }
-
-// Layla's voice tools — receptionist verbs, grounded in the actual 16-tool inventory
-const VOICE_TOOLS = [
-  'Answers inbound calls 24/7 or after-hours',
-  'Looks up the clinic\'s services and hours',
-  'Matches a service the caller asked for by name',
-  'Finds 1-2 open consultation slots on the line',
-  'Holds the slot and confirms the booking verbally',
-  'Confirms or reschedules existing appointments',
-  'Cancels an appointment when the patient asks',
-  'Looks up a caller\'s own appointment (caller-ID gated)',
-  'Texts the booking, manage, intake, or directions link mid-call',
-  'Gives directions to your clinic',
-  'Reads your FAQ entries verbatim',
-  'Reads pre-visit instructions on request',
-  'Takes a message when she can\'t resolve it',
-  'Transfers to a human you nominate',
-  'Sends a PHI-free post-call summary to the owner',
-  'Declines pricing and medical questions, by design',
-]
 
 // Top-level "what gets installed" sections — match narrative_order in the brief
 const PILLAR_SECTIONS = [
@@ -405,13 +393,15 @@ export default function LandingPage() {
               82% of callers who can&apos;t reach a business say they&apos;ll call a competitor next — CallRail consumer survey, 2025.
             </p>
             <div className="rise mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center" style={{ '--stagger': 4 } as React.CSSProperties}>
-              <Link
-                href="/book-demo"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
-              >
-                Book a 20-min demo
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              <MagneticCta className="w-full sm:w-auto">
+                <Link
+                  href="/book-demo"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                >
+                  Book a 20-min demo
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </MagneticCta>
               <Link
                 href="/signup"
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F5EFE1] px-6 py-3 text-base font-semibold text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
@@ -424,18 +414,17 @@ export default function LandingPage() {
                 (Tarhunna Aesthetics); every visitor can hear the product
                 before reading another word. */}
             <a
+              id="demo-line"
               href="tel:+13019622856"
               style={{ '--stagger': 5 } as React.CSSProperties}
-              className="rise group mx-auto mt-8 flex w-fit max-w-full items-center gap-3 rounded-2xl border border-brand-500/40 bg-brand-500/[0.07] px-5 py-3.5 transition-colors hover:border-brand-500/70 hover:bg-brand-500/[0.12]"
+              className="rise group mx-auto mt-8 flex w-fit max-w-full items-center gap-3 rounded-2xl border border-brand-500/40 bg-brand-500/[0.07] px-5 py-3.5 transition-[background-color,border-color,transform] duration-150 hover:border-brand-500/70 hover:bg-brand-500/[0.12] active:scale-[0.98]"
             >
               <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/15">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500/30 [animation-duration:2.2s]" />
-                <PhoneCall className="relative h-4 w-4 text-[#028090]" />
+                <span className="phone-ping absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500/30 [animation-duration:2.2s]" />
+                <PhoneCall className="phone-ring relative h-4 w-4 text-[#028090]" />
               </span>
               <span className="text-left">
-                <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#028090]">
-                  Live demo — Layla will answer
-                </span>
+                <NightAwareLine className="block text-[11px] font-semibold uppercase tracking-wider text-[#028090]" />
                 <span className="block text-lg font-extrabold tracking-tight text-gray-900 sm:text-xl">
                   (301) 962-2856
                 </span>
@@ -444,7 +433,11 @@ export default function LandingPage() {
                 </span>
               </span>
             </a>
-            <div className="rise mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6" style={{ '--stagger': 6 } as React.CSSProperties}>
+            <div className="rise" style={{ '--stagger': 6 } as React.CSSProperties}>
+              <HearLayla />
+              <TalkToLayla />
+            </div>
+            <div className="rise mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6" style={{ '--stagger': 7 } as React.CSSProperties}>
               {['No credit card required', 'Setup in less than 20 minutes', 'Cancel anytime'].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
                   <CheckCircle className="h-4 w-4 text-brand-500 shrink-0" />
@@ -483,18 +476,7 @@ export default function LandingPage() {
         {/* ── Value pillars strip — rewritten around voice + comms + CRM ─── */}
         <section className="bg-[#F5EFE1] px-6 pt-10">
           <AnimatedSection className="mx-auto max-w-5xl">
-            <div className="grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 shadow-sm sm:grid-cols-3">
-              {[
-                { stat: '16 voice tools', label: 'Layla can book, reschedule, transfer, take messages, and more on every call' },
-                { stat: 'Day-before recall', label: 'Outbound AI reminder calls 4–72 hours ahead — patients confirm or move by voice' },
-                { stat: 'One stack', label: 'Voice, two-way SMS, public booking, and CRM on a single phone number' },
-              ].map(({ stat, label }) => (
-                <div key={stat} className="bg-[#F5EFE1] px-6 py-6 text-center">
-                  <div className="text-xl font-extrabold tracking-tight text-[#14241d]">{stat}</div>
-                  <p className="mt-1 text-sm text-gray-500 leading-relaxed">{label}</p>
-                </div>
-              ))}
-            </div>
+            <ImpactLedger />
           </AnimatedSection>
         </section>
 
@@ -520,7 +502,7 @@ export default function LandingPage() {
 
         {/* ── What Layla does on every call ──────────────────── */}
         <section className="bg-[#F5EFE1] px-6 py-20">
-          <div className="mx-auto max-w-5xl">
+          <div className="mx-auto max-w-6xl">
             <AnimatedSection className="mb-12 text-center">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-3 py-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#14241d]">
@@ -538,20 +520,7 @@ export default function LandingPage() {
                 Inbound calls cost you nothing if your team is already on another line.
               </p>
             </AnimatedSection>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {VOICE_TOOLS.map((tool, index) => (
-                <AnimatedCard
-                  key={tool}
-                  index={index}
-                  className="flex items-start gap-3 rounded-xl border border-gray-200 bg-[#FAF6EC] px-5 py-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-500/40 hover:shadow-md"
-                >
-                  <div className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-500/15">
-                    <PhoneCall className="h-3.5 w-3.5 text-[#026B78]" />
-                  </div>
-                  <p className="text-sm text-gray-700 leading-snug">{tool}</p>
-                </AnimatedCard>
-              ))}
-            </div>
+            <ToolWall />
           </div>
         </section>
 
@@ -749,9 +718,10 @@ export default function LandingPage() {
                 Frequently asked questions
               </h2>
             </div>
+            <FaqMomentum>
             <div className="space-y-0 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-[#F5EFE1] overflow-hidden shadow-sm">
               {FAQ_ITEMS.map(({ q, a }) => (
-                <details key={q} className="group px-6 [&_summary::-webkit-details-marker]:hidden">
+                <details key={q} className="faq-item group px-6 [&_summary::-webkit-details-marker]:hidden">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-sm font-semibold text-gray-900 transition-colors hover:text-[#14241d]">
                     {q}
                     <ChevronDown className="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180" />
@@ -760,6 +730,7 @@ export default function LandingPage() {
                 </details>
               ))}
             </div>
+            </FaqMomentum>
           </AnimatedSection>
         </section>
 
@@ -779,19 +750,21 @@ export default function LandingPage() {
               talk to a founder, not a sales rep.
             </p>
             <div className="mt-8">
-              <Link
-                href="/book-demo"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
-              >
-                Book a 20-min demo
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              <MagneticCta>
+                <Link
+                  href="/book-demo"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                >
+                  Book a 20-min demo
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </MagneticCta>
             </div>
           </AnimatedSection>
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
-        <section className="bg-[#14241d] px-6 py-20">
+        <section id="final-cta" className="bg-[#14241d] px-6 py-20">
           <AnimatedSection className="mx-auto max-w-2xl text-center">
             <LogoMark size="lg" standalone className="mb-3" />
             <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1] sm:text-4xl">
@@ -800,14 +773,16 @@ export default function LandingPage() {
             <p className="mt-4 text-[#F5EFE1]/70">
               14-day free trial. No credit card required. Set up in less than 20 minutes.
             </p>
-            <div className="rise mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center" style={{ '--stagger': 4 } as React.CSSProperties}>
-              <Link
-                href="/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
-              >
-                Start 14-day free trial
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <MagneticCta className="w-full sm:w-auto">
+                <Link
+                  href="/signup"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-base font-semibold text-white hover:scale-[1.02] transition-all duration-150 shadow-sm"
+                >
+                  Start 14-day free trial
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </MagneticCta>
               <Link
                 href="/book-demo"
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white hover:border-white/60 hover:bg-[#F5EFE1]/5 transition-colors"
@@ -815,6 +790,24 @@ export default function LandingPage() {
                 Book a 20-min demo
               </Link>
             </div>
+            {/* The number reprise — the page opens and closes on "she
+                answers". One gentle ring as the section reveals. */}
+            <a
+              href="tel:+13019622856"
+              className="group mx-auto mt-6 flex w-fit max-w-full items-center gap-3 rounded-2xl border border-[#F5EFE1]/20 bg-[#F5EFE1]/5 px-5 py-3 transition-colors hover:border-brand-500/60 hover:bg-[#F5EFE1]/10"
+            >
+              <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500/20">
+                <PhoneCall className="phone-ring-once phone-ring h-4 w-4 text-[#02C39A]" />
+              </span>
+              <span className="text-left">
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#02C39A]">
+                  Or just call her first
+                </span>
+                <span className="block text-lg font-extrabold tracking-tight text-[#F5EFE1]">
+                  (301) 962-2856
+                </span>
+              </span>
+            </a>
           </AnimatedSection>
         </section>
 
@@ -838,6 +831,8 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <StickyCallPill />
 
     </div>
     </SmoothScrollProvider>

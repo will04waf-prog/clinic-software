@@ -21,6 +21,14 @@
  * Sound can't autoplay (browser policy), so it loops MUTED and offers a
  * "Play with sound" button that runs it once start-to-finish, then
  * offers Replay. Drop it anywhere:  <LaylaShowcase />
+ *
+ * The film is fully seekable: the progress track is a real slider
+ * (pointer scrub + ArrowLeft/Right = ±5s) and the chapter dots are
+ * buttons that jump straight to a scene. Seeks honor whichever clock is
+ * master — the VO element while playing, the offset attract loop while
+ * idle. Plays nicely with other sound on the page via the
+ * 'tarhunna:audio-start' CustomEvent protocol (we announce before
+ * playing, and pause when any other source announces).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -38,6 +46,12 @@ const CREAM = '#F5EFE1'
 // Real assets. VO is required for sound; music falls back to synthesis.
 const VO_AUDIO_SRC = '/layla-vo.mp3'
 const MUSIC_AUDIO_SRC: string | null = null
+
+// Cross-component audio etiquette: every sound-producing widget on the
+// landing page dispatches this event before playing and yields when a
+// different source announces. Keeps Layla from talking over herself.
+const AUDIO_EVENT = 'tarhunna:audio-start'
+const AUDIO_SOURCE = 'layla-showcase'
 
 // Scene boundaries (ms) aligned to the ElevenLabs (Jessica) narration —
 // cumulative per-line durations of public/layla-vo.mp3 (incl. 0.35s
@@ -120,6 +134,18 @@ const TOOL_LABELS: Record<string, string> = {
   post_call_summary_email:'Emails a recap',
 }
 
+// Plain-language chapter names for the seekable dots (aria-label + title).
+const CHAPTER_TITLES: Record<SceneKey, string> = {
+  ring:     'She answers',
+  talk:     'Live conversation',
+  book:     'She books it',
+  text:     'Texts the link',
+  manage:   'Manage a visit',
+  followup: 'After the call',
+  tools:    '16 tools',
+  outro:    'Meet Layla',
+}
+
 const ENTER: Record<SceneKey, string> = {
   ring:     'translateY(14px) scale(0.97)',
   talk:     'translateX(26px) scale(0.99)',
@@ -143,6 +169,18 @@ export function LaylaShowcase() {
   const modeRef = useRef<Mode>('idle')
   modeRef.current = mode
   const rootRef = useRef<HTMLDivElement>(null)
+
+  // Scrubber: the progress track doubles as a pointer + keyboard slider.
+  // scrubbing (ref) gates pointermove synchronously; scrubActive (state)
+  // mirrors it for rendering the thickened bar.
+  const trackRef = useRef<HTMLDivElement>(null)
+  const scrubbing = useRef(false)
+  const [scrubActive, setScrubActive] = useState(false)
+  const [trackHot, setTrackHot] = useState(false)
+  // Idle attract-loop offset (ms): idle time = (now + offset) % TOTAL, so
+  // seeking while idle just shifts the offset and the loop drifts onward
+  // from the sought point instead of snapping back.
+  const loopOffset = useRef(0)
 
   // Pause the animation loop while off-screen — avoids a continuous rAF
   // burning CPU on the landing page (helps INP / battery).
@@ -190,6 +228,7 @@ export function LaylaShowcase() {
 
   const beginPlay = useCallback(() => {
     stopAudio(false)
+    window.dispatchEvent(new CustomEvent(AUDIO_EVENT, { detail: { source: AUDIO_SOURCE } }))
     startMusic()
     const a = new Audio(VO_AUDIO_SRC); a.preload = 'auto'; a.muted = muted
     a.onended = () => { setT(TOTAL - 1); music.current?.stop(true); setMode('ended') }
@@ -204,7 +243,7 @@ export function LaylaShowcase() {
     if (mode === 'frozen' || mode === 'paused' || mode === 'ended' || !inView) return
     let raf = 0
     const loop = (now: number) => {
-      if (modeRef.current === 'idle') setT(now % TOTAL)
+      if (modeRef.current === 'idle') setT((now + loopOffset.current) % TOTAL)
       else if (modeRef.current === 'playing' && vo.current) setT(Math.min(vo.current.currentTime * 1000, TOTAL - 1))
       raf = requestAnimationFrame(loop)
     }
@@ -219,9 +258,69 @@ export function LaylaShowcase() {
     return () => stopAudio(false)
   }, [stopAudio])
 
-  const onPause = () => { vo.current?.pause(); music.current?.mute(true); setMode('paused') }
+  const onPause = useCallback(() => { vo.current?.pause(); music.current?.mute(true); setMode('paused') }, [])
   const onResume = () => { vo.current?.play().catch(() => {}); music.current?.mute(muted); setMode('playing') }
   const onMuteToggle = () => { setMuted((m) => { const nm = !m; if (vo.current) vo.current.muted = nm; music.current?.mute(nm); return nm }) }
+
+  // Yield to other sound sources on the page (see AUDIO_EVENT above).
+  useEffect(() => {
+    const onOtherAudio = (e: Event) => {
+      const source = (e as CustomEvent<{ source?: string }>).detail?.source
+      if (source !== AUDIO_SOURCE && modeRef.current === 'playing') onPause()
+    }
+    window.addEventListener(AUDIO_EVENT, onOtherAudio)
+    return () => window.removeEventListener(AUDIO_EVENT, onOtherAudio)
+  }, [onPause])
+
+  // Seek to an absolute film position, honoring whichever clock is master:
+  //   playing → reposition the VO element (the rAF loop resyncs next frame;
+  //             if metadata hasn't loaded yet, duration is NaN and we just
+  //             set the raw time — the browser clamps once it knows better);
+  //   idle    → shift the attract loop's offset so it drifts on from here;
+  //   paused / ended / frozen → set t directly, VO positioned so Resume
+  //             continues from the sought point ('ended' drops to 'paused').
+  const seekTo = useCallback((target: number) => {
+    const clamped = Math.min(Math.max(target, 0), TOTAL - 1)
+    const positionVo = () => {
+      const a = vo.current
+      if (!a) return
+      const secs = clamped / 1000
+      a.currentTime = Number.isFinite(a.duration) ? Math.min(secs, a.duration) : secs
+    }
+    if (modeRef.current === 'idle') {
+      loopOffset.current = (((clamped - performance.now()) % TOTAL) + TOTAL) % TOTAL
+    } else {
+      positionVo()
+      if (modeRef.current === 'ended') setMode('paused')
+    }
+    setT(clamped)
+  }, [])
+
+  const seekFromClientX = useCallback((clientX: number) => {
+    const el = trackRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const fraction = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+    seekTo(fraction * TOTAL)
+  }, [seekTo])
+
+  const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    scrubbing.current = true
+    setScrubActive(true)
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* no-op */ }
+    seekFromClientX(e.clientX)
+  }
+  const onTrackPointerMove = (e: React.PointerEvent<HTMLDivElement>) => { if (scrubbing.current) seekFromClientX(e.clientX) }
+  const endScrub = (e: React.PointerEvent<HTMLDivElement>) => {
+    scrubbing.current = false
+    setScrubActive(false)
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* no-op */ }
+  }
+  const onTrackKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    e.preventDefault()
+    seekTo(t + (e.key === 'ArrowRight' ? 5000 : -5000))
+  }
 
   const inScene = (k: SceneKey) => t >= T[k][0] && t < T[k][1]
   const progress = Math.min(t / TOTAL, 1)
@@ -235,7 +334,7 @@ export function LaylaShowcase() {
   const showControls = mode !== 'frozen'
 
   return (
-    <div ref={rootRef} style={{ ...wrap, aspectRatio: isMobile ? '0.54' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
+    <div ref={rootRef} data-layla-showcase="" style={{ ...wrap, aspectRatio: isMobile ? '0.54' : '16 / 10', maxWidth: isMobile ? 460 : 940 }}>
       <style>{KEYFRAMES}</style>
       <div style={glowA} aria-hidden />
       <div style={glowB} aria-hidden />
@@ -408,10 +507,49 @@ export function LaylaShowcase() {
         <div style={scrubWrap}>
           {mode === 'idle' && (<button style={soundBtn} onClick={beginPlay} aria-label="Play with sound"><PlayIcon /> Play with sound</button>)}
           {(mode === 'playing' || mode === 'paused') && (<button style={iconBtn} onClick={mode === 'playing' ? onPause : onResume} aria-label={mode === 'playing' ? 'Pause' : 'Resume'}>{mode === 'playing' ? <PauseIcon /> : <PlayIcon />}</button>)}
-          <div style={{ flex: 1, height: 4, borderRadius: 999, background: 'rgba(11,32,39,0.10)', overflow: 'hidden' }}>
-            <div style={{ width: `${progress * 100}%`, height: '100%', background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL})`, borderRadius: 999 }} />
+          <div
+            ref={trackRef}
+            className="ls-track"
+            role="slider"
+            tabIndex={0}
+            aria-label="Scrub the demo film"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(TOTAL / 1000)}
+            aria-valuenow={Math.round(t / 1000)}
+            aria-valuetext={`${Math.round(t / 1000)} of ${Math.round(TOTAL / 1000)} seconds`}
+            style={trackHit}
+            onPointerDown={onTrackPointerDown}
+            onPointerMove={onTrackPointerMove}
+            onPointerUp={endScrub}
+            onPointerCancel={endScrub}
+            onPointerEnter={() => setTrackHot(true)}
+            onPointerLeave={() => setTrackHot(false)}
+            onKeyDown={onTrackKeyDown}
+          >
+            <div style={{ width: '100%', height: trackHot || scrubActive ? 6 : 4, borderRadius: 999, background: 'rgba(11,32,39,0.10)', overflow: 'hidden', transition: 'height .15s ease' }}>
+              <div style={{ width: `${progress * 100}%`, height: '100%', background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL})`, borderRadius: 999 }} />
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 5 }}>{(Object.keys(T) as SceneKey[]).map((k) => (<span key={k} style={{ width: 6, height: 6, borderRadius: '50%', background: inScene(k) ? TEAL : 'rgba(11,32,39,0.18)', transition: 'background .3s' }} />))}</div>
+          {/* Chapter dots — hidden on mobile while idle: "Play with sound" +
+              track + 8 tap targets can't share a ~300px row, and the track
+              is the primary seek surface until playback starts. */}
+          {!(isMobile && mode === 'idle') && (
+            <div style={{ display: 'flex', gap: isMobile ? 0 : 2 }}>
+              {(Object.keys(T) as SceneKey[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className="ls-dot"
+                  style={{ ...dotBtn, margin: isMobile ? '0 -4px' : 0 }}
+                  onClick={() => seekTo(T[k][0] + 1)}
+                  aria-label={`Jump to chapter: ${CHAPTER_TITLES[k]}`}
+                  title={CHAPTER_TITLES[k]}
+                >
+                  <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: inScene(k) ? TEAL : 'rgba(11,32,39,0.18)', transform: inScene(k) ? 'scale(1.4)' : 'scale(1)', transition: 'background .3s, transform .3s' }} />
+                </button>
+              ))}
+            </div>
+          )}
           {(mode === 'playing' || mode === 'paused') && (<button style={iconBtn} onClick={onMuteToggle} aria-label={muted ? 'Unmute' : 'Mute'}>{muted ? <MuteIcon /> : <SpeakerIcon />}</button>)}
         </div>
       )}
@@ -449,6 +587,13 @@ const topBar: React.CSSProperties = { position: 'absolute', top: 0, left: 0, rig
 const liveDot: React.CSSProperties = { width: 8, height: 8, borderRadius: '50%', background: TEAL, display: 'inline-block', boxShadow: `0 0 0 0 ${TEAL}`, animation: 'pulse 1.6s infinite' }
 const stage: React.CSSProperties = { position: 'absolute', inset: '52px 0 56px', zIndex: 2, transformOrigin: 'center 42%', transition: 'transform .2s linear' }
 const scrubWrap: React.CSSProperties = { position: 'absolute', bottom: 0, left: 0, right: 0, minHeight: 56, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 12, zIndex: 6 }
+// The seekable track: the visible bar is 4px (6px hot) but lives inside a
+// 28px-tall hit area. touch-action: pan-y keeps vertical page scroll alive
+// while horizontal drags scrub.
+const trackHit: React.CSSProperties = { flex: 1, height: 28, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'pan-y', borderRadius: 999 }
+// Chapter dot buttons: 6px dot inside a 24px hit box (overlapped a little
+// on mobile where the control row is width-starved).
+const dotBtn: React.CSSProperties = { display: 'grid', placeItems: 'center', width: 24, height: 24, padding: 0, background: 'transparent', border: 'none', borderRadius: '50%', cursor: 'pointer', flexShrink: 0 }
 const kicker: React.CSSProperties = { margin: '0 0 10px', fontSize: 13, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEAL_DEEP }
 
 function layer(active: boolean, k: SceneKey): React.CSSProperties { return { position: 'absolute', inset: 0, padding: '0 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', opacity: active ? 1 : 0, transform: active ? 'translate(0) scale(1)' : ENTER[k], filter: active ? 'blur(0)' : 'blur(3px)', transition: 'opacity .6s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1), filter .6s ease', pointerEvents: 'none' } }
@@ -481,4 +626,8 @@ const KEYFRAMES = `
 @keyframes ripple { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(2.3);opacity:0} }
 @keyframes rise { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 @keyframes drift { from{transform:translate(0,0)} to{transform:translate(-14px,-10px)} }
+.ls-track:focus-visible, .ls-dot:focus-visible { outline: 2px solid ${TEAL_DEEP}; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  [data-layla-showcase], [data-layla-showcase] * { animation: none !important; }
+}
 `

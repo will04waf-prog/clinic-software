@@ -5,8 +5,12 @@
  * platform instead of the voice agent. Same treatment: brand-matched
  * (cream + teal) CSS/JS animation, a real Jessica narration as the master
  * clock when playing with sound, a synthesized music bed, autoplay-muted
- * loop + "Play with sound", scrubber, and a mobile-responsive portrait
- * layout.
+ * loop + "Play with sound", a seekable scrubber with chapter dots, and a
+ * mobile-responsive portrait layout.
+ *
+ * Only one Tarhunna piece plays sound at a time: beginPlay broadcasts
+ * 'tarhunna:audio-start' (source 'software-showcase'), and the film
+ * pauses itself when any other source broadcasts the same event.
  *
  * 6 scenes: dashboard → pipeline (a lead moves stages) → contact timeline
  * → AI Twin draft → calendar → outro. Swap VO_AUDIO_SRC for a new
@@ -27,6 +31,13 @@ const CREAM = '#F5EFE1'
 const VO_AUDIO_SRC = '/software-vo.mp3'
 const MUSIC_AUDIO_SRC: string | null = null
 
+// Identity on the shared 'tarhunna:audio-start' channel — whichever piece
+// announces last gets the speakers; everyone else pauses itself.
+const AUDIO_SOURCE_ID = 'software-showcase'
+
+// Arrow-key seek increment on the scrubber (slider convention: ±5s).
+const SEEK_STEP_MS = 5000
+
 // Scene boundaries (ms) aligned to the ElevenLabs (Jessica) narration —
 // cumulative per-line durations of public/software-vo.mp3.
 const T = {
@@ -44,6 +55,12 @@ type Mode = 'idle' | 'playing' | 'paused' | 'ended' | 'frozen'
 
 const MODULE: Record<SceneKey, string> = {
   dash: 'Dashboard', pipe: 'Pipeline', contact: 'Contacts', twin: 'AI Twin', cal: 'Calendar', outro: 'Tarhunna',
+}
+
+// Chapter names for the seek dots (the outro reads as its on-screen line,
+// not the URL-pill label above).
+const CHAPTER: Record<SceneKey, string> = {
+  dash: 'Dashboard', pipe: 'Pipeline', contact: 'Contacts', twin: 'AI Twin', cal: 'Calendar', outro: 'One platform',
 }
 
 const KPIS = [
@@ -81,12 +98,19 @@ export function SoftwareShowcase() {
   const [muted, setMuted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [inView, setInView] = useState(true)
+  const [scrubHover, setScrubHover] = useState(false)
+  const [scrubDrag, setScrubDrag] = useState(false)
 
   const music = useRef<{ stop: (fade?: boolean) => void; mute: (m: boolean) => void } | null>(null)
   const vo = useRef<HTMLAudioElement | null>(null)
   const modeRef = useRef<Mode>('idle')
   modeRef.current = mode
   const rootRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const draggingRef = useRef(false)
+  // Shifts the idle attract-loop's clock so a seek while idling lands on
+  // the requested frame: t = (now + loopOffset) % TOTAL.
+  const loopOffset = useRef(0)
 
   // Pause the animation loop while off-screen — avoids a continuous rAF
   // burning CPU on the landing page (helps INP / battery).
@@ -132,6 +156,9 @@ export function SoftwareShowcase() {
   }, [])
 
   const beginPlay = useCallback(() => {
+    // Claim the speakers — any other Tarhunna piece playing sound (e.g.
+    // the Layla film) pauses itself when it hears this.
+    window.dispatchEvent(new CustomEvent('tarhunna:audio-start', { detail: { source: AUDIO_SOURCE_ID } }))
     stopAudio(false)
     startMusic()
     const a = new Audio(VO_AUDIO_SRC); a.preload = 'auto'; a.muted = muted
@@ -145,7 +172,7 @@ export function SoftwareShowcase() {
     if (mode === 'frozen' || mode === 'paused' || mode === 'ended' || !inView) return
     let raf = 0
     const loop = (now: number) => {
-      if (modeRef.current === 'idle') setT(now % TOTAL)
+      if (modeRef.current === 'idle') setT((((now + loopOffset.current) % TOTAL) + TOTAL) % TOTAL)
       else if (modeRef.current === 'playing' && vo.current) setT(Math.min(vo.current.currentTime * 1000, TOTAL - 1))
       raf = requestAnimationFrame(loop)
     }
@@ -159,9 +186,63 @@ export function SoftwareShowcase() {
     return () => stopAudio(false)
   }, [stopAudio])
 
-  const onPause = () => { vo.current?.pause(); music.current?.mute(true); setMode('paused') }
+  const onPause = useCallback(() => { vo.current?.pause(); music.current?.mute(true); setMode('paused') }, [])
   const onResume = () => { vo.current?.play().catch(() => {}); music.current?.mute(muted); setMode('playing') }
   const onMuteToggle = () => { setMuted((m) => { const nm = !m; if (vo.current) vo.current.muted = nm; music.current?.mute(nm); return nm }) }
+
+  // Yield the speakers when another Tarhunna piece starts its own sound.
+  useEffect(() => {
+    const onExternalAudio = (e: Event) => {
+      const detail = (e as CustomEvent<{ source?: string }>).detail
+      if (detail?.source !== AUDIO_SOURCE_ID && modeRef.current === 'playing') onPause()
+    }
+    window.addEventListener('tarhunna:audio-start', onExternalAudio)
+    return () => window.removeEventListener('tarhunna:audio-start', onExternalAudio)
+  }, [onPause])
+
+  // ---- Seeking --------------------------------------------------------
+  // The film has three clocks, and a seek must talk to whichever one is in
+  // charge: the VO element while playing (the rAF loop reads from it), the
+  // frozen `t` while paused/ended/frozen, or the attract-loop offset while
+  // idling muted (so the loop keeps rolling from the new spot).
+  const seekTo = useCallback((ms: number) => {
+    const target = Math.min(Math.max(ms, 0), TOTAL - 1)
+    const m = modeRef.current
+    if (m === 'playing' && vo.current) { vo.current.currentTime = target / 1000; setT(target); return }
+    if (m === 'idle') { loopOffset.current = target - performance.now(); setT(target); return }
+    // paused / ended / frozen: freeze-frame the target; keep the VO in sync
+    // so Resume picks up there. Seeking out of 'ended' revives it as paused.
+    if (vo.current) vo.current.currentTime = target / 1000
+    setT(target)
+    if (m === 'ended') setMode('paused')
+  }, [])
+
+  const seekFromPointer = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const el = trackRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0) return
+    const fraction = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
+    seekTo(fraction * TOTAL)
+  }, [seekTo])
+
+  const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* stale pointer */ }
+    draggingRef.current = true; setScrubDrag(true)
+    seekFromPointer(e)
+  }
+  const onTrackPointerMove = (e: React.PointerEvent<HTMLDivElement>) => { if (draggingRef.current) seekFromPointer(e) }
+  const onTrackPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = false; setScrubDrag(false)
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* already released */ }
+  }
+  const onTrackKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); seekTo(t - SEEK_STEP_MS) }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); seekTo(t + SEEK_STEP_MS) }
+    else if (e.key === 'Home') { e.preventDefault(); seekTo(0) }
+    else if (e.key === 'End') { e.preventDefault(); seekTo(TOTAL - 1) }
+  }
 
   const inScene = (k: SceneKey) => t >= T[k][0] && t < T[k][1]
   const progress = Math.min(t / TOTAL, 1)
@@ -350,10 +431,40 @@ export function SoftwareShowcase() {
         <div style={scrubWrap}>
           {mode === 'idle' && (<button style={soundBtn} onClick={beginPlay} aria-label="Play with sound"><PlayIcon /> Play with sound</button>)}
           {(mode === 'playing' || mode === 'paused') && (<button style={iconBtn} onClick={mode === 'playing' ? onPause : onResume} aria-label={mode === 'playing' ? 'Pause' : 'Resume'}>{mode === 'playing' ? <PauseIcon /> : <PlayIcon />}</button>)}
-          <div style={{ flex: 1, height: 4, borderRadius: 999, background: 'rgba(11,32,39,0.10)', overflow: 'hidden' }}>
-            <div style={{ width: `${progress * 100}%`, height: '100%', background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL})`, borderRadius: 999 }} />
+          {/* Seekable scrubber — a 28px-tall hit strip around a 4px track
+              (6px on hover/drag). touch-action pan-y keeps vertical page
+              scroll alive when a thumb lands on it. */}
+          <div
+            ref={trackRef}
+            className="sw-scrub"
+            role="slider"
+            tabIndex={0}
+            aria-label="Seek through the platform tour"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(TOTAL / 1000)}
+            aria-valuenow={Math.round(t / 1000)}
+            aria-valuetext={`${Math.round(t / 1000)} of ${Math.round(TOTAL / 1000)} seconds`}
+            style={seekHit}
+            onPointerDown={onTrackPointerDown}
+            onPointerMove={onTrackPointerMove}
+            onPointerUp={onTrackPointerEnd}
+            onPointerCancel={onTrackPointerEnd}
+            onPointerEnter={() => setScrubHover(true)}
+            onPointerLeave={() => setScrubHover(false)}
+            onKeyDown={onTrackKeyDown}
+          >
+            <div style={{ width: '100%', height: scrubHover || scrubDrag ? 6 : 4, borderRadius: 999, background: 'rgba(11,32,39,0.10)', overflow: 'hidden', transition: 'height .15s ease' }}>
+              <div style={{ width: `${progress * 100}%`, height: '100%', background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL})`, borderRadius: 999 }} />
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 5 }}>{(Object.keys(T) as SceneKey[]).map((k) => (<span key={k} style={{ width: 6, height: 6, borderRadius: '50%', background: inScene(k) ? TEAL : 'rgba(11,32,39,0.18)', transition: 'background .3s' }} />))}</div>
+          {/* Chapter dots — one button per scene, active dot scaled 1.4x. */}
+          <div style={{ display: 'flex' }} role="group" aria-label="Chapters">
+            {(Object.keys(T) as SceneKey[]).map((k) => (
+              <button key={k} type="button" className="sw-chapter" style={chapterBtn} aria-label={`Go to ${CHAPTER[k]}`} title={CHAPTER[k]} onClick={() => seekTo(T[k][0] + 1)}>
+                <span style={{ ...chapterDot, background: inScene(k) ? TEAL : 'rgba(11,32,39,0.18)', transform: inScene(k) ? 'scale(1.4)' : 'scale(1)' }} />
+              </button>
+            ))}
+          </div>
           {(mode === 'playing' || mode === 'paused') && (<button style={iconBtn} onClick={onMuteToggle} aria-label={muted ? 'Unmute' : 'Mute'}>{muted ? <MuteIcon /> : <SpeakerIcon />}</button>)}
         </div>
       )}
@@ -388,6 +499,9 @@ const dot: React.CSSProperties = { width: 9, height: 9, borderRadius: '50%' }
 const urlPill: React.CSSProperties = { flex: 1, maxWidth: 320, margin: '0 auto', textAlign: 'center', fontSize: 12, color: '#7c8a84', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(11,32,39,0.08)', borderRadius: 999, padding: '4px 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 const stage: React.CSSProperties = { position: 'absolute', zIndex: 2, transformOrigin: 'center 42%', transition: 'transform .2s linear' }
 const scrubWrap: React.CSSProperties = { position: 'absolute', bottom: 0, left: 0, right: 0, minHeight: 56, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 12, zIndex: 6 }
+const seekHit: React.CSSProperties = { flex: 1, height: 28, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' }
+const chapterBtn: React.CSSProperties = { display: 'grid', placeItems: 'center', width: 24, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', flexShrink: 0 }
+const chapterDot: React.CSSProperties = { width: 6, height: 6, borderRadius: '50%', transition: 'background .3s ease, transform .3s ease' }
 
 const ENTER: Record<SceneKey, string> = {
   dash: 'translateY(16px) scale(0.98)', pipe: 'translateX(28px) scale(0.99)', contact: 'translateX(-28px) scale(0.99)', twin: 'translateY(18px) scale(0.98)', cal: 'translateX(28px) scale(0.99)', outro: 'scale(0.95)',
@@ -420,4 +534,12 @@ const KEYFRAMES = `
 @keyframes rise { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideInL { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
 @keyframes drift { from{transform:translate(0,0)} to{transform:translate(-14px,-10px)} }
+.sw-scrub, .sw-chapter { -webkit-tap-highlight-color: transparent; }
+.sw-scrub:focus-visible, .sw-chapter:focus-visible { outline: 2px solid ${TEAL_DEEP}; outline-offset: 2px; border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) {
+  @keyframes ripple { 0%{transform:scale(1);opacity:0} 100%{transform:scale(1);opacity:0} }
+  @keyframes rise { from{opacity:1;transform:none} to{opacity:1;transform:none} }
+  @keyframes slideInL { from{opacity:1;transform:none} to{opacity:1;transform:none} }
+  @keyframes drift { from{transform:none} to{transform:none} }
+}
 `

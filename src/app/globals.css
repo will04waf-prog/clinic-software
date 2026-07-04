@@ -354,9 +354,183 @@ html.lenis body {
   50%      { opacity: 0.55; }
 }
 .urgent-pulse { animation: app-urgent-pulse 1s ease-in-out infinite; }
-/* <details> FAQ bodies slide open */
-details[open] .faq-body { animation: app-rise 0.3s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
 @media (prefers-reduced-motion: reduce) {
   .rise, .pop-in, .step-in, .urgent-pulse { animation: none; }
-  details[open] .faq-body { animation: none; }
+}
+
+/* ─── Brand craft details ──────────────────────────────────────
+   Small sitewide signals that the page was made by hand: brand
+   text selection, a thin brand scrollbar, and mint focus rings. */
+::selection {
+  background: rgba(2, 195, 154, 0.3);
+  color: #0b2027;
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(2, 128, 144, 0.4) transparent;
+}
+:focus-visible {
+  outline: 2px solid #02c39a;
+  outline-offset: 2px;
+}
+
+/* ─── The phone that rings when you reach for it ───────────────
+   Handset shake on the hero demo card's PhoneCall icon while the
+   card is hovered/pressed (the ping ring also quickens via the
+   .phone-ping override — class specificity beats the Tailwind
+   arbitrary [animation-duration:2.2s] utility). .phone-ring-once
+   plays a single ring when its AnimatedSection reveals — used by
+   the final-CTA number reprise. Amplitude capped at 11° so it
+   reads as a ring, not slapstick. */
+@keyframes phone-ring-shake {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(-11deg); }
+  30% { transform: rotate(9deg); }
+  45% { transform: rotate(-7deg); }
+  60% { transform: rotate(5deg); }
+  75% { transform: rotate(-2deg); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) and (pointer: fine) {
+    .group:hover .phone-ring { animation: phone-ring-shake 0.9s ease-in-out; }
+    .group:hover .phone-ping { animation-duration: 1.1s; }
+  }
+  .group:active .phone-ring { animation: phone-ring-shake 0.9s ease-in-out; }
+  [data-visible='true'] .phone-ring-once {
+    animation: phone-ring-shake 0.9s ease-in-out 0.45s 1;
+  }
+}
+
+/* ── HearLayla: ended-state morph ("Now call her yourself →") ─────────
+   Applied when the chip converts to its post-listen state; decorative,
+   so it only runs for users who haven't asked for reduced motion. */
+@keyframes hl-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hl-fade-in { animation: hl-fade-in 320ms ease both; }
+}
+
+/* ─── Scroll progress hairline ─────────────────────────────────
+   2px teal→mint reading line pinned to the top of the viewport
+   (the div is rendered by StickyCallPill). Filled 0→100% by a
+   PURE CSS scroll-driven animation — zero JS per frame. Hidden by
+   default, so browsers without scroll-timeline support (and
+   reduced-motion users) simply never see it. */
+.scroll-progress-hairline {
+  display: none;
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-progress-hairline {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 60;
+      height: 2px;
+      background: linear-gradient(90deg, #028090, #02c39a);
+      transform-origin: left;
+      transform: scaleX(0);
+      pointer-events: none;
+      animation: scroll-progress-fill auto linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+@keyframes scroll-progress-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* NightAwareLine — ~200ms crossfade between time-of-day eyebrow copy in the
+   hero demo card. The exit layer rests at opacity 0, so with reduced motion
+   the swap is instant (old line vanishes, new line appears, no animation). */
+@keyframes night-line-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes night-line-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.night-line-exit {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .night-line-enter { animation: night-line-fade-in 200ms ease both; }
+  .night-line-exit { animation: night-line-fade-out 200ms ease both; }
+}
+
+/* ─── FAQ glide-open (progressive enhancement) ─────────────────
+   Buttery height animation for the FAQ <details> items. Chrome/Edge
+   (which support `interpolate-size: allow-keywords`) glide open and
+   closed via ::details-content; Safari/Firefox fall into the
+   @supports-not branch below and keep today's exact behavior —
+   instant height snap with the body fading up. */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+  details.faq-item::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition:
+      content-visibility 0.32s allow-discrete,
+      block-size 0.32s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  details.faq-item[open]::details-content {
+    block-size: auto;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    details.faq-item::details-content {
+      transition: none;
+    }
+  }
+}
+@supports not (interpolate-size: allow-keywords) {
+  details.faq-item[open] .faq-body {
+    animation: app-rise 0.3s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    details.faq-item[open] .faq-body {
+      animation: none;
+    }
+  }
+}
+
+/* ── Talk-to-Layla in-browser web call (talk-to-layla.tsx) ─────────
+   All three animations are decorative, so the whole block exists only
+   under prefers-reduced-motion: no-preference — reduced-motion users
+   get a static orb, a static connecting dot, and instant state swaps
+   (the classes are inert no-ops outside this media query). */
+@media (prefers-reduced-motion: no-preference) {
+  /* Slow breathing of the live-call orb between Layla's phrases. */
+  @keyframes ttl-orb-breathe {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.045); }
+  }
+  .ttl-orb-breathe {
+    animation: ttl-orb-breathe 3.2s ease-in-out infinite;
+  }
+
+  /* Connecting-state pulsing dot. */
+  @keyframes ttl-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+  .ttl-dot-pulse {
+    animation: ttl-dot-pulse 1.1s ease-in-out infinite;
+  }
+
+  /* Gentle entrance for each state swap (reveal, live, ended). */
+  @keyframes ttl-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .ttl-fade-in {
+    animation: ttl-fade-in 240ms ease-out both;
+  }
 }
