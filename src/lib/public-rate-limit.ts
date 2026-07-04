@@ -21,6 +21,14 @@ interface Bucket {
 export function makeRateLimiter(limit: number, windowMs: number) {
   const buckets = new Map<string, Bucket>()
   return function consume(key: string, now: number = Date.now()): { ok: boolean; retryAfterSeconds: number } {
+    // Expired buckets are normally overwritten in place, but IP-keyed
+    // users see unique keys forever — sweep so a warm instance's map
+    // can't grow without bound under key churn.
+    if (buckets.size > 1000) {
+      for (const [k, b] of buckets) {
+        if (b.resetAt <= now) buckets.delete(k)
+      }
+    }
     const existing = buckets.get(key)
     if (!existing || existing.resetAt <= now) {
       buckets.set(key, { count: 1, resetAt: now + windowMs })

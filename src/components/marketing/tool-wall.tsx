@@ -112,6 +112,20 @@ function usePrefersReducedMotion(): boolean {
   return reduced
 }
 
+/** SSR-safe lg-breakpoint flag (same pattern as usePrefersReducedMotion):
+ *  false on the server and the first client render, resolved in an effect. */
+function useIsLg(): boolean {
+  const [isLg, setIsLg] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const apply = () => setIsLg(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+  return isLg
+}
+
 function Bubble({ line }: { line: TranscriptLine }) {
   const isLayla = line.who === 'layla'
   return (
@@ -200,13 +214,18 @@ function MobileLine({ line, forceVisible }: { line: TranscriptLine; forceVisible
 
 export function ToolWall() {
   const reduced = usePrefersReducedMotion()
+  const isLg = useIsLg()
   // Index of the furthest transcript line whose center-band has been
   // crossed downward; -1 = nothing crossed yet (SSR / top of section).
   const [active, setActive] = useState(-1)
   const lineRefs = useRef<(HTMLLIElement | null)[]>([])
 
   useEffect(() => {
-    if (reduced) return
+    // Below lg the desktop transcript is display:none, so its lines
+    // report zero rects that the exit-direction logic would misread as
+    // downward crossings (pre-lighting the wall). Only observe at lg;
+    // re-attaching on the flip delivers fresh entries with real rects.
+    if (reduced || !isLg) return
     const els = lineRefs.current.filter((el): el is HTMLLIElement => el !== null)
     if (els.length === 0) return
     if (typeof IntersectionObserver === 'undefined') {
@@ -249,7 +268,7 @@ export function ToolWall() {
     )
     els.forEach((el) => io.observe(el))
     return () => io.disconnect()
-  }, [reduced])
+  }, [reduced, isLg])
 
   const activeIdx = reduced ? TRANSCRIPT.length - 1 : active
   const lit = activeIdx >= 0 ? CUMULATIVE[activeIdx] : EMPTY

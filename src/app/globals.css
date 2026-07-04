@@ -359,17 +359,21 @@ html.lenis body {
 }
 
 /* ─── Brand craft details ──────────────────────────────────────
-   Small sitewide signals that the page was made by hand: brand
-   text selection, a thin brand scrollbar, and mint focus rings. */
+   Small signals that the page was made by hand: brand text
+   selection, a thin brand scrollbar, and mint focus rings. The
+   selection tint sets NO text color, so selected copy stays
+   readable on the dark forest sections; the focus outline is
+   scoped to the landing page (.landing-page on its root) so it
+   can't fight the dashboard's own focus styles or Tailwind's
+   focus-visible utilities elsewhere in the app. */
 ::selection {
-  background: rgba(2, 195, 154, 0.3);
-  color: #0b2027;
+  background: rgba(2, 195, 154, 0.35);
 }
 html {
   scrollbar-width: thin;
   scrollbar-color: rgba(2, 128, 144, 0.4) transparent;
 }
-:focus-visible {
+.landing-page :focus-visible {
   outline: 2px solid #02c39a;
   outline-offset: 2px;
 }
@@ -471,7 +475,10 @@ html {
    @supports-not branch below and keep today's exact behavior —
    instant height snap with the body fading up. */
 @supports (interpolate-size: allow-keywords) {
-  :root {
+  /* Opt-in ON the FAQ items only — the property inherits, and a :root
+     opt-in would silently change keyword-size transitions across the
+     whole dashboard/booking app sharing this stylesheet. */
+  details.faq-item {
     interpolate-size: allow-keywords;
   }
   details.faq-item::details-content {

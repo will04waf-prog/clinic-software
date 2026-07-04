@@ -39,14 +39,20 @@ function twelveHourClock(date: Date): { h: number; mm: string; meridiem: 'AM' | 
   }
 }
 
-/** Picks the eyebrow copy for the visitor's local time. */
+/**
+ * Picks the eyebrow copy for the visitor's local time.
+ *
+ * Copy budget: every variant must stay ≤ ~44 characters at its longest
+ * timestamp (e.g. 10:59 PM) — the layer ellipsizes silently rather than
+ * widening the w-fit card, so an over-long line loses its payoff clause.
+ */
 function lineForTime(date: Date): string {
   const hour = date.getHours()
   if (hour >= 8 && hour < 18) return 'Live demo — Layla is answering right now'
   if (hour >= 5 && hour < 8) return "Before hours — she's already answering"
   const { h, mm, meridiem } = twelveHourClock(date)
   if (hour >= 18 && hour < 23) {
-    return `It's ${h}:${mm} PM — your front desk is closed. Layla isn't.`
+    return `${h}:${mm} PM — the desk is closed. Layla isn't.`
   }
   // 23:00–04:59 — 23h correctly reads 11:{mm} PM, 00–04h read {h}:{mm} AM.
   return `${h}:${mm} ${meridiem} and she still picks up. Try her.`

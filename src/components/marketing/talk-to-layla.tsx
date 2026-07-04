@@ -8,10 +8,10 @@
  * same proof: a real, interruptible conversation with the exact
  * assistant that answers (301) 962-2856.
  *
- *   - Mounts hidden. A cheap GET /api/demo-web-call (no rate-limit
- *     cost) decides whether to reveal at all — a dead button is worse
- *     than no button, and reveal-in-effect keeps SSR markup identical
- *     to the first client paint.
+ *   - page.tsx only renders this component when VAPI_PUBLIC_KEY is set
+ *     (a server component reads the env at build time), so the offer
+ *     row is in the server HTML from the first byte — no post-hydration
+ *     reveal, no layout shift under the visitor's finger.
  *   - Everything expensive is gesture-initiated: the tap POSTs for a
  *     call grant (per-IP + global rate limits, 180s hard cap minted
  *     server-side), and only THEN dynamic-imports @vapi-ai/web — zero
@@ -52,13 +52,15 @@ type CallGrant = {
 }
 
 type Phase =
-  | 'hidden' // pre-reveal (server render + until GET confirms the flag)
   | 'offer' // the one-line text button
   | 'connecting'
   | 'live'
   | 'busy' // 429 — point at the phone line
   | 'ended' // call finished — the conversion moment
   | 'error' // mic denied / SDK or handshake failure
+
+/** Give the handshake this long to produce call-start before bailing. */
+const CONNECT_TIMEOUT_MS = 20_000
 
 function formatElapsed(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
@@ -83,12 +85,13 @@ function PhoneLineLink() {
 }
 
 export function TalkToLayla() {
-  const [phase, setPhase] = useState<Phase>('hidden')
+  const [phase, setPhase] = useState<Phase>('offer')
   const [elapsedS, setElapsedS] = useState(0)
   const reduceMotion = useReducedMotion() ?? false
 
   const vapiRef = useRef<Vapi | null>(null)
   const timerRef = useRef<number | null>(null)
+  const connectTimeoutRef = useRef<number | null>(null)
   const startedAtRef = useRef(0)
 
   // Layla's voice → orb scale. volume-level arrives ~10×/s as 0–1; the
@@ -101,6 +104,10 @@ export function TalkToLayla() {
       if (timerRef.current !== null) {
         window.clearInterval(timerRef.current)
         timerRef.current = null
+      }
+      if (connectTimeoutRef.current !== null) {
+        window.clearTimeout(connectTimeoutRef.current)
+        connectTimeoutRef.current = null
       }
       const vapi = vapiRef.current
       vapiRef.current = null
@@ -115,23 +122,6 @@ export function TalkToLayla() {
     [orbScale],
   )
 
-  // Feature-flag reveal: costs nothing (GET is unthrottled) and keeps
-  // the server markup (nothing) identical to the first client paint.
-  useEffect(() => {
-    let cancelled = false
-    void fetch('/api/demo-web-call', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { enabled?: boolean } | null) => {
-        if (!cancelled && data?.enabled) setPhase('offer')
-      })
-      .catch(() => {
-        /* stay hidden — the tel: card above still works */
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   // Audio-coordination protocol + unmount cleanup. If anything else on
   // the page starts sound mid-call, hang up back to the offer — an
   // aborted call hasn't earned the closing pitch.
@@ -145,6 +135,8 @@ export function TalkToLayla() {
     return () => {
       window.removeEventListener(AUDIO_EVENT, onOtherAudio)
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
+      if (connectTimeoutRef.current !== null)
+        window.clearTimeout(connectTimeoutRef.current)
       const vapi = vapiRef.current
       vapiRef.current = null
       if (vapi) {
@@ -190,6 +182,10 @@ export function TalkToLayla() {
       vapiRef.current = vapi
 
       vapi.on('call-start', () => {
+        if (connectTimeoutRef.current !== null) {
+          window.clearTimeout(connectTimeoutRef.current)
+          connectTimeoutRef.current = null
+        }
         startTimer()
         setPhase('live')
       })
@@ -204,7 +200,25 @@ export function TalkToLayla() {
         new CustomEvent(AUDIO_EVENT, { detail: { source: SOURCE } }),
       )
 
+      // Watchdog: if the handshake never produces call-start (event
+      // missed, network stall), don't strand the visitor on a spinner
+      // while a call may be live and billing — kill it and fall back.
+      connectTimeoutRef.current = window.setTimeout(() => {
+        connectTimeoutRef.current = null
+        if (vapiRef.current === vapi) teardown('error')
+      }, CONNECT_TIMEOUT_MS)
+
       await vapi.start(grant.assistantId, grant.overrides)
+
+      // Teardown may have run while start() was in flight: the SDK's
+      // stop() no-ops before its internal call object exists, so the
+      // call can connect after we already "stopped" — a hot mic with no
+      // UI. If this instance is no longer current, kill the orphan now
+      // that the SDK has a call object to destroy.
+      if (vapiRef.current !== vapi) {
+        vapi.removeAllListeners()
+        void vapi.stop().catch(() => {})
+      }
     } catch {
       // Mic permission denied, SDK load failure, or a failed handshake.
       // If a coordination teardown already ran (ref cleared, phase
@@ -216,8 +230,6 @@ export function TalkToLayla() {
       }
     }
   }, [orbScale, startTimer, teardown])
-
-  if (phase === 'hidden') return null
 
   return (
     <div className="ttl-fade-in mx-auto mt-3 flex w-fit max-w-full flex-col items-center text-center">

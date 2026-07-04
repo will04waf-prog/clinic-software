@@ -181,6 +181,10 @@ export function LaylaShowcase() {
   // seeking while idle just shifts the offset and the loop drifts onward
   // from the sought point instead of snapping back.
   const loopOffset = useRef(0)
+  // Announced slider value (secs) while idle: frozen at the last user seek
+  // instead of tracking the attract loop, so a screen reader focused on the
+  // scrubber isn't flooded with per-frame value announcements.
+  const idleAriaSecs = useRef(0)
 
   // Pause the animation loop while off-screen — avoids a continuous rAF
   // burning CPU on the landing page (helps INP / battery).
@@ -232,7 +236,13 @@ export function LaylaShowcase() {
     startMusic()
     const a = new Audio(VO_AUDIO_SRC); a.preload = 'auto'; a.muted = muted
     a.onended = () => { setT(TOTAL - 1); music.current?.stop(true); setMode('ended') }
-    a.play().catch(() => {})
+    // If the VO fails to load or play, tear down audio and return to the
+    // muted attract loop instead of freezing on scene 0. The vo.current
+    // guard keeps a late error from an abandoned element from clobbering
+    // a newer play session.
+    const fail = () => { if (vo.current === a) { stopAudio(false); setMode('idle') } }
+    a.onerror = fail
+    a.play().then(() => { a.onerror = fail }).catch(fail)
     vo.current = a
     setT(0); setMode('playing')
   }, [startMusic, stopAudio, muted])
@@ -251,10 +261,14 @@ export function LaylaShowcase() {
     return () => cancelAnimationFrame(raf)
   }, [mode, inView])
 
-  // Dev-only ?seek=<ms> for screenshots.
+  // Dev-only ?seek=<ms> for screenshots. Gated on the dev build so a stray
+  // ?seek= on a shared prod URL can't freeze the film with controls hidden
+  // (Next.js inlines NODE_ENV, so the branch is dead-code-eliminated in prod).
   useEffect(() => {
-    const s = new URLSearchParams(window.location.search).get('seek')
-    if (s !== null && s !== '' && !Number.isNaN(Number(s))) { setT(Number(s) % TOTAL); setMode('frozen') }
+    if (process.env.NODE_ENV === 'development') {
+      const s = new URLSearchParams(window.location.search).get('seek')
+      if (s !== null && s !== '' && !Number.isNaN(Number(s))) { setT(Number(s) % TOTAL); setMode('frozen') }
+    }
     return () => stopAudio(false)
   }, [stopAudio])
 
@@ -289,6 +303,7 @@ export function LaylaShowcase() {
     }
     if (modeRef.current === 'idle') {
       loopOffset.current = (((clamped - performance.now()) % TOTAL) + TOTAL) % TOTAL
+      idleAriaSecs.current = Math.round(clamped / 1000)
     } else {
       positionVo()
       if (modeRef.current === 'ended') setMode('paused')
@@ -307,6 +322,10 @@ export function LaylaShowcase() {
   const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     scrubbing.current = true
     setScrubActive(true)
+    // Explicitly focus the track so keyboard seeking works right after a
+    // click/tap (some browsers never focus a div on pointerdown); the
+    // :focus-visible outline keeps this from painting a ring.
+    e.currentTarget.focus({ preventScroll: true })
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* no-op */ }
     seekFromClientX(e.clientX)
   }
@@ -319,11 +338,18 @@ export function LaylaShowcase() {
   const onTrackKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
     e.preventDefault()
-    seekTo(t + (e.key === 'ArrowRight' ? 5000 : -5000))
+    // While idle, step from the frozen announced value — not the moving
+    // attract-loop clock — so repeated keypresses land where expected.
+    const base = modeRef.current === 'idle' ? idleAriaSecs.current * 1000 : t
+    seekTo(base + (e.key === 'ArrowRight' ? 5000 : -5000))
   }
 
   const inScene = (k: SceneKey) => t >= T[k][0] && t < T[k][1]
   const progress = Math.min(t / TOTAL, 1)
+  // Slider aria value: frozen while the idle attract loop is the clock
+  // (see idleAriaSecs); live during playing/paused, per media-scrubber
+  // convention.
+  const ariaSecs = mode === 'idle' ? idleAriaSecs.current : Math.round(t / 1000)
   const callSecs = Math.min(Math.floor(t / 1000), 48)
   const mmss = `0:${String(callSecs).padStart(2, '0')}`
   const bookEl = t - T.book[0]
@@ -515,8 +541,8 @@ export function LaylaShowcase() {
             aria-label="Scrub the demo film"
             aria-valuemin={0}
             aria-valuemax={Math.round(TOTAL / 1000)}
-            aria-valuenow={Math.round(t / 1000)}
-            aria-valuetext={`${Math.round(t / 1000)} of ${Math.round(TOTAL / 1000)} seconds`}
+            aria-valuenow={ariaSecs}
+            aria-valuetext={`${ariaSecs} of ${Math.round(TOTAL / 1000)} seconds`}
             style={trackHit}
             onPointerDown={onTrackPointerDown}
             onPointerMove={onTrackPointerMove}

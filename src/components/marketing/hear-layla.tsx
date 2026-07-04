@@ -79,6 +79,11 @@ export function HearLayla() {
   )
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const rafRef = useRef(0)
+  const playBtnRef = useRef<HTMLButtonElement>(null)
+  const replayBtnRef = useRef<HTMLButtonElement>(null)
+  // Whether the control that triggered the current morph held focus — if
+  // so, hand focus to its successor when the old button unmounts.
+  const restoreFocusRef = useRef(false)
 
   const stopTicker = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
@@ -119,6 +124,20 @@ export function HearLayla() {
     }
   }, [])
 
+  // Focus follows the morph: the ended/replay swaps unmount the button the
+  // keyboard user just activated, so move focus to its replacement instead
+  // of letting it silently drop to <body>.
+  useEffect(() => {
+    if (!restoreFocusRef.current) return
+    if (phase === 'ended') {
+      restoreFocusRef.current = false
+      replayBtnRef.current?.focus()
+    } else if (phase === 'playing') {
+      restoreFocusRef.current = false
+      playBtnRef.current?.focus()
+    }
+  }, [phase])
+
   const toggle = useCallback(() => {
     if (!audioRef.current) {
       // Created inside the gesture on purpose: iOS Safari only permits
@@ -138,6 +157,9 @@ export function HearLayla() {
       a.addEventListener('ended', () => {
         stopTicker()
         setProgress(1)
+        // The play/pause button is about to unmount; remember whether it
+        // held focus so the replay button can inherit it.
+        restoreFocusRef.current = document.activeElement === playBtnRef.current
         setPhase('ended')
       })
       audioRef.current = a
@@ -145,14 +167,24 @@ export function HearLayla() {
     const audio = audioRef.current
     if (audio.paused) {
       if (audio.ended) {
+        // Replay morph mirrors the ended one: the replay button unmounts,
+        // so the play/pause button should inherit its focus.
+        restoreFocusRef.current =
+          document.activeElement === replayBtnRef.current
         audioRef.current.currentTime = 0
         setProgress(0)
       }
       window.dispatchEvent(
         new CustomEvent(AUDIO_EVENT, { detail: { source: SOURCE } }),
       )
-      audio.play().catch(() => {
+      audio.play().catch((err: unknown) => {
+        // pause() during a pending play() rejects with AbortError; the
+        // 'pause' event handler already set phase to 'paused' — don't
+        // stomp it. Only genuine refusals reset the chip to idle.
+        if (err instanceof DOMException && err.name === 'AbortError') return
         stopTicker()
+        audio.currentTime = 0
+        setProgress(0)
         setPhase('idle')
       })
     } else {
@@ -214,6 +246,7 @@ export function HearLayla() {
       {phase === 'ended' ? (
         <div className={`${PILL} hl-fade-in`}>
           <button
+            ref={replayBtnRef}
             type="button"
             onClick={toggle}
             aria-label="Replay Layla's greeting"
@@ -234,6 +267,7 @@ export function HearLayla() {
         </div>
       ) : (
         <button
+          ref={playBtnRef}
           type="button"
           onClick={toggle}
           aria-pressed={phase === 'playing'}
@@ -257,6 +291,13 @@ export function HearLayla() {
           </span>
         </button>
       )}
+      {/* Announce the ended morph — the control the user activated is
+          replaced, so tell screen readers what appeared in its place. */}
+      <span role="status" className="sr-only">
+        {phase === 'ended'
+          ? 'Recording finished. Replay or call the demo line.'
+          : ''}
+      </span>
       {/* Screen-reader transcript of the recording. */}
       <p className="sr-only">
         Transcript of the recording: &ldquo;{TRANSCRIPT}&rdquo;

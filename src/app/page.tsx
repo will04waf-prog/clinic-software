@@ -250,7 +250,7 @@ const FAQ_ITEMS = [
 export default function LandingPage() {
   return (
     <SmoothScrollProvider>
-    <div className="flex min-h-screen flex-col bg-[#F5EFE1]">
+    <div className="landing-page flex min-h-screen flex-col bg-[#F5EFE1]">
 
       {/* Organization schema — helps Google's knowledge graph recognize the brand */}
       <script
@@ -435,7 +435,10 @@ export default function LandingPage() {
             </a>
             <div className="rise" style={{ '--stagger': 6 } as React.CSSProperties}>
               <HearLayla />
-              <TalkToLayla />
+              {/* Server-gated: the offer row is in the first HTML byte when
+                  the key exists, and never mounts (no gap, no CLS) when it
+                  doesn't. Flipping the env var takes effect on deploy. */}
+              {process.env.VAPI_PUBLIC_KEY ? <TalkToLayla /> : null}
             </div>
             <div className="rise mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-6" style={{ '--stagger': 7 } as React.CSSProperties}>
               {['No credit card required', 'Setup in less than 20 minutes', 'Cancel anytime'].map((item) => (

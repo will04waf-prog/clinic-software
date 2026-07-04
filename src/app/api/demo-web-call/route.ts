@@ -2,27 +2,30 @@
  * Demo web-call grant — the server half of the in-browser "Talk to
  * Layla" affordance (src/components/marketing/talk-to-layla.tsx).
  *
- * GET  → { enabled } feature-flag check. Free: it consumes no rate
- *        limit, so the component can decide whether to render at all
- *        without spending a caller's slot.
- * POST → mints a "call grant": the Vapi public key, the demo assistant
- *        id, and the assistantOverrides both sides agree to. A Vapi
- *        public key is designed to be shipped to browsers, but every
- *        web call it starts costs real per-minute money — so the grant
- *        is what we throttle, not the key itself.
+ * GET  → { enabled } feature-flag check (kept for ops smoke tests; the
+ *        page itself gates on the env var server-side).
+ * POST → mints a "call grant": the Vapi public key, the WEB demo
+ *        assistant id, and advisory assistantOverrides.
  *
- * Cost protection, in order:
- *   1. Per-IP limiter (3 / 10 min) — one curious visitor gets three
- *      tries, a scripted loop from one address gets cut off fast.
- *   2. Global limiter (20 / hour) — a distributed flood can burn at
- *      most ~1 hour of talk time per hour, org-wide. Checked AFTER the
- *      per-IP limiter so one abusive address can't drain the shared
- *      pool for everyone else.
- *   3. The overrides cap each granted call at 180s of talk and 30s of
- *      dead air. maxDurationSeconds is a top-level AssistantOverrides
+ * Cost protection, in order of what actually holds:
+ *   1. THE ASSISTANT RECORD. Web calls use a dedicated assistant
+ *      (Tarhunna Aesthetics web demo) whose maxDurationSeconds=180 and
+ *      silenceTimeoutSeconds=30 are pinned on the Vapi record itself —
+ *      a client that strips the overrides still gets cut at 180s. The
+ *      phone demo line keeps its own uncapped assistant.
+ *   2. Origin allowlist on POST — third-party pages can't mint grants
+ *      from a visitor's browser.
+ *   3. Per-IP limiter (3 / 10 min) + global limiter (20 / hour,
+ *      checked second so an abusive IP can't drain the shared pool).
+ *      Honest-client throttles: a leaked public key can start calls
+ *      without this endpoint, which is exactly why cap #1 lives on the
+ *      assistant record and why the key should be origin-locked in the
+ *      Vapi dashboard. Total-call-count exposure is bounded by Vapi's
+ *      org-level concurrency limit, not by us.
+ *   4. The overrides ride along as belt-and-suspenders for our own
+ *      client. (maxDurationSeconds is a top-level AssistantOverrides
  *      field in @vapi-ai/web 2.5.2; silenceTimeoutSeconds is accepted
- *      by the Vapi API on the same object (the 2.5.2 generated client
- *      type simply lags the REST schema).
+ *      by the REST API — the generated type simply lags.)
  *
  * Same per-instance-memory caveat as every makeRateLimiter user: warm
  * lambdas each hold their own buckets, so the true ceiling is (limit ×
@@ -38,14 +41,22 @@ export const runtime = 'nodejs'
 const consumeIpSlot = makeRateLimiter(3, 10 * 60_000)
 const consumeGlobalSlot = makeRateLimiter(20, 60 * 60_000)
 
-/** The public demo assistant — the same Layla that answers (301) 962-2856. */
-const DEMO_ASSISTANT_ID = '42645506-c121-4b69-8f7d-a164bdd32a42'
+/**
+ * The WEB demo assistant — same brain, voice, and tools as the Layla
+ * that answers (301) 962-2856, but a separate Vapi record with
+ * maxDurationSeconds=180 / silenceTimeoutSeconds=30 pinned server-side
+ * so browser callers can't run up the meter.
+ */
+const WEB_DEMO_ASSISTANT_ID = '9410db69-f98f-4dbc-a85f-67dd5c2b821a'
 
-/** Hard caps sent as assistantOverrides on every granted web call. */
+/** Advisory copy of the caps already pinned on the assistant record. */
 const CALL_CAPS = {
   maxDurationSeconds: 180,
   silenceTimeoutSeconds: 30,
 } as const
+
+/** Origins allowed to mint grants from a browser. */
+const ALLOWED_ORIGIN = /^https?:\/\/(localhost(:\d+)?|(www\.)?tarhunna\.net)$/
 
 function rateLimited(retryAfterSeconds: number) {
   return NextResponse.json(
@@ -62,6 +73,14 @@ export async function POST(request: Request) {
   const publicKey = process.env.VAPI_PUBLIC_KEY
   if (!publicKey) {
     return NextResponse.json({ enabled: false }, { status: 503 })
+  }
+
+  // Browsers always send Origin on cross-origin POSTs — reject embeds
+  // from other sites. (A missing Origin means a non-browser client;
+  // the rate limiters below are the backstop there.)
+  const origin = request.headers.get('origin')
+  if (origin && !ALLOWED_ORIGIN.test(origin)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   // First hop of x-forwarded-for is the client as Vercel saw it.
@@ -81,7 +100,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     publicKey,
-    assistantId: DEMO_ASSISTANT_ID,
+    assistantId: WEB_DEMO_ASSISTANT_ID,
     overrides: CALL_CAPS,
   })
 }

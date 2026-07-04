@@ -111,6 +111,11 @@ export function SoftwareShowcase() {
   // Shifts the idle attract-loop's clock so a seek while idling lands on
   // the requested frame: t = (now + loopOffset) % TOTAL.
   const loopOffset = useRef(0)
+  // Frozen slider value announced while the idle attract loop is the clock —
+  // otherwise aria-valuenow changes every rAF frame and screen readers
+  // narrate a nonstop stream the user never requested. Updated only on
+  // user-initiated seeks; playing/paused modes keep live values.
+  const idleAriaSecs = useRef(0)
 
   // Pause the animation loop while off-screen — avoids a continuous rAF
   // burning CPU on the landing page (helps INP / battery).
@@ -163,7 +168,13 @@ export function SoftwareShowcase() {
     startMusic()
     const a = new Audio(VO_AUDIO_SRC); a.preload = 'auto'; a.muted = muted
     a.onended = () => { setT(TOTAL - 1); music.current?.stop(true); setMode('ended') }
-    a.play().catch(() => {})
+    // If the VO can't load or play (offline, 404, decode error), tear the
+    // audio down and return to the muted attract loop instead of freezing
+    // on scene 0 with the music bed droning. The vo.current === a guard
+    // keeps a late error from an abandoned element out of a newer session.
+    const fail = () => { if (vo.current === a) { stopAudio(false); setMode('idle') } }
+    a.onerror = fail
+    a.play().then(() => { a.onerror = fail }).catch(fail)
     vo.current = a
     setT(0); setMode('playing')
   }, [startMusic, stopAudio, muted])
@@ -181,8 +192,13 @@ export function SoftwareShowcase() {
   }, [mode, inView])
 
   useEffect(() => {
-    const s = new URLSearchParams(window.location.search).get('seek')
-    if (s !== null && s !== '' && !Number.isNaN(Number(s))) { setT(Number(s) % TOTAL); setMode('frozen') }
+    // Dev-only deep link (?seek=<ms>) for eyeballing a frame. Gated on the
+    // dev build so a stray param on a shared prod URL can't freeze the film
+    // (NODE_ENV is statically inlined; the branch is dead-code-eliminated).
+    if (process.env.NODE_ENV === 'development') {
+      const s = new URLSearchParams(window.location.search).get('seek')
+      if (s !== null && s !== '' && !Number.isNaN(Number(s))) { setT(Number(s) % TOTAL); setMode('frozen') }
+    }
     return () => stopAudio(false)
   }, [stopAudio])
 
@@ -209,7 +225,7 @@ export function SoftwareShowcase() {
     const target = Math.min(Math.max(ms, 0), TOTAL - 1)
     const m = modeRef.current
     if (m === 'playing' && vo.current) { vo.current.currentTime = target / 1000; setT(target); return }
-    if (m === 'idle') { loopOffset.current = target - performance.now(); setT(target); return }
+    if (m === 'idle') { loopOffset.current = target - performance.now(); idleAriaSecs.current = Math.round(target / 1000); setT(target); return }
     // paused / ended / frozen: freeze-frame the target; keep the VO in sync
     // so Resume picks up there. Seeking out of 'ended' revives it as paused.
     if (vo.current) vo.current.currentTime = target / 1000
@@ -228,6 +244,10 @@ export function SoftwareShowcase() {
 
   const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault()
+    // preventDefault cancels the browser's focus-on-mousedown, so focus the
+    // track explicitly — otherwise arrow-key seeking is dead after a click.
+    // :focus-visible styling keeps this from painting a ring on pointer use.
+    e.currentTarget.focus({ preventScroll: true })
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* stale pointer */ }
     draggingRef.current = true; setScrubDrag(true)
     seekFromPointer(e)
@@ -238,14 +258,19 @@ export function SoftwareShowcase() {
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* already released */ }
   }
   const onTrackKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); seekTo(t - SEEK_STEP_MS) }
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); seekTo(t + SEEK_STEP_MS) }
+    // While idling, step from the frozen announced value rather than the
+    // live attract-loop clock, which moves under the user between keypresses.
+    const base = modeRef.current === 'idle' ? idleAriaSecs.current * 1000 : t
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); seekTo(base - SEEK_STEP_MS) }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); seekTo(base + SEEK_STEP_MS) }
     else if (e.key === 'Home') { e.preventDefault(); seekTo(0) }
     else if (e.key === 'End') { e.preventDefault(); seekTo(TOTAL - 1) }
   }
 
   const inScene = (k: SceneKey) => t >= T[k][0] && t < T[k][1]
   const progress = Math.min(t / TOTAL, 1)
+  // Announced slider value: frozen during the idle attract loop, live otherwise.
+  const ariaSecs = mode === 'idle' ? idleAriaSecs.current : Math.round(t / 1000)
   const showControls = mode !== 'frozen'
   const currentModule = (Object.keys(T) as SceneKey[]).find((k) => inScene(k)) ?? 'dash'
 
@@ -442,8 +467,8 @@ export function SoftwareShowcase() {
             aria-label="Seek through the platform tour"
             aria-valuemin={0}
             aria-valuemax={Math.round(TOTAL / 1000)}
-            aria-valuenow={Math.round(t / 1000)}
-            aria-valuetext={`${Math.round(t / 1000)} of ${Math.round(TOTAL / 1000)} seconds`}
+            aria-valuenow={ariaSecs}
+            aria-valuetext={`${ariaSecs} of ${Math.round(TOTAL / 1000)} seconds`}
             style={seekHit}
             onPointerDown={onTrackPointerDown}
             onPointerMove={onTrackPointerMove}

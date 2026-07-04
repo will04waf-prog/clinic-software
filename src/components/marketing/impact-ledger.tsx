@@ -15,7 +15,9 @@
  * SSR / no-JS / reduced-motion honesty: the server renders every FINAL
  * value and the first client paint matches it exactly — the zeros only
  * ever exist for the duration of the animation, triggered inside a
- * one-shot IntersectionObserver (same rootMargin as AnimatedSection).
+ * one-shot IntersectionObserver (same rootMargin as AnimatedSection,
+ * then deliberately delayed so the wrapper's 1s fade-in has settled
+ * before the count-up plays in full view).
  * prefers-reduced-motion skips the whole performance and leaves the
  * static final values in place.
  *
@@ -121,11 +123,16 @@ export function ImpactLedger() {
       })
     }
 
+    let timerId = 0
+
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
           obs.disconnect()
-          run()
+          // The AnimatedSection wrapper fires on the same scroll tick and
+          // fades in over 1s — wait until it's ~97% opaque and settled so
+          // the count-up plays in full view instead of behind opacity 0.
+          timerId = window.setTimeout(run, 600)
         }
       },
       { rootMargin: '0px 0px -15% 0px' },
@@ -133,6 +140,7 @@ export function ImpactLedger() {
     obs.observe(el)
     return () => {
       obs.disconnect()
+      window.clearTimeout(timerId)
       cancelAnimationFrame(rafId)
     }
   }, [])
