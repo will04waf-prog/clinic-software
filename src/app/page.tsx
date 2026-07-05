@@ -233,7 +233,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Is Tarhunna HIPAA compliant?',
-    a: "Business Associate Agreements are in place with every infrastructure provider behind the platform, data is encrypted at rest, and an in-app BAA attestation is required from the clinic owner before the voice agent will accept inbound or place outbound calls. Compliance is shared between your clinic and the platform — so rather than treating 'HIPAA compliant' as a marketing checkbox, we give you the controls and agreements that real compliance depends on.",
+    a: "Not yet — and we won't pretend otherwise, because 'HIPAA compliant' as a marketing checkbox is usually a lie. Tarhunna is built HIPAA-ready: data encrypted at rest, tenant isolation enforced in the database itself, caller-ID-gated appointment lookups, PHI-scrubbed notifications, and full audit logging. We're completing our formal compliance program — vendor agreements and written policies — and we'll tell any clinic exactly where things stand before patient data is ever involved. Ask us; you'll get a straight answer.",
   },
   {
     q: 'Does Tarhunna replace my EMR?',
@@ -623,9 +623,10 @@ export default function LandingPage() {
                   should come from a clinician.
                 </p>
                 <p className="mt-3 text-gray-500 leading-relaxed">
-                  Business Associate Agreements are in place with every infrastructure provider behind the platform. An in-app BAA
-                  attestation is required before the voice agent will accept inbound or place outbound calls.
-                  Data is encrypted at rest via Supabase/Postgres infrastructure.
+                  We&apos;re completing our formal HIPAA compliance program and are upfront
+                  about exactly where it stands. An in-app BAA attestation is required
+                  before the voice agent will accept inbound or place outbound calls,
+                  and data is encrypted at rest via Supabase/Postgres infrastructure.
                 </p>
               </div>
               <ul className="space-y-3">

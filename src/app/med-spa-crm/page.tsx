@@ -293,7 +293,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Is Tarhunna HIPAA compliant?',
-    a: 'We do not claim HIPAA compliance as a checkbox. Business Associate Agreements are in place with every infrastructure provider behind the platform, and an in-app BAA attestation is required from the owner before the voice agent will accept inbound or place outbound calls. Data is encrypted at rest. Caller-ID-gated lookups prevent a dictated phone number from being accepted as identity. Talk to us about your specific compliance posture.',
+    a: 'Not yet — and we won\'t claim it before it\'s true. The platform is built HIPAA-ready: data encrypted at rest, tenant isolation enforced at the database layer, caller-ID-gated lookups so a dictated phone number is never accepted as identity, and an in-app BAA attestation required before the voice agent takes calls. Our formal compliance program — vendor agreements and written policies — is in progress. Talk to us and you\'ll get a straight answer on exactly where it stands.',
   },
   {
     q: 'Does Tarhunna integrate with my EMR or Google Calendar?',
