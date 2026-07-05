@@ -35,6 +35,7 @@
 
 import { NextResponse } from 'next/server'
 import { makeRateLimiter } from '@/lib/public-rate-limit'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
@@ -98,9 +99,26 @@ export async function POST(request: Request) {
     return rateLimited(global.retryAfterSeconds)
   }
 
+  // Personalized prospect demos (/demo/[slug]) pass a slug; the grant
+  // then points at that clinic's cloned assistant instead of the
+  // generic web demo. Unknown slugs fall back to the generic demo —
+  // a stale outreach link should degrade, not 404 mid-pitch.
+  let assistantId = WEB_DEMO_ASSISTANT_ID
+  const body = (await request.json().catch(() => null)) as
+    | { slug?: string }
+    | null
+  if (body?.slug && typeof body.slug === 'string' && body.slug.length <= 80) {
+    const { data } = await supabaseAdmin
+      .from('demo_prospects')
+      .select('vapi_assistant_id')
+      .eq('slug', body.slug)
+      .maybeSingle()
+    if (data?.vapi_assistant_id) assistantId = data.vapi_assistant_id
+  }
+
   return NextResponse.json({
     publicKey,
-    assistantId: WEB_DEMO_ASSISTANT_ID,
+    assistantId,
     overrides: CALL_CAPS,
   })
 }

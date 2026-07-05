@@ -84,7 +84,15 @@ function PhoneLineLink() {
   )
 }
 
-export function TalkToLayla() {
+interface TalkToLaylaProps {
+  /** Personalized prospect demo: grants resolve this slug's assistant
+   *  (see /api/demo-web-call), so Layla answers as THAT clinic. */
+  slug?: string
+  /** Override the offer-row button copy (default is the hero's line). */
+  offerLabel?: string
+}
+
+export function TalkToLayla({ slug, offerLabel }: TalkToLaylaProps = {}) {
   const [phase, setPhase] = useState<Phase>('offer')
   const [elapsedS, setElapsedS] = useState(0)
   const reduceMotion = useReducedMotion() ?? false
@@ -164,7 +172,11 @@ export function TalkToLayla() {
   const beginCall = useCallback(async () => {
     setPhase('connecting')
     try {
-      const res = await fetch('/api/demo-web-call', { method: 'POST' })
+      const res = await fetch('/api/demo-web-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slug ? { slug } : {}),
+      })
       if (res.status === 429) {
         setPhase('busy')
         return
@@ -229,7 +241,7 @@ export function TalkToLayla() {
         setPhase((p) => (p === 'connecting' ? 'error' : p))
       }
     }
-  }, [orbScale, startTimer, teardown])
+  }, [orbScale, slug, startTimer, teardown])
 
   return (
     <div className="ttl-fade-in mx-auto mt-3 flex w-fit max-w-full flex-col items-center text-center">
@@ -240,7 +252,7 @@ export function TalkToLayla() {
           aria-label="Start a live browser call with Layla — uses your microphone"
           className={`inline-flex min-h-[44px] cursor-pointer items-center px-2 text-sm font-semibold text-[#026B78] underline-offset-4 hover:underline ${FOCUS_RING}`}
         >
-          No phone handy? Talk to her right here&thinsp;&rarr;
+          {offerLabel ?? <>No phone handy? Talk to her right here&thinsp;&rarr;</>}
         </button>
       )}
 
