@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   }
 
   // CRITICAL: identity from envelope only — never from LLM args in prod.
-  const { toE164, fromE164 } = resolveCallEnvelope(tc)
+  const { toE164, fromE164 } = await resolveCallEnvelope(tc)
   if (!toE164 || !fromE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

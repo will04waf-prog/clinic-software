@@ -182,7 +182,7 @@ export async function POST(req: Request) {
   // ---- to_e164 + org resolution ----------------------------------------
   // Identity hard-locked to call envelope in prod; LLM-supplied
   // to_e164/from_e164/phone_number args refused outside dev.
-  const { toE164 } = resolveCallEnvelope(tc)
+  const { toE164 } = await resolveCallEnvelope(tc)
   if (!toE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

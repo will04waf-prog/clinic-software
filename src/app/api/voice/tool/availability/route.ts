@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   // Identity hard-locked to call envelope in prod; LLM-supplied
   // to_e164/from_e164/phone_number args refused outside dev.
-  const { toE164 } = resolveCallEnvelope(tc)
+  const { toE164 } = await resolveCallEnvelope(tc)
   const serviceHintArg = typeof tc.arguments.service === 'string'
     ? tc.arguments.service
     : null

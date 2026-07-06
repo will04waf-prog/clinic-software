@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   // CRITICAL: identity comes ONLY from the Vapi envelope in prod.
   // resolveCallEnvelope refuses LLM-supplied to_e164/from_e164/
   // phone_number args in production — see lib/voice-agent/resolve-envelope.ts.
-  const { toE164, fromE164 } = resolveCallEnvelope(tc)
+  const { toE164, fromE164 } = await resolveCallEnvelope(tc)
   if (!toE164 || !fromE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

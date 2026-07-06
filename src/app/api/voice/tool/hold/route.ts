@@ -64,7 +64,7 @@ export async function POST(req: Request) {
   // Envelope: to_e164/from_e164/phone_number args are ignored in prod
   // (caller-id spoof vector). resolveCallEnvelope is the single source
   // of truth — see lib/voice-agent/resolve-envelope.ts.
-  const { toE164, fromE164 } = resolveCallEnvelope(tc)
+  const { toE164, fromE164 } = await resolveCallEnvelope(tc)
   if (!toE164 || !args.service_id || !args.provider_id || !args.slot_start_utc || !args.name || !args.phone) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: true,

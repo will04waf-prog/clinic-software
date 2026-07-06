@@ -85,9 +85,14 @@ async function main() {
   }
 
   // 2. Reskin: greeting + every prompt mention of the demo clinic.
+  // The TTS reads whatever we write — "&" comes out mangled and
+  // hyphens get spelled, so everything Layla SPEAKS uses a cleaned
+  // form of the name. The display name (with &) only lives on the
+  // /demo page and in the DB row.
+  const spokenName = name.replace(/\s*&\s*/g, ' and ')
   src.name = `Web demo — ${slug}`.slice(0, 40)
   if (typeof src.firstMessage === 'string') {
-    src.firstMessage = src.firstMessage.replaceAll(SOURCE_CLINIC_NAME, name)
+    src.firstMessage = src.firstMessage.replaceAll(SOURCE_CLINIC_NAME, spokenName)
   }
 
   const model = src.model as {
@@ -98,22 +103,24 @@ async function main() {
     console.error('Template assistant has no system prompt — aborting.')
     process.exit(1)
   }
-  sys.content = sys.content.replaceAll(SOURCE_CLINIC_NAME, name)
+  sys.content = sys.content.replaceAll(SOURCE_CLINIC_NAME, spokenName)
   sys.content += [
     '',
     '',
     '## PROSPECT PREVIEW — GROUND TRUTH FOR THIS DEMO',
-    `You are a personalized PREVIEW of Layla answering for ${name}` +
+    `You are a personalized PREVIEW of Layla answering for ${spokenName}` +
       (city ? ` in ${city}` : '') +
-      `. ${name} has NOT deployed you yet — this demo exists so the owner can hear what their front desk would sound like.`,
+      `. ${spokenName} has NOT deployed you yet — this demo exists so the owner can hear what their front desk would sound like.`,
     address
       ? `The clinic's real address is ${address}. Use it for directions.`
       : '',
     services.length > 0
       ? `Services the clinic actually offers (use these when the caller asks what's available): ${services.join(', ')}.`
       : '',
-    website ? `The clinic's website is ${website}.` : '',
-    'Rails for this preview: the calendar behind you is a SAMPLE — offer times naturally, but if asked whether a booking is real, be honest that this is a demonstration. Never invent prices. If the caller asks whether they are talking to the real clinic, say this is a preview built by Tarhunna to show the owner what Layla can do, and the fastest way to make it real is tarhunna.net.',
+    website
+      ? `The clinic's website is ${website} — for YOUR reference only. Never direct callers there to book; the clinic does not take bookings on its website.`
+      : '',
+    'Rails for this preview: the calendar behind you is a SAMPLE — offer and book times naturally with your booking tools, and if asked whether a booking is real, be honest that this is a demonstration. Never invent prices. Never claim the clinic offers online booking. If a booking tool ever fails, apologize once and offer to take a message — do not send the caller to any website. If the caller asks whether they are talking to the real clinic, say this is a preview built by Tarhunna to show the owner what Layla can do, and the fastest way to make it real is tarhunna.net.',
   ]
     .filter(Boolean)
     .join('\n')

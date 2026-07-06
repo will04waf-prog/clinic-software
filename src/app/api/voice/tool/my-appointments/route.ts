@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   // `phone_number` arg as a fallback, which let a prompt-injecting
   // caller pivot to another patient's record. resolveCallEnvelope
   // refuses args in prod and only honors them in dev/test.
-  const { toE164, fromE164 } = resolveCallEnvelope(tc)
+  const { toE164, fromE164 } = await resolveCallEnvelope(tc)
   if (!toE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,

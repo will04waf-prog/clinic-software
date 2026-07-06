@@ -37,6 +37,11 @@ export interface NormalizedToolCall {
    *  patient calling from their own phone it's the same signal a
    *  human receptionist uses ("is this Sarah?"). */
   fromE164?: string
+  /** The Vapi assistant id handling the call. Web (browser) calls
+   *  carry no phone numbers at all — this is the only handle the
+   *  envelope resolver has to map a web-demo call onto the demo
+   *  clinic (see resolve-envelope.ts). */
+  assistantId?: string
 }
 
 export interface ToolCallResultOk {
@@ -82,6 +87,23 @@ function pickPhone(b: Record<string, any>, key: 'phoneNumber' | 'customer'): str
   return undefined
 }
 
+// Same schema-drift defense as pickPhone: Vapi has moved the
+// assistant reference between call.assistantId and assistant.id
+// across dashboard versions.
+function pickAssistantId(b: Record<string, any>): string | undefined {
+  const candidates = [
+    b?.call?.assistantId,
+    b?.message?.call?.assistantId,
+    b?.call?.assistant?.id,
+    b?.message?.assistant?.id,
+    b?.assistant?.id,
+  ]
+  for (const v of candidates) {
+    if (typeof v === 'string' && v.length > 0) return v
+  }
+  return undefined
+}
+
 export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | null {
   if (!body || typeof body !== 'object') return null
   const b = body as Record<string, any>
@@ -105,6 +127,7 @@ export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | nul
       callSid:    b.call?.id ?? b.message?.call?.id ? String(b.call?.id ?? b.message?.call?.id) : undefined,
       toE164:     pickPhone(b, 'phoneNumber'),
       fromE164:   pickPhone(b, 'customer'),
+      assistantId: pickAssistantId(b),
     }
   }
 
@@ -118,6 +141,7 @@ export function toolCallFromVapiPayload(body: unknown): NormalizedToolCall | nul
       callSid:    b.call?.id ? String(b.call.id) : undefined,
       toE164:     pickPhone(b, 'phoneNumber'),
       fromE164:   pickPhone(b, 'customer'),
+      assistantId: pickAssistantId(b),
     }
   }
 

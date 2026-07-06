@@ -32,7 +32,34 @@
  */
 
 import { normalizePhone } from '@/lib/validators'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { NormalizedToolCall } from '@/lib/voice-agent/tool-types'
+
+/**
+ * Web-demo masquerade. Browser calls (the landing page's "talk to her
+ * right here" + the /demo/[slug] prospect previews) carry NO phone
+ * numbers in the envelope — there is no Twilio leg at all — so
+ * toE164-based org resolution would dead-end and every tool would
+ * fail ("trouble reaching the schedule"). Those assistants are ours:
+ * the capped web-demo clone and the demo_prospects clones. When the
+ * envelope has no toE164 but names one of them, we resolve the call
+ * AS IF it rang the demo clinic's line — tools then operate on the
+ * fictional Tarhunna Aesthetics org (sample calendar, zero PHI).
+ * Real clinic assistants always arrive with a Twilio DID and never
+ * take this path.
+ */
+const DEMO_LINE_E164 = '+13019622856'
+const WEB_DEMO_ASSISTANT_ID = '9410db69-f98f-4dbc-a85f-67dd5c2b821a'
+
+async function isWebDemoAssistant(assistantId: string): Promise<boolean> {
+  if (assistantId === WEB_DEMO_ASSISTANT_ID) return true
+  const { data } = await supabaseAdmin
+    .from('demo_prospects')
+    .select('slug')
+    .eq('vapi_assistant_id', assistantId)
+    .maybeSingle()
+  return Boolean(data)
+}
 
 export interface ResolvedEnvelope {
   /** Clinic Twilio DID (E.164) or null. */
@@ -44,7 +71,7 @@ export interface ResolvedEnvelope {
   overrideAttempted: boolean
 }
 
-export function resolveCallEnvelope(tc: NormalizedToolCall): ResolvedEnvelope {
+export async function resolveCallEnvelope(tc: NormalizedToolCall): Promise<ResolvedEnvelope> {
   const allowOverride = process.env.NODE_ENV !== 'production'
 
   const argsToE164Raw = typeof tc.arguments.to_e164 === 'string'
@@ -62,8 +89,14 @@ export function resolveCallEnvelope(tc: NormalizedToolCall): ResolvedEnvelope {
   const argsToE164   = allowOverride ? argsToE164Raw : undefined
   const argsFromE164 = allowOverride ? argsFromRaw   : undefined
 
-  const toE164   = normalizePhone(argsToE164   ?? tc.toE164   ?? '')
+  let toE164     = normalizePhone(argsToE164   ?? tc.toE164   ?? '')
   const fromE164 = normalizePhone(argsFromE164 ?? tc.fromE164 ?? '')
+
+  // Web calls: no phone envelope at all → masquerade OUR demo
+  // assistants as calls to the demo clinic's line (see above).
+  if (!toE164 && tc.assistantId && (await isWebDemoAssistant(tc.assistantId))) {
+    toE164 = DEMO_LINE_E164
+  }
 
   if (!allowOverride && overrideAttempted) {
     // Don't log full numbers — last 4 of whatever they tried to pass.

@@ -99,7 +99,7 @@ export async function POST(req: Request) {
   // we don't even read tc.arguments.caller_phone here. ──
   // Identity hard-locked to call envelope in prod; LLM-supplied
   // to_e164/from_e164/phone_number args refused outside dev.
-  const { toE164, fromE164 } = resolveCallEnvelope(tc)
+  const { toE164, fromE164 } = await resolveCallEnvelope(tc)
 
   // Tail-only logging — never log full caller IDs (PII).
   console.log('[voice/tool/take-message] envelope', {

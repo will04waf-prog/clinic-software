@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   // — Vapi forwards the patient's phone as customer.number on
   // outbound calls just like inbound, and the org's twilio number
   // as phoneNumber.number, so resolveCallEnvelope works unchanged.
-  const { toE164, fromE164 } = resolveCallEnvelope(tc)
+  const { toE164, fromE164 } = await resolveCallEnvelope(tc)
   if (!toE164 || !fromE164) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
