@@ -34,6 +34,7 @@ import { MagneticCta } from '@/components/marketing/magnetic-cta'
 import { ImpactLedger } from '@/components/marketing/impact-ledger'
 import { ToolWall } from '@/components/marketing/tool-wall'
 import { FaqMomentum } from '@/components/marketing/faq-momentum'
+import { NightBand } from '@/components/marketing/night-band'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — AI receptionist that books appointments, backed by a full CRM',
@@ -737,6 +738,12 @@ export default function LandingPage() {
             </FaqMomentum>
           </AnimatedSection>
         </section>
+
+        {/* ── 9:07 PM — the cinematic photograph band ──────────── */}
+        {/* Full-bleed night shot of the reception: the front desk
+            went home, the phone still glows. The whole pitch in one
+            frame, right before the founder note. */}
+        <NightBand />
 
         {/* ── Founder-led — kept on purpose, retuned for voice ──── */}
         <section className="bg-[#F5EFE1] px-6 py-16">
