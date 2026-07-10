@@ -199,6 +199,48 @@ export async function POST(req: Request) {
     if (Number.isFinite(diff) && diff >= 0 && diff < 86400) durationSec = Math.round(diff)
   }
 
+  // Multi-vertical Phase 2: the model reported the call's dominant
+  // language via post_call_summary_email (mid-call), persisted in the
+  // voice_call_summary activity_log row's metadata. Copy it here, where
+  // persistCallLog writes call_logs.detected_language and (NULL-guarded)
+  // stamps contacts.preferred_language. Degrades to null on any miss.
+  let detectedLanguage: 'en' | 'es' | null = null
+  {
+    const { data: summaryRow } = await supabaseAdmin
+      .from('activity_log')
+      .select('metadata')
+      .eq('organization_id', org.id)
+      .eq('action', 'voice_call_summary')
+      .eq('metadata->>call_sid', call.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const dl = (summaryRow?.metadata as Record<string, unknown> | undefined)?.detected_language
+    if (dl === 'en' || dl === 'es') detectedLanguage = dl
+  }
+
+  // Multi-vertical Phase 4: copy the urgency flag (set mid-call by
+  // flag_urgent, on trades lines) onto the call_logs row. Degrades to
+  // not-urgent on any miss.
+  let isUrgent = false
+  let urgencyReason: string | null = null
+  {
+    const { data: urgentRow } = await supabaseAdmin
+      .from('activity_log')
+      .select('metadata')
+      .eq('organization_id', org.id)
+      .eq('action', 'voice_urgent_flag')
+      .eq('metadata->>call_sid', call.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (urgentRow) {
+      isUrgent = true
+      const r = (urgentRow.metadata as Record<string, unknown> | undefined)?.reason
+      urgencyReason = typeof r === 'string' ? r : null
+    }
+  }
+
   const result = await persistCallLog({
     orgId:        org.id,
     callSid:      call.id,
@@ -215,6 +257,9 @@ export async function POST(req: Request) {
     safetyTriggerLabel:       msg.analysis?.structuredData?.safety_trigger_label ?? null,
     outcome:      mapOutcome(call.endedReason),
     followupSummary: msg.summary ?? null,
+    detectedLanguage,
+    isUrgent,
+    urgencyReason,
   })
 
   // If the insert genuinely failed (DB blip, transient outage), return

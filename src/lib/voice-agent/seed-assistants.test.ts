@@ -176,3 +176,62 @@ describe('assistant bodies', () => {
     expect(body.metadata.role).toBe('reminder')
   })
 })
+
+describe('multi-vertical config (Phase 1)', () => {
+  // ORG has no vertical / caller_languages → exercises the defaults
+  // path (medspa / {en}), which must reproduce the prior body exactly.
+  it('med-spa defaults are byte-identical to the pre-multi-vertical body', () => {
+    const body = buildInboundAssistantBody(ORG, APP_URL, 'sec')
+    expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
+    expect(body.transcriber).toEqual({ provider: 'deepgram', model: 'nova-2', language: 'en' })
+    expect(body.model.tools).toHaveLength(16)
+    const sys = (body.model.messages[0].content as string)
+    expect(sys).toContain('# Layla — Tarhunna voice receptionist') // base prompt
+    expect(sys).not.toMatch(/# Vertical:/)                          // no fragment appended
+    expect(body.firstMessage).toBe(
+      'Thanks for calling Glow Med Spa, this is Layla! Just so you know, this call may be recorded. What can I do for you today?',
+    )
+  })
+
+  it('bilingual trades: Spanish voice, multilingual transcriber, trades fragment, flag_urgent (Phase 4)', () => {
+    const trades = { ...ORG, vertical: 'trades', caller_languages: ['en', 'es'] }
+    const body = buildInboundAssistantBody(trades, APP_URL, 'sec')
+    expect(body.transcriber).toMatchObject({ language: 'multi' })
+    expect((body.voice as { provider: string }).provider).not.toBe('vapi') // not Savannah
+    expect((body.model.messages[0].content as string)).toContain('# Vertical: home & trade services')
+    const names = body.model.tools.map((t: any) => t.function.name)
+    expect(names).toContain('flag_urgent')  // Phase 4: trades-only urgency tool
+    expect(names).toHaveLength(17)           // base 16 + flag_urgent
+    // Phase 2: bilingual directive appended for es-capable lines
+    const sys = (body.model.messages[0].content as string)
+    expect(sys).toContain('# Bilingual — English & Spanish')
+    expect(sys).toContain('FOLLOW their most recent language') // code-switch rule
+  })
+
+  it('med-spa NEVER gets flag_urgent (vertical-gated)', () => {
+    const names = buildInboundAssistantBody(ORG, APP_URL, 'sec').model.tools.map((t: any) => t.function.name)
+    expect(names).not.toContain('flag_urgent')
+    expect(names).toHaveLength(16)
+  })
+
+  it('English-only lines get NO bilingual directive', () => {
+    const body = buildInboundAssistantBody(ORG, APP_URL, 'sec')
+    expect((body.model.messages[0].content as string)).not.toContain('# Bilingual')
+  })
+
+  it('English-caller trades: keeps Savannah + English transcriber but gets the trades fragment', () => {
+    const trades = { ...ORG, vertical: 'trades', caller_languages: ['en'] }
+    const body = buildInboundAssistantBody(trades, APP_URL, 'sec')
+    expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
+    expect(body.transcriber).toMatchObject({ language: 'en' })
+    expect((body.model.messages[0].content as string)).toContain('# Vertical: home & trade services')
+  })
+
+  it('unknown/malformed vertical + caller_languages fall back to med-spa / English', () => {
+    const weird = { ...ORG, vertical: 'zzz', caller_languages: ['fr', ''] as string[] }
+    const body = buildInboundAssistantBody(weird, APP_URL, 'sec')
+    expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
+    expect(body.transcriber).toMatchObject({ language: 'en' })
+    expect((body.model.messages[0].content as string)).not.toMatch(/# Vertical:/)
+  })
+})

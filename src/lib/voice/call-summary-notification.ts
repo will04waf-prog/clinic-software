@@ -17,6 +17,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 import { getAppUrl } from '@/lib/voice-agent/app-url'
+import { notifyOwner } from '@/lib/notify'
 
 export type CallDisposition =
   | 'booked'
@@ -63,13 +64,17 @@ export async function notifyOwnerOfCallSummary(
       .maybeSingle(),
     supabaseAdmin
       .from('organizations')
-      .select('name')
+      .select('name, owner_language')
       .eq('id', args.organizationId)
       .single(),
   ])
 
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
+  // Multi-vertical Phase 2: owner-facing output follows owner_language,
+  // independent of the call's language (an English call still summarizes
+  // to a Spanish-speaking owner in Spanish).
+  const ownerLang: 'en' | 'es' = org?.owner_language === 'es' ? 'es' : 'en'
 
   // ── Race-safe dedupe: INSERT the claim ticket FIRST, only send
   // the email if the insert succeeds. The partial UNIQUE index
@@ -102,20 +107,41 @@ export async function notifyOwnerOfCallSummary(
   // record and can pivot to the calls/inbox surface manually.
   const transcriptUrl = `${getAppUrl()}/calls/${encodeURIComponent(args.callSid)}`
 
-  // PHI-free, single-line copy. The disposition is a closed enum so
-  // no free-form text can leak through this surface.
+  // PHI-free, single-line copy. The disposition is a closed enum, so
+  // no free-form text can leak through this surface — and the Spanish
+  // labels below are natively written, not machine-translated.
+  const DISP_ES: Record<CallDisposition, string> = {
+    booked:            'reservada',
+    rescheduled:       'reprogramada',
+    canceled:          'cancelada',
+    info_only:         'informativa',
+    message_taken:     'mensaje tomado',
+    transferred:       'transferida',
+    abandoned:         'abandonada',
+    escalation_needed: 'requiere atención',
+  }
+  const disp = ownerLang === 'es' ? DISP_ES[args.disposition] : args.disposition
+  const subject = ownerLang === 'es'
+    ? `Resumen de llamada en ${orgName}: ${disp}`
+    : `Call summary at ${orgName}: ${disp}`
   const html = wrapEmailHtml(
-    [
-      `Call completed: ${args.disposition} at ${orgName}. Open ClinIQ for the transcript.`,
-      `Open the transcript: ${transcriptUrl}`,
-    ].join('\n'),
+    (ownerLang === 'es'
+      ? [
+          `Llamada completada: ${disp} en ${orgName}. Abra ClinIQ para ver la transcripción.`,
+          `Ver la transcripción: ${transcriptUrl}`,
+        ]
+      : [
+          `Call completed: ${disp} at ${orgName}. Open ClinIQ for the transcript.`,
+          `Open the transcript: ${transcriptUrl}`,
+        ]
+    ).join('\n'),
     orgName,
   )
 
   try {
     await sendEmail({
       to: owner.email,
-      subject: `Call summary at ${orgName}: ${args.disposition}`,
+      subject,
       html,
       // Belt-and-suspenders alongside the DB-level claim row above:
       // if the same call_sid somehow re-runs after the claim is
@@ -126,4 +152,17 @@ export async function notifyOwnerOfCallSummary(
   } catch {
     console.error('[call-summary-notification] resend send failed')
   }
+
+  // Additive phone-channel push (SMS/WhatsApp per notification_channel).
+  // Reached only by the dedupe winner above, so it fires once per call.
+  // Inert until the owner sets owner_notify_e164; WhatsApp stays off
+  // until WHATSAPP_ENABLED. PHI-free — disposition + link only.
+  await notifyOwner({
+    organizationId: args.organizationId,
+    type: 'job_summary',
+    smsBody: ownerLang === 'es'
+      ? `Layla: llamada ${disp} en ${orgName}. Ver: ${transcriptUrl}`
+      : `Layla: call ${disp} at ${orgName}. View: ${transcriptUrl}`,
+    templateVariables: [orgName, disp, transcriptUrl],
+  })
 }

@@ -20,6 +20,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 
 import { getAppUrl } from '@/lib/voice-agent/app-url'
+import { notifyOwner } from '@/lib/notify'
 
 export interface NotifyOwnerOfVoiceMessageArgs {
   organizationId: string
@@ -62,13 +63,15 @@ export async function notifyOwnerOfVoiceMessage(
       .maybeSingle(),
     supabaseAdmin
       .from('organizations')
-      .select('name')
+      .select('name, owner_language')
       .eq('id', args.organizationId)
       .single(),
   ])
 
   if (!owner?.email) return
   const orgName = org?.name ?? 'your clinic'
+  // Multi-vertical Phase 2: owner-facing output follows owner_language.
+  const ownerLang: 'en' | 'es' = org?.owner_language === 'es' ? 'es' : 'en'
 
   // ── Race-safe dedupe: INSERT the claim ticket FIRST, only send
   // the email if the insert succeeds. The partial UNIQUE index
@@ -99,16 +102,23 @@ export async function notifyOwnerOfVoiceMessage(
 
   const inboxUrl = `${getAppUrl()}/voice-messages`
 
-  const subject = urgency === 'urgent'
-    ? `URGENT: new message at ${orgName}`
-    : `New message at ${orgName}`
+  const subject = ownerLang === 'es'
+    ? (urgency === 'urgent' ? `URGENTE: nuevo mensaje en ${orgName}` : `Nuevo mensaje en ${orgName}`)
+    : (urgency === 'urgent' ? `URGENT: new message at ${orgName}`   : `New message at ${orgName}`)
 
-  // PHI-free body. No caller name, no phone, no message text.
+  // PHI-free body. No caller name, no phone, no message text. Spanish
+  // copy is natively written, not machine-translated.
   const html = wrapEmailHtml(
-    [
-      `A caller left a message at ${orgName} — open ClinIQ to read it.`,
-      `Open the inbox: ${inboxUrl}`,
-    ].join('\n'),
+    (ownerLang === 'es'
+      ? [
+          `Un cliente dejó un mensaje en ${orgName} — abra ClinIQ para leerlo.`,
+          `Abra la bandeja: ${inboxUrl}`,
+        ]
+      : [
+          `A caller left a message at ${orgName} — open ClinIQ to read it.`,
+          `Open the inbox: ${inboxUrl}`,
+        ]
+    ).join('\n'),
     orgName,
   )
 
@@ -125,4 +135,20 @@ export async function notifyOwnerOfVoiceMessage(
   } catch {
     console.error('[voice-message-notification] resend send failed')
   }
+
+  // Additive phone-channel push. Always the PHI-free job_summary
+  // template — a "you have a voicemail" nudge carries no caller
+  // identity. (urgent_alert is reserved for flag_urgent, which is
+  // trades-only and deliberately includes the caller's number.) The
+  // urgency is conveyed in the body text, not the template. Inert until
+  // owner_notify_e164 is set; WhatsApp gated by WHATSAPP_ENABLED.
+  const detail = ownerLang === 'es' ? 'mensaje nuevo' : 'new message'
+  await notifyOwner({
+    organizationId: args.organizationId,
+    type: 'job_summary',
+    smsBody: ownerLang === 'es'
+      ? `${urgency === 'urgent' ? 'URGENTE' : 'Layla'}: ${detail} en ${orgName}. Abra: ${inboxUrl}`
+      : `${urgency === 'urgent' ? 'URGENT' : 'Layla'}: ${detail} at ${orgName}. Open: ${inboxUrl}`,
+    templateVariables: [orgName, detail, inboxUrl],
+  })
 }

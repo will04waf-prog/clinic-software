@@ -30,6 +30,14 @@ export interface PersistCallInput {
   safetyTriggerLabel:        string | null
   outcome:                   'completed' | 'transferred' | 'voicemail' | 'safety_handoff' | 'no_consent' | 'agent_error'
   followupSummary:           string | null
+  /** Multi-vertical Phase 2: dominant call language ('en'|'es'), as
+   *  reported by Layla via post_call_summary_email. null on English-
+   *  only lines and pre-feature calls. */
+  detectedLanguage?:         'en' | 'es' | null
+  /** Multi-vertical Phase 4: set when flag_urgent fired (trades
+   *  business emergency). Defaults false. */
+  isUrgent?:                 boolean
+  urgencyReason?:            string | null
 }
 
 export async function persistCallLog(input: PersistCallInput): Promise<{ inserted: boolean; callLogId?: string; contactId?: string }> {
@@ -112,12 +120,27 @@ export async function persistCallLog(input: PersistCallInput): Promise<{ inserte
       safety_trigger_label:       input.safetyTriggerLabel,
       outcome:                    input.outcome,
       followup_summary:           input.followupSummary,
+      detected_language:          input.detectedLanguage ?? null,
+      is_urgent:                  input.isUrgent ?? false,
+      urgency_reason:             input.urgencyReason ?? null,
     })
     .select('id')
     .single()
   if (insertErr || !inserted) {
     console.error('[persist-call] insert failed:', insertErr?.message)
     return { inserted: false }
+  }
+
+  // Multi-vertical Phase 2: stamp the caller's preferred follow-up
+  // language. NULL-GUARDED — an English-only line reports no language,
+  // so `detectedLanguage` is null and we skip the update entirely,
+  // never erasing a previously-known 'es'. A non-null value is
+  // last-write-wins per the spec.
+  if (input.detectedLanguage && contactId) {
+    await supabaseAdmin
+      .from('contacts')
+      .update({ preferred_language: input.detectedLanguage })
+      .eq('id', contactId)
   }
 
   // Activity log row so the timeline picks it up alongside SMS +

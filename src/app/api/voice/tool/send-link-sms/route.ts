@@ -328,6 +328,19 @@ export async function POST(req: Request) {
   let url: string | null = null
   let bodyCopy: string | null = null
 
+  // Multi-vertical Phase 2: customer-facing SMS copy follows the
+  // caller's language. The LLM passes `language` for the language the
+  // caller is speaking right now; default English. STOP disclaimer is
+  // TCPA-mandatory in both languages.
+  const lang: 'en' | 'es' = args.language === 'es' ? 'es' : 'en'
+  const linkSmsCopy = (lead: string, linkUrl: string): string => {
+    const name = org.name ?? (lang === 'es' ? 'Su negocio' : 'Your clinic')
+    const stop = lang === 'es'
+      ? 'Responda STOP para no recibir mensajes.'
+      : 'Reply STOP to opt out.'
+    return `${name}: ${lead} ${linkUrl} ${stop}`
+  }
+
   if (linkKind === 'booking') {
     if (!org.slug) {
       return wontSend('org_missing_booking_slug')
@@ -353,7 +366,7 @@ export async function POST(req: Request) {
       }
     }
     url = bookingUrl
-    bodyCopy = `${org.name ?? 'Your clinic'}: book here ${url} Reply STOP to opt out.`
+    bodyCopy = linkSmsCopy(lang === 'es' ? 'reserve aquí' : 'book here', url)
   } else if (linkKind === 'manage') {
     if (!contact) {
       return wontSend('caller_not_recognized')
@@ -385,14 +398,14 @@ export async function POST(req: Request) {
       return wontSend('manage_token_unavailable')
     }
     url = `${getAppUrl()}/manage/${token}`
-    bodyCopy = `${org.name ?? 'Your clinic'}: manage your appointment ${url} Reply STOP to opt out.`
+    bodyCopy = linkSmsCopy(lang === 'es' ? 'gestione su cita' : 'manage your appointment', url)
   } else if (linkKind === 'intake') {
     const raw = typeof org.intake_form_url === 'string' ? org.intake_form_url.trim() : ''
     if (!raw || !URL_RE.test(raw)) {
       return wontSend('no_intake_form_configured')
     }
     url = raw
-    bodyCopy = `${org.name ?? 'Your clinic'}: new-patient form ${url} Reply STOP to opt out.`
+    bodyCopy = linkSmsCopy(lang === 'es' ? 'formulario de nuevo paciente' : 'new-patient form', url)
   } else if (linkKind === 'directions') {
     const placeId = typeof org.google_place_id === 'string' ? org.google_place_id.trim() : ''
     const line1   = typeof org.address_line1   === 'string' ? org.address_line1.trim()   : ''
@@ -415,7 +428,7 @@ export async function POST(req: Request) {
       ].filter(Boolean)
       url = `https://maps.google.com/?q=${encodeURIComponent(parts.join(', '))}`
     }
-    bodyCopy = `${org.name ?? 'Your clinic'}: directions ${url} Reply STOP to opt out.`
+    bodyCopy = linkSmsCopy(lang === 'es' ? 'cómo llegar' : 'directions', url)
   }
 
   if (!url || !bodyCopy) {

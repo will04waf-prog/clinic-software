@@ -25,6 +25,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ALL_TOOLS } from '../../voice/tools/schemas'
 import { getAppUrl } from './app-url'
+import { getVerticalConfig, resolveCallerLanguages } from '@/lib/vertical/config'
 
 // Vapi-native "Savannah" — warm professional female ('Paige' is in
 // Vapi's LEGACY set and new assistants are rejected with it), and served from
@@ -57,6 +58,7 @@ const INBOUND_ROUTE_BY_TOOL: Record<string, string> = {
   post_call_summary_email: 'post-call-summary-email',
   lookup_faq:              'lookup-faq',
   confirm_appointment:     'confirm-appointment',
+  flag_urgent:             'flag-urgent',
 }
 
 const REMINDER_TOOL_NAMES: ReadonlySet<string> = new Set([
@@ -83,6 +85,94 @@ interface OrgRow {
   id:   string
   name: string
   slug: string
+  /** Multi-vertical Phase 1. Optional so callers that don't select
+   *  them fall through to med-spa defaults via getVerticalConfig /
+   *  resolveCallerLanguages. */
+  vertical?:         string | null
+  caller_languages?: string[] | null
+}
+
+// ─── Spanish TTS voice (bilingual tenants) ───────────────────────
+// A tenant whose caller_languages include 'es' gets ONE voice that
+// must sound natural in BOTH English and Spanish — customers often
+// call in English while the owner is Spanish-speaking. LOCKED
+// 2026-07-05 to Azure es-MX-DaliaNeural (audition voice "C" — warmest,
+// most neutral Latin-American Spanish) after a real-call comparison
+// against ElevenLabs multilingual and Azure es-US-Paloma. Env-
+// overridable in one place here. English-only tenants keep Savannah,
+// byte-identical.
+const SPANISH_VOICE = () => {
+  const provider = process.env.VAPI_ES_VOICE_PROVIDER ?? 'azure'
+  const voiceId  = process.env.VAPI_ES_VOICE_ID       ?? 'es-MX-DaliaNeural'
+  // The 11labs branch carries the model field; Azure/others don't.
+  return provider === '11labs'
+    ? { provider, voiceId, model: process.env.VAPI_ES_VOICE_MODEL ?? 'eleven_multilingual_v2' }
+    : { provider, voiceId }
+}
+
+function selectVoice(langs: readonly string[]) {
+  return langs.includes('es')
+    ? SPANISH_VOICE()
+    : { provider: VOICE_PROVIDER(), voiceId: VOICE_ID() }
+}
+
+function selectTranscriber(langs: readonly string[]) {
+  // Deepgram nova-2 with language 'multi' handles EN/ES code-switching;
+  // English-only stays 'en' (byte-identical to today). VERIFY the exact
+  // multilingual model string against Vapi/Deepgram before a bilingual
+  // tenant goes live.
+  return langs.includes('es')
+    ? { provider: 'deepgram', model: 'nova-2', language: 'multi' }
+    : { provider: 'deepgram', model: 'nova-2', language: 'en' }
+}
+
+function readVerticalFragment(name: string): string {
+  return readFileSync(resolve(process.cwd(), 'src/voice/prompts/verticals', `${name}.md`), 'utf8')
+}
+
+// Base receptionist prompt + the vertical's terminology-reframe
+// fragment (med-spa appends nothing → identical to today) + the
+// bilingual directive when the line serves Spanish callers. The 911
+// safety rail lives in the base prompt and every fragment preserves it.
+function composeInboundPrompt(
+  vertical: string | null | undefined,
+  langs: readonly string[],
+): string {
+  const cfg = getVerticalConfig(vertical)
+  let prompt = readPrompt('receptionist.md')
+  if (cfg.promptFragment) {
+    prompt += '\n\n' + readVerticalFragment(cfg.promptFragment)
+  }
+  if (langs.includes('es')) {
+    prompt += '\n\n' + readFileSync(
+      resolve(process.cwd(), 'src/voice/prompts', 'bilingual.md'), 'utf8',
+    )
+  }
+  return prompt
+}
+
+// Tools wired only for specific verticals — excluded from the base
+// inbound set, then re-added per config.extraTools. flag_urgent (trades)
+// ships in Phase 4; naming it here means that once it's added to
+// ALL_TOOLS + INBOUND_ROUTE_BY_TOOL it is automatically restricted to
+// trades and never appears on med-spa assistants.
+const VERTICAL_GATED_TOOLS: ReadonlySet<string> = new Set(['flag_urgent'])
+
+function inboundToolFilter(vertical: string | null | undefined): ReadonlySet<string> {
+  const cfg = getVerticalConfig(vertical)
+  const names = new Set<string>()
+  for (const t of ALL_TOOLS) {
+    if (!VERTICAL_GATED_TOOLS.has(t.function.name)) names.add(t.function.name)
+  }
+  for (const name of cfg.extraTools) {
+    // Only wire extras that already exist (schema + route). Skips
+    // flag_urgent until Phase 4 lands it, so no assistant points at a
+    // missing endpoint.
+    if (ALL_TOOLS.some(t => t.function.name === name) && INBOUND_ROUTE_BY_TOOL[name]) {
+      names.add(name)
+    }
+  }
+  return names
 }
 
 export interface EnsureAssistantOptions {
@@ -166,17 +256,21 @@ function wireTools(
 }
 
 export function buildInboundAssistantBody(org: OrgRow, appUrl: string, webhookSecret: string | undefined) {
+  // Multi-vertical Phase 1: prompt, tools, transcriber, and voice all
+  // derive from the org's vertical + caller_languages. Defaults
+  // (medspa / {en}) reproduce the prior body exactly.
+  const langs = resolveCallerLanguages(org.caller_languages)
   return {
     name: `${org.name} receptionist`,
     model: {
       provider: 'openai',
       model:    'gpt-4o-mini',
-      messages: [{ role: 'system', content: readPrompt('receptionist.md') }],
-      tools:    wireTools(INBOUND_ROUTE_BY_TOOL, null, appUrl, webhookSecret),
+      messages: [{ role: 'system', content: composeInboundPrompt(org.vertical, langs) }],
+      tools:    wireTools(INBOUND_ROUTE_BY_TOOL, inboundToolFilter(org.vertical), appUrl, webhookSecret),
       temperature: 0.4,
     },
-    voice:       { provider: VOICE_PROVIDER(), voiceId: VOICE_ID() },
-    transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en' },
+    voice:       selectVoice(langs),
+    transcriber: selectTranscriber(langs),
     // Vapi's default is a synthetic "office" ambience — real-call
     // feedback: it reads as noise, not realism. Silence is cleaner.
     backgroundSound: 'off',
@@ -249,7 +343,7 @@ async function createVapiAssistant(apiKey: string, body: unknown): Promise<strin
 async function fetchOrg(supabase: EnsureAssistantOptions['supabase'], orgId: string, extraCol: string) {
   const { data: org, error } = await supabase
     .from('organizations')
-    .select(`id, name, slug, ${extraCol}`)
+    .select(`id, name, slug, vertical, caller_languages, ${extraCol}`)
     .eq('id', orgId)
     .single()
   if (error || !org) throw new Error(`Could not load organization ${orgId}: ${error?.message ?? 'not found'}`)

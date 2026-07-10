@@ -245,6 +245,11 @@ export const TOOL_SEND_LINK_SMS: VapiTool = {
           description:
             "Optional. When link_kind='booking', narrows the link to a specific service. Silently dropped if it doesn't match.",
         },
+        language: {
+          type: 'string',
+          enum: ['en', 'es'],
+          description: "Optional. The language the caller is speaking RIGHT NOW ('en' or 'es'). The text message copy is written in this language. Defaults to English if omitted.",
+        },
       },
       required: ['link_kind', 'consent_confirmed'],
       // NOTE: consultation_id is mandatory iff link_kind='manage'. This
@@ -363,6 +368,11 @@ export const TOOL_POST_CALL_SUMMARY_EMAIL: VapiTool = {
           type: 'boolean',
           description: 'true if the caller matched an existing contact record.',
         },
+        detected_language: {
+          type: 'string',
+          enum: ['en', 'es'],
+          description: "Optional. The DOMINANT language of the call — the one you spoke with the caller for MOST of the conversation ('es' if mostly Spanish, 'en' if mostly English). Only set this on bilingual lines; omit on English-only calls. Stamps the caller's record so the team follows up in the right language.",
+        },
       },
       required: ['disposition','summary_text','contact_resolved'],
     },
@@ -408,6 +418,26 @@ export const TOOL_LOOKUP_FAQ: VapiTool = {
   },
 }
 
+export const TOOL_FLAG_URGENT: VapiTool = {
+  type: 'function',
+  function: {
+    name: 'flag_urgent',
+    description:
+      "Flag this call as an URGENT business emergency so the owner is alerted immediately to call the customer back — e.g. burst pipe, no water, flooding, gas smell, no heat in winter, a lockout. Call it AS SOON AS the caller describes the emergency, then keep helping them (book the job, take a message, etc.). This is NOT the medical 911 rail — that safety line is separate and always comes first. `reason` is the caller's stated issue in a short phrase; it is sent to the owner along with the caller's phone number so they can call back in one tap.",
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: "The caller's stated emergency in a short phrase, in the caller's own words (e.g. 'burst pipe flooding the kitchen', 'fuga de gas en la cocina'). Max 200 chars.",
+          maxLength: 200,
+        },
+      },
+      required: ['reason'],
+    },
+  },
+}
+
 export const ALL_TOOLS: VapiTool[] = [
   TOOL_GET_CONTEXT,
   TOOL_FIND_SERVICE,
@@ -425,4 +455,8 @@ export const ALL_TOOLS: VapiTool[] = [
   TOOL_POST_CALL_SUMMARY_EMAIL,
   TOOL_LOOKUP_FAQ,
   TOOL_CONFIRM_APPOINTMENT,
+  // Vertical-gated: seed-assistants excludes flag_urgent from the base
+  // inbound set and re-adds it only for verticals whose config lists it
+  // (trades). Med-spa assistants never receive it.
+  TOOL_FLAG_URGENT,
 ]

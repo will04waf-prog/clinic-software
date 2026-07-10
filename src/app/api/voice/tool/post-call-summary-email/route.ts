@@ -38,6 +38,7 @@ import { resolveCallEnvelope } from '@/lib/voice-agent/resolve-envelope'
 import { sanitizeSummary } from '@/lib/voice-agent/sanitize-summary'
 import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-agent/tool-types'
 import { notifyOwnerOfCallSummary, type CallDisposition } from '@/lib/voice/call-summary-notification'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 const DISPOSITIONS: readonly CallDisposition[] = [
   'booked',
@@ -94,9 +95,9 @@ export async function POST(req: Request) {
     }))
   }
   // Hard cap BEFORE sanitize so a multi-MB prompt-injection payload
-  // never reaches the regex engine.
+  // never reaches the regex engine. The scrub itself is gated on the
+  // vertical below (medspa: on; others: off but available).
   const summaryTrimmed = summaryRaw.length > 500 ? summaryRaw.slice(0, 500) : summaryRaw
-  const summarySanitized = sanitizeSummary(summaryTrimmed)
 
   // contact_resolved: accept native booleans plus stringified
   // "true"/"false" the LLM occasionally emits when it JSON-encodes
@@ -156,10 +157,16 @@ export async function POST(req: Request) {
   }
   const callSid = rawCallSid
 
+  // Multi-vertical Phase 2: the model reports the call's dominant
+  // language on bilingual lines. Optional — English-only calls omit it.
+  const dlRaw = tc.arguments.detected_language
+  const detectedLanguage: 'en' | 'es' | null =
+    dlRaw === 'en' || dlRaw === 'es' ? dlRaw : null
+
   // ── Resolve org + agent-enabled gate. ──
   const { data: org } = await supabaseAdmin
     .from('organizations')
-    .select('id, name, call_agent_enabled, call_agent_baa_attested_at')
+    .select('id, name, vertical, call_agent_enabled, call_agent_baa_attested_at')
     .eq('twilio_phone_number', toE164)
     .maybeSingle()
   if (!org) {
@@ -175,6 +182,13 @@ export async function POST(req: Request) {
     }))
   }
 
+  // PHI scrub is on for med spas (covered entity) and off for the other
+  // verticals (no PHI on a landscaping call). The sanitizer stays
+  // available and is flipped per vertical in one place: config.phiScrub.
+  const summaryStored = getVerticalConfig(org.vertical).phiScrub
+    ? sanitizeSummary(summaryTrimmed)
+    : summaryTrimmed
+
   // ── Persist the structured summary row. This is the ONLY surface
   // that retains the (sanitized) LLM prose — owners read it in-app. ──
   const { error: logErr } = await supabaseAdmin.from('activity_log').insert({
@@ -182,9 +196,10 @@ export async function POST(req: Request) {
     action:          'voice_call_summary',
     metadata: {
       disposition,
-      summary_text_sanitized: summarySanitized,
+      summary_text_sanitized: summaryStored,
       contact_resolved:       contactResolved,
       call_sid:               callSid,
+      detected_language:      detectedLanguage,
     },
   })
   if (logErr) {
