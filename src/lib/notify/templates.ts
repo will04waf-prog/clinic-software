@@ -83,18 +83,21 @@ export const OWNER_ALERT_TEMPLATES: Record<OwnerAlertType, OwnerAlertTemplate> =
   booking_confirmation: {
     type: 'booking_confirmation',
     variables: ['business name', 'booking detail (PHI-free)', 'calendar link'],
+    // Meta rejected the short v1 ("too many variables for its length",
+    // subcode 2388293) — the fixed text must be long relative to the
+    // variable count, and no variable may start/end the body.
     en: {
       name: 'booking_confirmation',
       language: 'en',
       category: 'UTILITY',
-      body: 'New booking at {{1}}: {{2}}. Open your calendar: {{3}}',
+      body: 'New booking at {{1}}: {{2}}. The appointment is on your calendar and reminders are scheduled automatically. See the details here: {{3}} (sent by Layla, your receptionist).',
       contentSidEnv: 'TWILIO_WA_BOOKING_CONFIRMATION_EN_SID',
     },
     es: {
       name: 'confirmacion_reserva',
       language: 'es',
       category: 'UTILITY',
-      body: 'Nueva reserva en {{1}}: {{2}}. Abra su calendario: {{3}}',
+      body: 'Nueva reserva en {{1}}: {{2}}. La cita ya está en su calendario y los recordatorios quedaron programados automáticamente. Vea los detalles aquí: {{3}} (enviado por Layla, su recepcionista).',
       contentSidEnv: 'TWILIO_WA_BOOKING_CONFIRMATION_ES_SID',
     },
   },
@@ -106,18 +109,21 @@ export const OWNER_ALERT_TEMPLATES: Record<OwnerAlertType, OwnerAlertTemplate> =
   urgent_alert: {
     type: 'urgent_alert',
     variables: ['business name', 'caller phone number', 'stated issue'],
+    // Meta rejected v1 ("Variables can't be at the start or end of the
+    // template", subcode 2388299) — the body ended on {{2}}. Fixed text
+    // now closes the message; caller phone + issue stay per rider 2.
     en: {
       name: 'urgent_alert',
       language: 'en',
       category: 'UTILITY',
-      body: 'URGENT — {{1}}. A customer needs a callback now. Issue: {{3}}. Call them: {{2}}',
+      body: 'URGENT — {{1}}. A customer needs a callback right now. Issue: {{3}}. Call them back at {{2}} as soon as you can.',
       contentSidEnv: 'TWILIO_WA_URGENT_ALERT_EN_SID',
     },
     es: {
       name: 'alerta_urgente',
       language: 'es',
       category: 'UTILITY',
-      body: 'URGENTE — {{1}}. Un cliente necesita que le devuelvan la llamada ya. Problema: {{3}}. Llámelo: {{2}}',
+      body: 'URGENTE — {{1}}. Un cliente necesita que le devuelvan la llamada ahora mismo. Problema: {{3}}. Llámelo al {{2}} lo antes posible.',
       contentSidEnv: 'TWILIO_WA_URGENT_ALERT_ES_SID',
     },
   },
