@@ -19,6 +19,7 @@ import { ProductShowcase } from './product-showcase'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
+import { BilingualRoll } from '@/components/marketing/bilingual-roll'
 
 /* SEO landing for the "med spa CRM" search intent. The route stays at
    /med-spa-crm so Google keeps the keyword association, but the H1 and
@@ -531,6 +532,9 @@ export default function MedSpaCRMPage() {
                   <h3 className="text-base font-semibold text-brand-900">{title}</h3>
                   <p className="text-sm font-medium text-brand-800/90 leading-snug">{oneLine}</p>
                   <p className="text-sm text-brand-900/70 leading-relaxed">{body}</p>
+                  {title === 'She answers and books in English or Spanish' && (
+                    <BilingualRoll layoutId="bilingual-roll-pill-medspa" />
+                  )}
                 </AnimatedCard>
               ))}
             </div>

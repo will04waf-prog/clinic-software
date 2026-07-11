@@ -33,6 +33,7 @@ import { NightAwareLine } from '@/components/marketing/night-aware-line'
 import { StickyCallPill } from '@/components/marketing/sticky-call-pill'
 import { MagneticCta } from '@/components/marketing/magnetic-cta'
 import { ImpactLedger } from '@/components/marketing/impact-ledger'
+import { BilingualRoll } from '@/components/marketing/bilingual-roll'
 import { ToolWall } from '@/components/marketing/tool-wall'
 import { FaqMomentum } from '@/components/marketing/faq-momentum'
 import { NightBand } from '@/components/marketing/night-band'
@@ -575,6 +576,7 @@ export default function LandingPage() {
                   <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
                   <p className="mt-2 text-sm font-medium text-[#14241d]">{oneLine}</p>
                   <p className="mt-3 text-sm text-gray-600 leading-relaxed">{body}</p>
+                  {eyebrow === 'Bilingual voice' && <BilingualRoll />}
                 </AnimatedCard>
               ))}
             </div>
