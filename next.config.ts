@@ -7,11 +7,20 @@ const nextConfig: NextConfig = {
   // doesn't see fs.readFileSync paths, so without this entry the
   // lambda for the provision route ships WITHOUT the prompts and
   // self-serve assistant seeding would 500 in production only.
+  // `**/*.md` (not `*.md`): composeInboundPrompt also reads the
+  // vertical fragments under src/voice/prompts/verticals/ for
+  // non-med-spa tenants — the old single-level glob shipped without
+  // them, which would 500 the first trades/food/general provision in
+  // production only.
   outputFileTracingIncludes: {
-    "/api/admin/numbers/provision": ["./src/voice/prompts/*.md"],
+    "/api/admin/numbers/provision": ["./src/voice/prompts/**/*.md"],
     // The onboarding wizard's server actions call the same seeding
     // service in-process, so the page's lambda needs the prompts too.
-    "/onboarding/phone-number": ["./src/voice/prompts/*.md"],
+    "/onboarding/phone-number": ["./src/voice/prompts/**/*.md"],
+    // Language settings PATCH re-syncs the live Vapi assistant in
+    // place (prompt + voice + transcriber), so its lambda needs the
+    // prompts as well.
+    "/api/org/language-notifications": ["./src/voice/prompts/**/*.md"],
   },
 };
 

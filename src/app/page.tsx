@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   CalendarCheck,
   Voicemail,
+  Languages,
   LayoutGrid,
   ShieldCheck,
   Layers,
@@ -82,6 +83,14 @@ const PILLAR_SECTIONS = [
     title: 'Layla answers the phone',
     oneLine: 'An AI voice receptionist that picks up inbound calls 24/7 or after-hours, in your clinic\'s voice.',
     body: "Layla is a voice AI agent that answers your clinic's phone number and talks to callers like a trained front-desk hire. She greets, listens, asks the right intake questions, and resolves the call — or transfers to a human you nominate. Owners choose always-on or after-hours-only, and set a fallback number for anything Layla can't handle.",
+    tier: 'scale' as Tier,
+  },
+  {
+    icon: Languages,
+    eyebrow: 'Bilingual voice',
+    title: 'She answers and books in English or Spanish',
+    oneLine: "Layla detects the caller's language and stays in it — even if they switch mid-call.",
+    body: "Layla greets, answers questions, and books consultations in natural, neutral Latin-American Spanish or English. She picks up the caller's language on her own turn and follows them if they code-switch mid-call. Spanish-speaking patients get the same live booking, reminders, and CRM logging as English callers — on your clinic's own number, no separate line.",
     tier: 'scale' as Tier,
   },
   {
@@ -231,6 +240,10 @@ const FAQ_ITEMS = [
   {
     q: 'Will patients be able to tell Layla is AI?',
     a: "Layla answers in a natural voice on your own clinic's phone number — no 'press 1' menus, no robocall stiffness, no shared shortcode. She greets, listens, asks real intake questions, and books on the line the way a trained front-desk hire would. If a call needs a human, she transfers to someone you nominate. Most callers experience it as a smooth front desk, not a robot.",
+  },
+  {
+    q: 'Can Layla answer Spanish-speaking patients?',
+    a: "Yes. Layla answers and books in both English and Spanish, in a natural, neutral Latin-American Spanish. She detects the caller's language automatically and follows them if they switch mid-call — with the same live booking, reminders, and CRM logging she gives every English call.",
   },
   {
     q: 'Is Tarhunna HIPAA compliant?',

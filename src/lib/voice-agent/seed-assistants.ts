@@ -340,6 +340,71 @@ async function createVapiAssistant(apiKey: string, body: unknown): Promise<strin
   return created.id
 }
 
+async function patchVapiAssistant(apiKey: string, assistantId: string, body: unknown): Promise<void> {
+  let res: Response
+  try {
+    res = await fetch(`https://api.vapi.ai/assistant/${assistantId}`, {
+      method:  'PATCH',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+      signal:  AbortSignal.timeout(30_000),
+    })
+  } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') {
+      throw new Error('Vapi assistant update timed out after 30s — try again.')
+    }
+    throw err
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Vapi rejected the assistant update: ${res.status} ${text.slice(0, 500)}`)
+  }
+}
+
+/**
+ * Re-sync an org's EXISTING inbound assistant IN PLACE — used when the
+ * owner changes a setting that alters the assistant body (today: caller
+ * languages, which switch the voice, transcriber, and bilingual
+ * directive). We PATCH the stored assistant rather than mint a new one,
+ * so the Vapi phone-number binding is untouched — no rebind needed.
+ *
+ * NEVER THROWS. It's called from a settings PATCH that has already saved
+ * the config to the DB, so a Vapi/config hiccup must not fail the save —
+ * it returns { synced:false, reason } and the caller surfaces a soft
+ * "voice sync" status. Only the config-derived fields are patched
+ * (model, voice, transcriber); name/serverUrl/metadata are left as-is.
+ */
+export async function syncInboundAssistant(
+  opts: EnsureAssistantOptions,
+): Promise<{ synced: boolean; reason?: string }> {
+  let assistantId: string
+  let apiKey: string
+  let body: ReturnType<typeof buildInboundAssistantBody>
+  try {
+    const org = await fetchOrg(opts.supabase, opts.orgId, 'call_agent_assistant_id')
+    if (!org.call_agent_assistant_id) return { synced: false, reason: 'not_seeded' }
+    assistantId = org.call_agent_assistant_id
+    const env = requireEnv()
+    apiKey = env.apiKey
+    const appUrl = resolveAppUrl(opts.appUrl)
+    body = buildInboundAssistantBody(org, appUrl, env.webhookSecret)
+  } catch (err) {
+    // Config-time failure (missing key, localhost URL, org not found).
+    return { synced: false, reason: err instanceof Error ? err.message : 'config_error' }
+  }
+  try {
+    await patchVapiAssistant(apiKey, assistantId, {
+      model:       body.model,
+      voice:       body.voice,
+      transcriber: body.transcriber,
+    })
+    return { synced: true }
+  } catch (err) {
+    console.error('[syncInboundAssistant] vapi patch failed:', err instanceof Error ? err.message : err)
+    return { synced: false, reason: 'vapi_error' }
+  }
+}
+
 async function fetchOrg(supabase: EnsureAssistantOptions['supabase'], orgId: string, extraCol: string) {
   const { data: org, error } = await supabase
     .from('organizations')

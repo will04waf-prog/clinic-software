@@ -10,6 +10,7 @@ import { CallAgentLinkCard } from '@/components/settings/call-agent-link-card'
 import { FaqsLinkCard } from '@/components/settings/faqs-link-card'
 import { CaptureFormCard } from '@/components/settings/capture-form-card'
 import { SmsSettingsCard } from '@/components/settings/sms-settings-card'
+import { LanguageNotificationsCard, type CallerLanguage } from '@/components/settings/language-notifications-card'
 import { AiTwinSettingsCard } from '@/components/settings/ai-twin-settings-card'
 import { AiVoiceTrainingCard } from '@/components/settings/ai-voice-training-card'
 import { AiVoiceHealthCard } from '@/components/settings/ai-voice-health-card'
@@ -32,7 +33,8 @@ export default async function SettingsPage() {
         name, slug, plan, timezone, plan_status, stripe_customer_id, procedures,
         sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
         sms_template_confirmation, sms_template_reminder_24h, sms_template_reminder_2h,
-        ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end
+        ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end,
+        caller_languages, owner_language, notification_channel, owner_notify_e164
       )
     `)
     .eq('id', user.id)
@@ -99,6 +101,23 @@ export default async function SettingsPage() {
             reads it only fires when the (Scale-only) call agent is
             on. */}
         {profile?.role === 'owner' && <FaqsLinkCard />}
+
+        {/* Multi-vertical Phase 6: caller languages (drives the Vapi
+            assistant's transcriber/voice/bilingual prompt), owner
+            language, alert channel + owner mobile. Owner-only — the
+            API is OWNER_ONLY and owner_notify_e164 is the owner's
+            personal number. Vertical stays admin-set, not shown here. */}
+        {profile?.role === 'owner' && (
+          <LanguageNotificationsCard initial={{
+            caller_languages:     (Array.isArray(org?.caller_languages) && org.caller_languages.length > 0
+                                    ? org.caller_languages.filter((l: string): l is CallerLanguage => l === 'en' || l === 'es')
+                                    : ['en']) as CallerLanguage[],
+            owner_language:       org?.owner_language === 'es' ? 'es' : 'en',
+            notification_channel: (['sms', 'whatsapp', 'both'].includes(org?.notification_channel)
+                                    ? org.notification_channel : 'sms'),
+            owner_notify_e164:    org?.owner_notify_e164 ?? null,
+          }} />
+        )}
 
         <SmsSettingsCard initial={{
           sms_enabled:               org?.sms_enabled               ?? false,

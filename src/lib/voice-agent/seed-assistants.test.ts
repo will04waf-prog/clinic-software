@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   ensureInboundAssistant,
   ensureReminderAssistant,
+  syncInboundAssistant,
   buildInboundAssistantBody,
   buildReminderAssistantBody,
 } from './seed-assistants'
@@ -174,6 +175,75 @@ describe('assistant bodies', () => {
       'take_message',
     ])
     expect(body.metadata.role).toBe('reminder')
+  })
+})
+
+describe('syncInboundAssistant (language settings live-sync)', () => {
+  function stubVapiPatch(status = 200) {
+    const calls: { url: string; method: string; body: any }[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), method: String(init?.method), body: JSON.parse(String(init?.body ?? '{}')) })
+      return new Response(status < 300 ? JSON.stringify({ id: 'asst_1' }) : 'nope', { status })
+    }))
+    return calls
+  }
+
+  it('PATCHes the existing assistant in place with model+voice+transcriber only', async () => {
+    const calls = stubVapiPatch()
+    const supabase = fakeSupabase([{ ...ORG, caller_languages: ['en', 'es'], call_agent_assistant_id: 'asst_1' }])
+    const res = await syncInboundAssistant({ supabase, orgId: ORG.id, appUrl: APP_URL })
+    expect(res).toEqual({ synced: true })
+    expect(calls).toHaveLength(1)
+    expect(calls[0].url).toBe('https://api.vapi.ai/assistant/asst_1')
+    expect(calls[0].method).toBe('PATCH')
+    // Subset PATCH — must not touch id-adjacent or webhook fields.
+    expect(Object.keys(calls[0].body).sort()).toEqual(['model', 'transcriber', 'voice'])
+    // Bilingual set drives the multilingual transcriber + ES voice.
+    expect(calls[0].body.transcriber).toMatchObject({ language: 'multi' })
+    expect(calls[0].body.voice.provider).not.toBe('vapi')
+    expect(calls[0].body.model.messages[0].content).toContain('# Bilingual — English & Spanish')
+  })
+
+  it('reverting to English-only restores the default voice + transcriber', async () => {
+    const calls = stubVapiPatch()
+    const supabase = fakeSupabase([{ ...ORG, caller_languages: ['en'], call_agent_assistant_id: 'asst_1' }])
+    const res = await syncInboundAssistant({ supabase, orgId: ORG.id, appUrl: APP_URL })
+    expect(res.synced).toBe(true)
+    expect(calls[0].body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
+    expect(calls[0].body.transcriber).toMatchObject({ language: 'en' })
+    expect(calls[0].body.model.messages[0].content).not.toContain('# Bilingual')
+  })
+
+  it('no assistant yet → synced:false reason not_seeded, no Vapi call', async () => {
+    const calls = stubVapiPatch()
+    const supabase = fakeSupabase([{ ...ORG, call_agent_assistant_id: null }])
+    const res = await syncInboundAssistant({ supabase, orgId: ORG.id, appUrl: APP_URL })
+    expect(res).toEqual({ synced: false, reason: 'not_seeded' })
+    expect(calls).toHaveLength(0)
+  })
+
+  it('Vapi rejection → synced:false vapi_error (never throws)', async () => {
+    stubVapiPatch(500)
+    const supabase = fakeSupabase([{ ...ORG, caller_languages: ['es'], call_agent_assistant_id: 'asst_1' }])
+    const res = await syncInboundAssistant({ supabase, orgId: ORG.id, appUrl: APP_URL })
+    expect(res).toEqual({ synced: false, reason: 'vapi_error' })
+  })
+
+  it('config errors (missing key, localhost URL) are swallowed into synced:false', async () => {
+    delete process.env.VAPI_API_KEY
+    const supabase = fakeSupabase([{ ...ORG, call_agent_assistant_id: 'asst_1' }])
+    const res = await syncInboundAssistant({ supabase, orgId: ORG.id, appUrl: APP_URL })
+    expect(res.synced).toBe(false)
+    expect(res.reason).toMatch(/VAPI_API_KEY/)
+
+    process.env.VAPI_API_KEY = 'test-key'
+    const res2 = await syncInboundAssistant({
+      supabase: fakeSupabase([{ ...ORG, call_agent_assistant_id: 'asst_1' }]),
+      orgId: ORG.id,
+      appUrl: 'http://localhost:3000',
+    })
+    expect(res2.synced).toBe(false)
+    expect(res2.reason).toMatch(/localhost/)
   })
 })
 

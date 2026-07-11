@@ -6,6 +6,7 @@ import {
   PhoneOutgoing,
   MessageSquare,
   CalendarDays,
+  Languages,
   Inbox,
   Database,
   ShieldCheck,
@@ -87,6 +88,7 @@ function TierBadge({ tier }: { tier: Tier }) {
    their front desk if she never called in sick. */
 const LAYLA_DOES = [
   'Answers the phone in your clinic\'s voice',
+  'Answers and books in English or Spanish, following the caller\'s language',
   'Looks up your services and hours on her first turn',
   'Matches a treatment the caller asks for by name',
   'Finds 1-2 open slots on the line',
@@ -127,6 +129,15 @@ const FEATURE_BLOCKS: Array<{
       'Layla checks real provider availability and confirms a slot before the caller hangs up.',
     body:
       'Layla reads your service catalog, your providers\' weekly hours, and date-specific overrides — then offers slots that actually exist. She holds the time, confirms it verbally, books the consultation in your calendar, and texts a confirmation. No "we\'ll call you back" loop, no double-booking, no slots invented out of thin air.',
+    tier: 'scale',
+  },
+  {
+    icon: Languages,
+    title: 'She answers and books in English or Spanish',
+    oneLine:
+      'Layla detects the caller\'s language and stays in it — even if they switch mid-call.',
+    body:
+      'Layla greets, answers questions, and books consultations in natural, neutral Latin-American Spanish or English. She picks up the caller\'s language on her own turn and follows a caller who code-switches mid-call. Spanish-speaking patients get the same live booking, reminders, and CRM logging as English callers, on your clinic\'s own number.',
     tier: 'scale',
   },
   {
@@ -282,6 +293,10 @@ const FAQ_ITEMS = [
   {
     q: 'How does Layla actually book an appointment?',
     a: 'Layla reads your service catalog, your providers\' weekly hours, and any date-specific overrides through the same availability engine the public booking page uses. She offers slots that genuinely exist, holds the time during the call, verbally confirms it with the caller, books the consultation, and texts a confirmation. She does not invent times and she does not double-book.',
+  },
+  {
+    q: 'Can Layla answer Spanish-speaking patients?',
+    a: 'Yes. Layla answers and books in both English and Spanish, in a natural, neutral Latin-American Spanish. She detects the caller\'s language automatically and follows a caller who switches languages mid-call — with the same live booking, reminders, and CRM logging she gives every English call. For the DMV\'s large Spanish-speaking patient base, that means a receptionist who greets and books them natively, on your clinic\'s own number.',
   },
   {
     q: 'Will Layla call patients back to reduce no-shows?',
