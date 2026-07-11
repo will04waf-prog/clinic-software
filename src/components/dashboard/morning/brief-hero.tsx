@@ -1,5 +1,6 @@
 import { Clock } from 'lucide-react'
 import type { MorningResponse } from './types'
+import '../ambient.css'
 
 /**
  * Variant A hero: morning brief sentence styled as a magazine
@@ -25,7 +26,17 @@ function generatedLabel(iso: string) {
 export function BriefHero({ brief, generatedAt }: Props) {
   return (
     <section className="relative pl-0.5 pt-2 pb-1">
-      {/* The single decorative gradient on the screen. */}
+      {/* Ambient aurora — two blurred brand blobs drifting on slow
+          loops behind the brief (see ambient.css). Clipped by its
+          own overflow-hidden wrapper, inert to the pointer, and
+          painted under the content div below (tree order). */}
+      <div aria-hidden className="amb-aurora">
+        <span className="amb-aurora-blob amb-aurora-blob--mint" />
+        <span className="amb-aurora-blob amb-aurora-blob--teal" />
+      </div>
+
+      {/* Static anchor gradient, top-right — predates the aurora
+          and stays put so the corner keeps its settled glow. */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -right-16 h-80 w-[30rem] opacity-90"

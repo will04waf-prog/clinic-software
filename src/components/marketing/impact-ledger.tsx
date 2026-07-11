@@ -31,6 +31,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { BlurUnveil } from './blur-unveil'
 
 /** Final values — the only numbers the server (and no-JS clients) ever see. */
 const TOOL_COUNT = 16
@@ -167,18 +168,23 @@ export function ImpactLedger() {
         {PILLARS.map(({ stat, label }, i) => (
           <div key={stat} className="bg-[#F5EFE1] px-6 py-6 text-center">
             <div className="text-xl font-extrabold tracking-tight text-[#14241d]">
-              {i === 0 ? (
-                <>
-                  {/* Animated digits are decorative churn — screen readers
-                      get the stable final value from the sr-only twin. */}
-                  <span aria-hidden="true" className="tabular-nums">
-                    {tools}
-                  </span>
-                  <span className="sr-only">{TOOL_COUNT}</span> voice tools
-                </>
-              ) : (
-                stat
-              )}
+              {/* Each stat line sharpens under a mint sweep with a small
+                  per-tile stagger; composes with the count-up (the digits
+                  keep ticking inside the unblurring span). */}
+              <BlurUnveil delay={i * 130}>
+                {i === 0 ? (
+                  <>
+                    {/* Animated digits are decorative churn — screen readers
+                        get the stable final value from the sr-only twin. */}
+                    <span aria-hidden="true" className="tabular-nums">
+                      {tools}
+                    </span>
+                    <span className="sr-only">{TOOL_COUNT}</span> voice tools
+                  </>
+                ) : (
+                  stat
+                )}
+              </BlurUnveil>
             </div>
             <p className="mt-1 text-sm text-gray-500 leading-relaxed">{label}</p>
           </div>

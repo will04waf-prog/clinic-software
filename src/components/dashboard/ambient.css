@@ -1,0 +1,153 @@
+/* ─── Ambient dashboard motion ─────────────────────────────────
+   The Spline-gallery aesthetic (soft aurora, glassy shimmer)
+   brought into the product at working-tool volume. Three effects:
+
+     ① .amb-aurora       — drifting brand blobs behind the brief hero
+     ② .amb-sheen        — one glassy sweep across an ROI stat tile on hover
+     ③ .amb-row          — mint edge-glow breathing on hovered action rows
+
+   Scoped by the `amb-` prefix and imported ONLY by the components
+   that use it (brief-hero, layla-impact, action-stack) — never via
+   the global stylesheet. Extends the app motion language declared
+   in globals.css (rise / pop-in / urgent-pulse): same easing
+   family, calmer register.
+
+   Discipline: transform / opacity / box-shadow / filter only — no
+   layout properties, so zero CLS. Background effects stay at or
+   below 0.08 opacity. Everything degrades to static (or nothing)
+   under prefers-reduced-motion. */
+
+/* ── ① Briefing aurora ─────────────────────────────────────────
+   Two blurred radial blobs (brand mint + teal) drifting on slow
+   alternating loops behind the morning-brief hero. The wrapper
+   extends slightly past the section so the glow halos the text
+   without hard clip lines; overflow-hidden keeps it contained and
+   pointer-events-none keeps it inert. Reads as "the header
+   breathes slightly" — nothing more. */
+.amb-aurora {
+  position: absolute;
+  top: -3.5rem;
+  bottom: -1.5rem;
+  left: -1rem;
+  right: -1rem;
+  overflow: hidden;
+  pointer-events: none;
+}
+.amb-aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  will-change: transform;
+}
+.amb-aurora-blob--mint {
+  left: 4%;
+  top: 8%;
+  width: 30rem;
+  height: 17rem;
+  opacity: 0.08; /* ceiling for background effects */
+  background: radial-gradient(closest-side, #02c39a, transparent 72%);
+  animation: amb-aurora-drift-a 26s ease-in-out infinite alternate;
+}
+.amb-aurora-blob--teal {
+  left: 38%;
+  top: 24%;
+  width: 26rem;
+  height: 15rem;
+  opacity: 0.06;
+  background: radial-gradient(closest-side, #028090, transparent 72%);
+  animation: amb-aurora-drift-b 21s ease-in-out infinite alternate;
+}
+@keyframes amb-aurora-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(3rem, 0.75rem, 0) scale(1.06); }
+}
+@keyframes amb-aurora-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.05); }
+  to   { transform: translate3d(-2.5rem, -0.5rem, 0) scale(1); }
+}
+
+/* ── ② Stat-tile sheen ─────────────────────────────────────────
+   A diagonal translucent-white stripe that sweeps across an ROI
+   stat tile once per hover — glassy, not flashy. It reads mostly
+   where it crosses the big number and the mint icon chip; faint
+   mint shoulders give a whisper of it on the white card body.
+   Pointer-fine hover devices only; the un-hover reset is
+   transition-free, so the stripe never sweeps backwards. */
+@media (hover: hover) and (pointer: fine) {
+  .amb-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .amb-sheen::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    bottom: -30%;
+    left: -60%;
+    width: 50%;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgba(2, 195, 154, 0) 0%,
+      rgba(2, 195, 154, 0.05) 18%,
+      rgba(255, 255, 255, 0.34) 42%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0.34) 58%,
+      rgba(2, 195, 154, 0.05) 82%,
+      rgba(2, 195, 154, 0) 100%
+    );
+    transform: skewX(-18deg) translateX(0);
+  }
+  .amb-sheen:hover::after {
+    transform: skewX(-18deg) translateX(340%);
+    transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+}
+
+/* ── ③ Action-row edge glow ────────────────────────────────────
+   Non-urgent action rows get a soft mint ring + bloom that fades
+   in on hover, then breathes on a 3s loop while hovered (opacity
+   keyframe on an overlay pseudo-element, so the existing Tailwind
+   hover shadow/lift is untouched). Hover-scoped only — no idle
+   loops — and urgent rows are excluded in the component so the
+   urgency rail stays the dominant signal. The 0.35s animation
+   delay hands off seamlessly from the fade-in transition. */
+@media (hover: hover) and (pointer: fine) {
+  .amb-row::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px; /* matches the row's rounded-[14px] */
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1px rgba(2, 195, 154, 0.18),
+      0 0 18px -4px rgba(2, 195, 154, 0.26);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .amb-row:hover::after {
+    opacity: 0.7;
+    animation: amb-row-breathe 3s ease-in-out 0.35s infinite;
+  }
+}
+@keyframes amb-row-breathe {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 0.38; }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────
+   Aurora blobs freeze in place as a static tint (≤ 0.08 they read
+   as a faint wash, not motion), the sheen is removed entirely,
+   and the row glow becomes a static hover ring (opacity fade
+   only, no breathing). */
+@media (prefers-reduced-motion: reduce) {
+  .amb-aurora-blob {
+    animation: none;
+  }
+  .amb-sheen::after {
+    display: none;
+  }
+  .amb-row:hover::after {
+    animation: none;
+  }
+}

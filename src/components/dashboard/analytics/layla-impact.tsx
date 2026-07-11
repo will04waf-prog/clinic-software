@@ -5,6 +5,7 @@ import {
   PhoneCall, PhoneOutgoing, TrendingUp, CalendarCheck, type LucideIcon,
 } from 'lucide-react'
 import { AnimatedNumber } from '@/components/ui/animated-number'
+import '../ambient.css'
 
 export interface LaylaImpactData {
   callsAnswered: number
@@ -36,7 +37,10 @@ function Stat({ icon: Icon, value, label, sub }: {
   icon: LucideIcon; value: React.ReactNode; label: string; sub?: string
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+    // amb-sheen: one glassy sweep per hover (pointer-fine devices
+    // only; see ambient.css). Pure overlay pseudo-element — the
+    // AnimatedNumber layout is untouched.
+    <div className="amb-sheen rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-center gap-2">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#028090]">
           <Icon className="h-4 w-4" />

@@ -37,6 +37,9 @@ import { BilingualRoll } from '@/components/marketing/bilingual-roll'
 import { ToolWall } from '@/components/marketing/tool-wall'
 import { FaqMomentum } from '@/components/marketing/faq-momentum'
 import { NightBand } from '@/components/marketing/night-band'
+import { HeroEcho } from '@/components/marketing/hero-echo'
+import { LaylaDock } from '@/components/marketing/layla-dock'
+import { AuroraDrift } from '@/components/marketing/aurora'
 
 export const metadata: Metadata = {
   title: 'Tarhunna — AI receptionist that books appointments, backed by a full CRM',
@@ -392,7 +395,7 @@ export default function LandingPage() {
               </p>
             </div>
             <h1 className="rise text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl" style={{ '--stagger': 1 } as React.CSSProperties}>
-              You&apos;re losing <span className="text-[#14241d]">1 in 4 calls</span> right now.
+              You&apos;re losing <HeroEcho className="whitespace-nowrap text-[#14241d]">1 in 4 calls</HeroEcho> right now.
             </h1>
             <p className="rise mt-5 text-lg text-gray-500 sm:text-xl max-w-2xl mx-auto" style={{ '--stagger': 2 } as React.CSSProperties}>
               Layla, your AI receptionist, answers every call, books the consult on the line, and texts the
@@ -465,6 +468,14 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Layla dock — her pipeline at a glance ────────────── */}
+        {/* Decorative glass pill bridging the hero into the showcase:
+            answers → books → texts → logs, chips lighting in sequence.
+            aria-hidden inside the component (it repeats adjacent copy). */}
+        <div className="-mt-6 flex justify-center bg-[#F5EFE1] px-6 pb-2 sm:-mt-10">
+          <LaylaDock />
+        </div>
 
         {/* ── See Layla in action ──────────────────────────────── */}
         <section className="bg-[#F5EFE1] px-6 pt-14 pb-6 sm:pt-20">
@@ -584,8 +595,9 @@ export default function LandingPage() {
         </section>
 
         {/* ── CRM foundation — reframed as where every call lands ─── */}
-        <section className="bg-[#14241d] px-6 py-20">
-          <div className="mx-auto max-w-6xl">
+        <section className="relative overflow-hidden bg-[#14241d] px-6 py-20">
+          <AuroraDrift />
+          <div className="relative z-10 mx-auto max-w-6xl">
             <AnimatedSection className="mb-12 text-center">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#F5EFE1]">
@@ -790,8 +802,9 @@ export default function LandingPage() {
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
-        <section id="final-cta" className="bg-[#14241d] px-6 py-20">
-          <AnimatedSection className="mx-auto max-w-2xl text-center">
+        <section id="final-cta" className="relative overflow-hidden bg-[#14241d] px-6 py-20">
+          <AuroraDrift />
+          <AnimatedSection className="relative z-10 mx-auto max-w-2xl text-center">
             <LogoMark size="lg" standalone className="mb-3" />
             <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1] sm:text-4xl">
               Let Layla answer your next call

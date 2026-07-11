@@ -626,3 +626,157 @@ html {
     animation: night-band-grain-jitter 0.8s steps(1, end) infinite;
   }
 }
+
+/* ─── Spline-inspired motion pass (marketing pages) ────────────
+   Motion language lifted from the Spline Discover gallery and
+   recreated in lightweight CSS — no runtime embed. Three effects
+   live here (HeroEcho and the AnimatedCard tilt are framer-motion
+   inline transforms and need no CSS):
+
+   1. blur-unveil — text resolves from blur(6px) while a mint
+      highlight band sweeps across it ("Relativity" unblur tile).
+      The armed/play classes are only ever added by JS after
+      hydration confirms IO support, so server HTML and no-JS
+      clients always get plain readable text.
+   2. layla-dock — glassmorphic pipeline pill; slow idle float
+      keyed off data-floating (flipped by IO + visibilitychange)
+      and a scale pop on the lit chip.
+   3. aurora — 2-3 soft mint/teal blobs drifting behind the dark
+      forest sections; transform-only 22-30s loops, opacity ≤ 0.12
+      so text contrast on #14241d is untouched.
+
+   Every animation here is decorative: loops are declared inside
+   prefers-reduced-motion: no-preference only, and the reduce
+   block below force-clears the blur states as a belt-and-braces
+   fallback (JS already never arms them). */
+
+/* 1 — blur-unveil */
+.blur-unveil {
+  position: relative;
+  display: inline-block;
+}
+.blur-unveil-armed {
+  filter: blur(6px);
+  opacity: 0.55;
+}
+.blur-unveil-play {
+  filter: blur(0px);
+  opacity: 1;
+  transition:
+    filter 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--bu-delay, 0ms),
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--bu-delay, 0ms);
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Mint band sweeping the line as it sharpens — same overshooting
+     background-position trick as the logo-mark sheen. */
+  .blur-unveil-play::after {
+    content: '';
+    position: absolute;
+    inset: -0.1em -0.25em;
+    pointer-events: none;
+    background-image: linear-gradient(
+      100deg,
+      rgba(2, 195, 154, 0) 38%,
+      rgba(2, 195, 154, 0.26) 50%,
+      rgba(2, 195, 154, 0) 62%
+    );
+    background-size: 250% 100%;
+    background-position: -150% 0;
+    background-repeat: no-repeat;
+    animation: blur-unveil-sweep 0.9s ease-out var(--bu-delay, 0ms) 1 both;
+  }
+}
+@keyframes blur-unveil-sweep {
+  from { background-position: -150% 0; }
+  to   { background-position: 150% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blur-unveil-armed,
+  .blur-unveil-play {
+    filter: none;
+    opacity: 1;
+    transition: none;
+  }
+}
+
+/* 2 — layla-dock */
+.layla-dock-chip {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.35s ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Idle float — gentle 0 → -4px → +4px → 0 sine, only while the
+     dock is on screen and the tab is visible (data-floating). */
+  @keyframes layla-dock-float {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    25%      { transform: translate3d(0, -4px, 0); }
+    75%      { transform: translate3d(0, 4px, 0); }
+  }
+  .layla-dock[data-floating='true'] {
+    animation: layla-dock-float 6s ease-in-out infinite;
+    will-change: transform;
+  }
+  .layla-dock-chip[data-lit='true'] {
+    transform: scale(1.06);
+  }
+}
+
+/* 3 — aurora drift */
+.aurora-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora-blob {
+  position: absolute;
+  display: block;
+  border-radius: 9999px;
+  filter: blur(72px);
+}
+.aurora-blob-a {
+  top: -18%;
+  left: -10%;
+  width: clamp(340px, 46vw, 640px);
+  height: clamp(340px, 46vw, 640px);
+  background: radial-gradient(circle at 35% 35%, rgba(2, 195, 154, 0.85), rgba(2, 195, 154, 0) 70%);
+  opacity: 0.12;
+}
+.aurora-blob-b {
+  bottom: -24%;
+  right: -8%;
+  width: clamp(320px, 42vw, 600px);
+  height: clamp(320px, 42vw, 600px);
+  background: radial-gradient(circle at 60% 45%, rgba(2, 128, 144, 0.9), rgba(2, 128, 144, 0) 70%);
+  opacity: 0.12;
+}
+.aurora-blob-c {
+  top: 28%;
+  left: 52%;
+  width: clamp(240px, 30vw, 440px);
+  height: clamp(240px, 30vw, 440px);
+  background: radial-gradient(circle at 50% 50%, rgba(92, 234, 184, 0.8), rgba(92, 234, 184, 0) 70%);
+  opacity: 0.08;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Transform-only drifts on 22-30s alternating loops. The blur is
+     static per-frame, so the compositor just moves a cached texture. */
+  @keyframes aurora-drift-a {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(9%, 12%, 0) scale(1.12); }
+  }
+  @keyframes aurora-drift-b {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-10%, -9%, 0) scale(1.08); }
+  }
+  @keyframes aurora-drift-c {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-12%, 10%, 0) scale(0.9); }
+  }
+  .aurora-blob-a { animation: aurora-drift-a 26s ease-in-out infinite alternate; }
+  .aurora-blob-b { animation: aurora-drift-b 30s ease-in-out infinite alternate; }
+  .aurora-blob-c { animation: aurora-drift-c 22s ease-in-out infinite alternate; }
+}

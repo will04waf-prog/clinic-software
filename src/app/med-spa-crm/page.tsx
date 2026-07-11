@@ -20,6 +20,9 @@ import { LogoMark } from '@/components/ui/logo-mark'
 import { AnimatedSection } from '@/components/marketing/animated-section'
 import { AnimatedCard } from '@/components/marketing/animated-card'
 import { BilingualRoll } from '@/components/marketing/bilingual-roll'
+import { HeroEcho } from '@/components/marketing/hero-echo'
+import { LaylaDock } from '@/components/marketing/layla-dock'
+import { AuroraDrift } from '@/components/marketing/aurora'
 
 /* SEO landing for the "med spa CRM" search intent. The route stays at
    /med-spa-crm so Google keeps the keyword association, but the H1 and
@@ -399,7 +402,12 @@ export default function MedSpaCRMPage() {
               </span>
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-brand-900 sm:text-5xl lg:text-6xl">
-              An AI receptionist that actually books appointments<span className="text-brand-600">.</span>
+              {/* Echo scoped to the payoff word (period inside) so the
+                  inline-block never distorts the H1's natural line wrap. */}
+              An AI receptionist that actually books{' '}
+              <HeroEcho>
+                appointments<span className="text-brand-600">.</span>
+              </HeroEcho>
             </h1>
             <p className="mt-4 text-base font-medium text-brand-700 sm:text-lg">
               Yes, it&apos;s a med spa CRM. The upgrade is who answers the phone.
@@ -434,6 +442,14 @@ export default function MedSpaCRMPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Layla dock — her pipeline at a glance ────────────── */}
+        {/* Same decorative glass pill as the landing page, bridging the
+            hero into the CRM-reassurance section. aria-hidden inside the
+            component (it repeats adjacent copy). */}
+        <div className="-mt-6 flex justify-center bg-[#FAF6EC] px-6 pb-10 sm:-mt-10">
+          <LaylaDock />
+        </div>
 
         {/* ── Yes-we-are-a-CRM reassurance ─────────────────────── */}
         {/* SEO intent honored explicitly before we escalate to voice.
@@ -720,8 +736,9 @@ export default function MedSpaCRMPage() {
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────── */}
-        <section className="bg-[#14241d] px-6 py-20">
-          <AnimatedSection className="mx-auto max-w-2xl text-center">
+        <section className="relative overflow-hidden bg-[#14241d] px-6 py-20">
+          <AuroraDrift />
+          <AnimatedSection className="relative z-10 mx-auto max-w-2xl text-center">
             <LogoMark size="lg" standalone className="mb-3" />
             <h2 className="text-3xl font-bold tracking-tight text-[#F5EFE1] sm:text-4xl">
               Let Layla answer your next call

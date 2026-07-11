@@ -7,6 +7,7 @@ import { SourcePill } from '@/components/leads/source-pill'
 import { InitialAvatar } from './initial-avatar'
 import type { ActionRow, TagTone, Urgency } from './types'
 import { cn } from '@/lib/utils'
+import '../ambient.css'
 
 /**
  * The action stack — vertical list of ranked triage cards. This is the
@@ -89,7 +90,16 @@ export function ActionStack({ actions }: Props) {
 
 function ActionCard({ action, idx }: { action: ActionRow; idx: number }) {
   return (
-    <li className="rise relative flex items-center gap-[15px] rounded-[14px] bg-white px-5 py-[18px] pl-[24px] shadow-[0_1px_2px_rgba(11,32,39,0.05)] transition-[box-shadow,transform] duration-200 hover:-translate-y-[1px] hover:shadow-[0_4px_16px_-6px_rgba(11,32,39,0.12)]" style={{ '--stagger': Math.min(idx, 8) } as React.CSSProperties}>
+    // amb-row (ambient.css): soft mint edge-glow that breathes while
+    // hovered — non-urgent rows only, so 'now' rows keep their rail
+    // as the loudest signal on the card.
+    <li
+      className={cn(
+        'rise relative flex items-center gap-[15px] rounded-[14px] bg-white px-5 py-[18px] pl-[24px] shadow-[0_1px_2px_rgba(11,32,39,0.05)] transition-[box-shadow,transform] duration-200 hover:-translate-y-[1px] hover:shadow-[0_4px_16px_-6px_rgba(11,32,39,0.12)]',
+        action.urg !== 'now' && 'amb-row',
+      )}
+      style={{ '--stagger': Math.min(idx, 8) } as React.CSSProperties}
+    >
       {/* Urgency rail */}
       <span
         className={cn(

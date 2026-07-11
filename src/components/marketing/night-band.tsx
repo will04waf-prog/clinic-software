@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { PhoneCall } from 'lucide-react'
+import { BlurUnveil } from './blur-unveil'
 
 /**
  * NightBand — the "9:07 PM" cinematic photograph band.
@@ -160,7 +161,12 @@ export function NightBand() {
           }
           className={`${enter} mt-3 max-w-xl text-3xl font-medium leading-[1.15] tracking-tight text-[#F5EFE1] sm:text-4xl lg:text-5xl`}
         >
-          The front desk went home. <em>She didn&apos;t.</em>
+          {/* Blur-unveil composes with the .rise entrance: the h2 lifts in
+              while the line sharpens under the mint sweep. Server HTML is
+              plain text — see blur-unveil.tsx. */}
+          <BlurUnveil>
+            The front desk went home. <em>She didn&apos;t.</em>
+          </BlurUnveil>
         </h2>
         <a
           href="tel:+13019622856"
