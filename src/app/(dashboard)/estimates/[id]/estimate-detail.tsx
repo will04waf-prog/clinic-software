@@ -74,7 +74,7 @@ export function EstimateDetail({ locale, estimate }: { locale: Locale; estimate:
       : 'bg-[#028090]/10 text-[#028090]'
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 pb-28">
       <Link href="/estimates" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ArrowLeft className="h-4 w-4" /> {t.empty ? 'Estimados' : ''}
       </Link>
@@ -135,7 +135,7 @@ export function EstimateDetail({ locale, estimate }: { locale: Locale; estimate:
           {result && (
             <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
               <p className="text-xs text-gray-500">
-                {result.channel === 'whatsapp' ? 'WhatsApp' : result.channel === 'sms' ? 'SMS' : t.send}
+                {result.channel === 'whatsapp' ? t.sentWhatsApp : result.channel === 'sms' ? t.sentSms : t.shareLink}
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <input readOnly value={result.link} className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs text-gray-700" />

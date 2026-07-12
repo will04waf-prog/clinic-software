@@ -25,7 +25,7 @@ export function LandscapingDashboard({ locale, ownerName }: { locale: Locale; ow
           <Sun className="h-5 w-5 text-[#028090]" fill="currentColor" />
         </span>
         <h1
-          className="text-[#14241D]"
+          className="text-[#0B2027]"
           style={{ fontFamily: 'var(--font-newsreader), Newsreader, Georgia, serif', fontSize: '22px', fontWeight: 600 }}
         >
           Tarhunna
@@ -46,7 +46,7 @@ export function LandscapingDashboard({ locale, ownerName }: { locale: Locale; ow
                 <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#02C39A]/12 text-[#028090]">
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className="text-[15px] font-semibold text-[#14241D]">{label}</span>
+                <span className="text-[15px] font-semibold text-[#0B2027]">{label}</span>
               </Link>
             ))}
           </div>

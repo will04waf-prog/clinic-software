@@ -45,17 +45,22 @@ export default async function SettingsPage() {
     .single()
 
   const org = profile?.organization as any
+  const isLoop = org?.vertical === 'landscaping'
+  const es = resolveLocale(org?.owner_language) === 'es'
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <Header title="Settings" subtitle="Clinic and account configuration" />
+      <Header
+        title={isLoop ? 'Ajustes' : 'Settings'}
+        subtitle={isLoop ? (es ? 'Configuración de su negocio y su cuenta' : 'Business and account configuration') : 'Clinic and account configuration'}
+      />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-2xl">
         <Card>
-          <CardHeader><CardTitle>Clinic</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{isLoop ? (es ? 'Negocio' : 'Business') : 'Clinic'}</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Name</span>
+              <span className="text-gray-500">{isLoop && es ? 'Nombre' : 'Name'}</span>
               <span className="font-medium text-gray-900">{org?.name ?? '—'}</span>
             </div>
             <div className="flex justify-between">
@@ -63,7 +68,7 @@ export default async function SettingsPage() {
               <span className="font-medium text-gray-900 capitalize">{org?.plan ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Timezone</span>
+              <span className="text-gray-500">{isLoop && es ? 'Zona horaria' : 'Timezone'}</span>
               <span className="font-medium text-gray-900">{org?.timezone ?? '—'}</span>
             </div>
           </CardContent>
@@ -103,28 +108,28 @@ export default async function SettingsPage() {
           />
         )}
 
-        {org?.slug && (
+        {!isLoop && org?.slug && (
           <CaptureFormCard url={`${APP_URL}/capture/${org.slug}`} />
         )}
 
-        <ServicesCard initial={org?.procedures ?? null} />
+        {!isLoop && <ServicesCard initial={org?.procedures ?? null} />}
 
         {/* Booking calendar — links to /settings/booking. Sits next to
             ServicesCard because the two are conceptually paired: services
             here is the intake-form taxonomy; bookable services + providers
             + availability live on the booking sub-page. */}
-        <BookingSettingsLinkCard />
+        {!isLoop && <BookingSettingsLinkCard />}
 
         {/* W8: Team management is owner-only — surface the link card
             only when the current user is the org owner. /settings/team
             also hard-redirects non-owners (defense in depth). */}
-        {profile?.role === 'owner' && <TeamSettingsLinkCard />}
+        {!isLoop && profile?.role === 'owner' && <TeamSettingsLinkCard />}
 
         {/* P5 W1: Call agent — owner-only at the link layer; the
             page also handles non-Scale orgs by surfacing
             UpgradeCardLocked, so all roles below owner are hidden
             and non-Scale Scale owners see the upgrade card on click. */}
-        {profile?.role === 'owner' && <CallAgentLinkCard />}
+        {!isLoop && profile?.role === 'owner' && <CallAgentLinkCard />}
 
         {/* P5 W2: Custom FAQ corpus that backs Layla's lookup_faq
             voice tool. Owner-only at the link layer; the page also
@@ -132,7 +137,7 @@ export default async function SettingsPage() {
             can be pre-authored on any plan, but the voice tool that
             reads it only fires when the (Scale-only) call agent is
             on. */}
-        {profile?.role === 'owner' && <FaqsLinkCard />}
+        {!isLoop && profile?.role === 'owner' && <FaqsLinkCard />}
 
         {/* Multi-vertical Phase 6: caller languages (drives the Vapi
             assistant's transcriber/voice/bilingual prompt), owner
@@ -151,7 +156,7 @@ export default async function SettingsPage() {
           }} />
         )}
 
-        <SmsSettingsCard initial={{
+        {!isLoop && <SmsSettingsCard initial={{
           sms_enabled:               org?.sms_enabled               ?? false,
           sms_confirmation_enabled:  org?.sms_confirmation_enabled  ?? true,
           sms_reminder_24h_enabled:  org?.sms_reminder_24h_enabled  ?? true,
@@ -160,49 +165,51 @@ export default async function SettingsPage() {
           sms_template_confirmation_es: org?.sms_template_confirmation_es ?? null,
           sms_template_reminder_24h: org?.sms_template_reminder_24h ?? null,
           sms_template_reminder_2h:  org?.sms_template_reminder_2h  ?? null,
-        }} vertical={(org?.vertical as string | null) ?? null} />
+        }} vertical={(org?.vertical as string | null) ?? null} />}
 
         {/* AI Twin sits under SMS — it's downstream of SMS being on. */}
-        <AiTwinSettingsCard initial={{
+        {!isLoop && <AiTwinSettingsCard initial={{
           ai_twin_enabled:            org?.ai_twin_enabled            ?? true,
           ai_twin_quiet_hours_start:  org?.ai_twin_quiet_hours_start  ?? null,
           ai_twin_quiet_hours_end:    org?.ai_twin_quiet_hours_end    ?? null,
-        }} />
+        }} />}
 
         {/* Voice training (Phase 2 W6). Loads via /api/org/voice-profile
             + /api/org/voice-examples, so no server prefetch needed.
             The anchor is the SetupGuide's "Add voice examples" target. */}
-        <div id="ai-twin-training" className="scroll-mt-24">
-          <AiVoiceTrainingCard vertical={(org?.vertical as string | null) ?? null} />
-        </div>
+        {!isLoop && (
+          <div id="ai-twin-training" className="scroll-mt-24">
+            <AiVoiceTrainingCard vertical={(org?.vertical as string | null) ?? null} />
+          </div>
+        )}
 
         {/* Voice training health (Phase 2 W8). Loads via /api/org/voice-health
             — surfaces edit-pattern signals + recommendations. */}
-        <AiVoiceHealthCard />
+        {!isLoop && <AiVoiceHealthCard />}
 
         {/* Autonomous send (Phase 2 W9). Loads via /api/org/auto-send-settings
             — master toggle + per-class allowlist + recent auto-sends. */}
-        <AiAutoSendCard />
+        {!isLoop && <AiAutoSendCard />}
 
         <Card>
-          <CardHeader><CardTitle>Your Account</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{isLoop && es ? 'Su cuenta' : 'Your Account'}</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Name</span>
+              <span className="text-gray-500">{isLoop && es ? 'Nombre' : 'Name'}</span>
               <span className="font-medium text-gray-900">{profile?.full_name ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Email</span>
+              <span className="text-gray-500">{isLoop && es ? 'Correo' : 'Email'}</span>
               <span className="font-medium text-gray-900">{profile?.email ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Role</span>
+              <span className="text-gray-500">{isLoop && es ? 'Rol' : 'Role'}</span>
               <span className="font-medium text-gray-900 capitalize">{profile?.role ?? '—'}</span>
             </div>
             {profile?.email && <ChangePasswordCard userEmail={profile.email} />}
 
             <div className="pt-3 border-t border-gray-100">
-              <SignOutButton />
+              <SignOutButton label={isLoop && es ? 'Cerrar sesión' : undefined} busyLabel={isLoop && es ? 'Cerrando…' : undefined} />
             </div>
           </CardContent>
         </Card>

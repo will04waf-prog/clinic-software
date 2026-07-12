@@ -137,7 +137,7 @@ export function InvoiceDetail({
   }
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-6">
+    <div className="mx-auto w-full max-w-md px-4 pt-6 pb-28">
       <Link href="/invoices" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ArrowLeft className="h-4 w-4" /> {dict(locale).nav.invoices}
       </Link>
@@ -187,7 +187,7 @@ export function InvoiceDetail({
         </div>
       ) : (
         <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-[#14241d]">{t.recordPayment}</p>
+          <p className="text-sm font-semibold text-[#0B2027]">{t.recordPayment}</p>
           <p className="mb-3 mt-0.5 text-[11px] text-gray-400">{t.feeNote}</p>
 
           {/* Method chips */}
@@ -258,7 +258,7 @@ export function InvoiceDetail({
       {!isPaid && (
         connectChargesEnabled ? (
           <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="flex items-center gap-2 text-sm font-semibold text-[#14241d]">
+            <p className="flex items-center gap-2 text-sm font-semibold text-[#0B2027]">
               <CreditCard className="h-4 w-4 text-[#028090]" /> {t.cardSectionTitle}
             </p>
             <label className="mb-1 mt-3 block text-xs text-gray-500">{t.payLinkLabel}</label>

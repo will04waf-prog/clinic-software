@@ -64,7 +64,7 @@ export function EstimatesList({ locale }: { locale: Locale }) {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-[#14241d]">{dict(locale).dashboard.estimates}</h1>
+        <h1 className="text-xl font-semibold text-[#0B2027]">{dict(locale).dashboard.estimates}</h1>
         <Button asChild size="sm">
           <Link href="/estimates/new">
             <Plus className="h-4 w-4" />
@@ -111,14 +111,14 @@ export function EstimatesList({ locale }: { locale: Locale }) {
                 className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-[#14241d]">{e.title}</p>
+                  <p className="truncate text-sm font-medium text-[#0B2027]">{e.title}</p>
                   <p className="truncate text-xs text-gray-500">
                     {m.number(e.estimate_number)}
                     {e.first_name ? ` · ${e.first_name}` : ''}
                   </p>
                 </div>
                 <div className="flex flex-none flex-col items-end gap-1">
-                  <span className="text-sm font-semibold tabular-nums text-[#14241d]">
+                  <span className="text-sm font-semibold tabular-nums text-[#0B2027]">
                     ${formatMoney(e.total_cents)}
                   </span>
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusClasses(e.status)}`}>

@@ -131,10 +131,10 @@ export function PayStatus({
 function Shell({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   const t = dict(locale).pay
   return (
-    <div className="flex min-h-dvh flex-col bg-[#f7faf9]">
+    <div className="flex min-h-dvh flex-col bg-[#F5EFE1]">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
         {children}
-        <p className="mt-8 text-center text-xs text-gray-300">{t.poweredBy}</p>
+        <p className="mt-8 text-center text-[11px] uppercase tracking-wider text-[#7E8C90]">{t.poweredBy}</p>
       </div>
     </div>
   )

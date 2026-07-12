@@ -194,7 +194,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
       </section>
 
       {/* Bilingual bridge — dark band */}
-      <section className="mt-6 bg-[#14241d] px-5 py-14 text-[#F5EFE1]">
+      <section className="mt-6 bg-[#0B2027] px-5 py-14 text-[#F5EFE1]">
         <div className="mx-auto max-w-2xl text-center">
           <Sparkles className="mx-auto h-6 w-6 text-[#02C39A]" />
           <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl text-balance">{t.bridgeTitle}</h2>
@@ -232,7 +232,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
       </section>
 
       {/* Close */}
-      <section className="bg-[#14241d] px-5 py-16 text-center text-[#F5EFE1]">
+      <section className="bg-[#0B2027] px-5 py-16 text-center text-[#F5EFE1]">
         <h2 className="text-3xl font-extrabold tracking-tight">{t.closeTitle}</h2>
         <p className="mx-auto mt-2 max-w-sm text-[#F5EFE1]/70">{t.closeSub}</p>
         <Link href="/signup" className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-7 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform">

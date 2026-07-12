@@ -132,7 +132,7 @@ export function ScheduleView({ locale }: { locale: Locale }) {
           <CalendarDays className="h-5 w-5 text-[#028090]" />
         </span>
         <h1
-          className="text-[#14241D]"
+          className="text-[#0B2027]"
           style={{
             fontFamily: 'var(--font-newsreader), Newsreader, Georgia, serif',
             fontSize: '22px',
@@ -149,11 +149,15 @@ export function ScheduleView({ locale }: { locale: Locale }) {
             <p className="rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-600">{error}</p>
           )}
           {jobs === null ? (
-            <p className="text-sm text-[#7E8C90]">{common.loading}</p>
+            <div className="w-full space-y-2.5 animate-pulse" aria-label={common.loading}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-16 rounded-xl bg-black/5" />
+              ))}
+            </div>
           ) : isEmpty ? (
             <div className="rounded-2xl border border-dashed border-[#02C39A]/40 bg-white/60 px-6 py-14 text-center">
               <CalendarDays className="mx-auto mb-3 h-8 w-8 text-[#02C39A]" />
-              <p className="text-[15px] font-medium text-[#14241D]">{t.empty}</p>
+              <p className="text-[15px] font-medium text-[#0B2027]">{t.empty}</p>
             </div>
           ) : (
             <>
@@ -211,11 +215,11 @@ function JobGroup({
           return (
             <div
               key={job.id}
-              className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm"
+              className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm sm:flex-row sm:items-center"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="truncate text-[15px] font-semibold text-[#14241D]">
+                  <p className="truncate text-[15px] font-semibold text-[#0B2027]">
                     {job.contact_first_name || (locale === 'es' ? 'Cliente' : 'Client')}
                   </p>
                   <StatusPill status={job.status} locale={locale} />
@@ -235,7 +239,7 @@ function JobGroup({
                   type="button"
                   onClick={() => onComplete(job.id)}
                   disabled={busy}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#028090] px-3.5 py-2 text-[12.5px] font-semibold text-white shadow-[0_2px_6px_-2px_rgba(2,128,144,0.5)] transition-colors hover:bg-[#026B78] disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#028090] px-3.5 py-2 text-sm font-semibold text-white sm:w-auto sm:rounded-full shadow-[0_2px_6px_-2px_rgba(2,128,144,0.5)] transition-colors hover:bg-[#026B78] disabled:opacity-60"
                 >
                   {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" strokeWidth={2.6} />}
                   {t.markComplete}

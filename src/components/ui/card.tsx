@@ -21,10 +21,10 @@ CardHeader.displayName = 'CardHeader'
 
 const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    // Forest #14241d on the title — that's the "main letters" the brand
+    // Forest #0B2027 on the title — that's the "main letters" the brand
     // shows up in. Body text inside cards stays neutral gray for
     // readability.
-    <h3 ref={ref} className={cn('text-base font-semibold leading-none text-[#14241d]', className)} {...props} />
+    <h3 ref={ref} className={cn('text-base font-semibold leading-none text-[#0B2027]', className)} {...props} />
   )
 )
 CardTitle.displayName = 'CardTitle'

@@ -37,7 +37,7 @@ export function MobileNav({ vertical = 'medspa', ownerLanguage }: { vertical?: s
     : NAV_ITEMS.filter((i) => i.href !== '/automations' || FEATURES.automations)
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden bg-[#14241d] text-[#F5EFE1]">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden bg-[#0B2027] text-[#F5EFE1]">
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href)
         return (

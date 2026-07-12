@@ -85,7 +85,7 @@ export function ApproveView(props: ApproveViewProps) {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#02C39A]/15">
             <Check className="h-7 w-7 text-[#028090]" />
           </div>
-          <h1 className="text-[19px] font-semibold text-[#14241d]">{t.approve.approvedTitle}</h1>
+          <h1 className="text-[19px] font-semibold text-[#0B2027]">{t.approve.approvedTitle}</h1>
           <p className="text-[14px] leading-relaxed text-[#4A5A60]">{t.approve.approvedBody(orgName)}</p>
           <p className="pt-2 text-[12.5px] text-[#7E8C90]">{t.approve.questions}</p>
         </div>
@@ -96,23 +96,23 @@ export function ApproveView(props: ApproveViewProps) {
   return (
     <Shell locale={locale}>
       <header className="mb-5">
-        <h1 className="text-[19px] font-semibold leading-tight text-[#14241d]">
+        <h1 className="text-[19px] font-semibold leading-tight text-[#0B2027]">
           {t.approve.fromBusiness(orgName)}
         </h1>
         {title && <p className="mt-1 text-[13.5px] text-[#7E8C90]">{title}</p>}
       </header>
 
-      <div className="overflow-hidden rounded-xl border border-[#14241d]/10">
-        <ul className="divide-y divide-[#14241d]/10">
+      <div className="overflow-hidden rounded-xl border border-[#0B2027]/10">
+        <ul className="divide-y divide-[#0B2027]/10">
           {lineItems.map((li) => (
             <li key={li.id} className="flex items-start justify-between gap-3 bg-white px-4 py-3">
               <div className="min-w-0">
-                <p className="text-[14px] text-[#14241d]">{li.description}</p>
+                <p className="text-[14px] text-[#0B2027]">{li.description}</p>
                 <p className="mt-0.5 text-[12px] text-[#7E8C90]">
                   {li.quantity} × {money(li.unitPriceCents)}
                 </p>
               </div>
-              <p className="shrink-0 text-[14px] font-medium text-[#14241d]">
+              <p className="shrink-0 text-[14px] font-medium text-[#0B2027]">
                 {money(li.quantity * li.unitPriceCents)}
               </p>
             </li>
@@ -122,7 +122,7 @@ export function ApproveView(props: ApproveViewProps) {
         <div className="space-y-1.5 bg-[#F5EFE1]/60 px-4 py-3 text-[13px]">
           <Row label={t.estimate.subtotal} value={money(subtotalCents)} />
           {taxCents > 0 && <Row label={t.estimate.tax} value={money(taxCents)} />}
-          <div className="flex items-center justify-between pt-1.5 text-[16px] font-semibold text-[#14241d]">
+          <div className="flex items-center justify-between pt-1.5 text-[16px] font-semibold text-[#0B2027]">
             <span>{t.approve.total}</span>
             <span>{money(totalCents)}</span>
           </div>
@@ -173,7 +173,7 @@ function Shell({ locale, children }: { locale: Locale; children: ReactNode }) {
   const t = dict(locale)
   return (
     <div className="min-h-screen bg-[#F5EFE1] px-4 py-8">
-      <div className="mx-auto w-full max-w-md rounded-2xl border border-[#14241d]/10 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mx-auto w-full max-w-md rounded-2xl border border-[#0B2027]/10 bg-white p-5 shadow-sm sm:p-6">
         {children}
       </div>
       <p className="mx-auto mt-5 max-w-md text-center text-[11px] uppercase tracking-wider text-[#7E8C90]">

@@ -97,7 +97,7 @@ export default function BookDemoPage() {
               20-minute live walkthrough
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-[#14241d] sm:text-5xl">
+            <h1 className="text-4xl font-bold tracking-tight text-[#0B2027] sm:text-5xl">
               Watch Layla answer a real call, book an appointment, and text the confirmation.
             </h1>
 
@@ -131,7 +131,7 @@ export default function BookDemoPage() {
 
             {/* Agenda */}
             <div className="mt-10">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-[#14241d]">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-[#0B2027]">
                 What we&rsquo;ll cover
               </h2>
               <ul className="mt-4 space-y-4">
@@ -141,13 +141,13 @@ export default function BookDemoPage() {
                     className="rounded-xl border border-gray-200 bg-white/70 p-4 shadow-sm"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-[#14241d]">
+                      <h3 className="text-base font-semibold text-[#0B2027]">
                         {item.title}
                       </h3>
                       <span
                         className={
                           item.tier === 'scale'
-                            ? 'inline-flex items-center rounded-full bg-[#14241d] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#F5EFE1]'
+                            ? 'inline-flex items-center rounded-full bg-[#0B2027] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#F5EFE1]'
                             : item.tier === 'professional'
                             ? 'inline-flex items-center rounded-full border border-brand-600/30 bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700'
                             : 'inline-flex items-center rounded-full border border-gray-300 bg-[#F5EFE1] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-700'
@@ -164,7 +164,7 @@ export default function BookDemoPage() {
 
             {/* Prefer-trial nudge */}
             <div className="mt-8 rounded-xl border border-dashed border-[#02C39A]/40 bg-white/60 p-4 text-sm text-gray-700">
-              <span className="font-semibold text-[#14241d]">In a hurry?</span>{' '}
+              <span className="font-semibold text-[#0B2027]">In a hurry?</span>{' '}
               <a href="/signup" className="text-brand-700 underline-offset-2 hover:underline">
                 Start the 14-day free trial
               </a>{' '}
@@ -176,7 +176,7 @@ export default function BookDemoPage() {
           <div className="lg:sticky lg:top-24">
             <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-[#14241d]">
+                <h2 className="text-2xl font-bold text-[#0B2027]">
                   Pick a time
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">

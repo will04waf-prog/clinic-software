@@ -43,7 +43,7 @@ export function LandscapingEmptyState({
         </p>
       )}
       <h2
-        className="text-[#14241D]"
+        className="text-[#0B2027]"
         style={{
           fontFamily: 'var(--font-newsreader), Newsreader, Georgia, serif',
           fontSize: '28px',
@@ -85,7 +85,7 @@ export function LandscapingEmptyState({
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-bold text-[#A4AFB2]">{i + 1}</span>
-                  <span className="text-[13.5px] font-medium text-[#14241D]">{step.label}</span>
+                  <span className="text-[13.5px] font-medium text-[#0B2027]">{step.label}</span>
                 </div>
                 {i < steps.length - 1 && (
                   <ArrowRight className="hidden h-4 w-4 text-[#D4CFC2] sm:ml-auto sm:block" />

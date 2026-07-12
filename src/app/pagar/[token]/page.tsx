@@ -16,8 +16,28 @@ import { resolveLocale } from '@/lib/i18n'
 import { reconcileInvoicePayment } from '@/lib/stripe/reconcile-invoice-payment'
 import { PayView, PayStatus } from './pay-view'
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
+// Dynamic title/OG: the WhatsApp preview should say WHOSE invoice this
+// is — a homeowner about to enter a card needs the business's name in
+// the chat bubble, not a bare link. Still no-index (capability token).
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params
+  const fallback: Metadata = { title: 'Factura', robots: { index: false, follow: false } }
+  const invoiceId = verifyCapabilityToken('invoice_pay', token)
+  if (!invoiceId) return fallback
+  const { data } = await supabaseAdmin
+    .from('invoices')
+    .select('organization_id, organizations(name)')
+    .eq('id', invoiceId)
+    .maybeSingle()
+  const org = (data?.organizations ?? null) as { name?: string } | null
+  if (!org?.name) return fallback
+  const title = `Factura de ${org.name}`
+  return {
+    title,
+    description: 'Revise su factura y pague de forma segura.',
+    robots: { index: false, follow: false },
+    openGraph: { title, description: 'Revise su factura y pague de forma segura.', siteName: org.name },
+  }
 }
 
 export default async function PayPage({

@@ -56,7 +56,7 @@ export function InvoicesList({ locale }: { locale: Locale }) {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-[#14241d]">{dict(locale).nav.invoices}</h1>
+        <h1 className="text-xl font-semibold text-[#0B2027]">{dict(locale).nav.invoices}</h1>
         <Button asChild size="sm">
           <Link href="/invoices/new">
             <Plus className="h-4 w-4" />
@@ -105,7 +105,7 @@ export function InvoicesList({ locale }: { locale: Locale }) {
                   className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[#14241d]">
+                    <p className="truncate text-sm font-medium text-[#0B2027]">
                       {inv.title || m.number(inv.invoice_number)}
                     </p>
                     <p className="truncate text-xs text-gray-500">
@@ -114,7 +114,7 @@ export function InvoicesList({ locale }: { locale: Locale }) {
                     </p>
                   </div>
                   <div className="flex flex-none flex-col items-end gap-1">
-                    <span className="text-sm font-semibold tabular-nums text-[#14241d]">
+                    <span className="text-sm font-semibold tabular-nums text-[#0B2027]">
                       ${formatMoney(inv.total_cents)}
                     </span>
                     {inv.status !== 'paid' && balance > 0 ? (

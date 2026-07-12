@@ -49,6 +49,7 @@ export function InvoiceBuilder({
   const router = useRouter()
   const m = dict(locale).invoice
   const c = dict(locale).clients
+  const est = dict(locale).estimate
   const common = dict(locale).common
 
   const hasEstimates = approvedEstimates.length > 0
@@ -138,14 +139,14 @@ export function InvoiceBuilder({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+    <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-28">
       <div className="mb-5 flex items-center gap-2">
-        <Button asChild variant="ghost" size="icon">
+        <Button asChild variant="ghost" size="icon" className="h-11 w-11">
           <Link href="/invoices" aria-label={common.back}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-xl font-semibold text-[#14241d]">{m.newTitle}</h1>
+        <h1 className="text-xl font-semibold text-[#0B2027]">{m.newTitle}</h1>
       </div>
 
       {/* Mode toggle — only shown when there is an estimate path to offer. */}
@@ -182,12 +183,12 @@ export function InvoiceBuilder({
               <select
                 value={estimateId}
                 onChange={(e) => setEstimateId(e.target.value)}
-                className="flex h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="flex h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 <option value="">{m.pickEstimate}</option>
                 {approvedEstimates.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {m.number(e.estimate_number)}
+                    {est.number(e.estimate_number)}
                     {e.first_name ? ` · ${e.first_name}` : ''} · ${money(e.total_cents)}
                   </option>
                 ))}
@@ -209,7 +210,7 @@ export function InvoiceBuilder({
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="flex h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="flex h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 <option value="">{c.pick}</option>
                 {initialClients.map((cl) => (
@@ -242,10 +243,10 @@ export function InvoiceBuilder({
                       onChange={(e) => updateLine(i, { description: e.target.value })}
                       placeholder={m.itemDescriptionPlaceholder}
                       aria-label={m.itemDescription}
-                      className="mb-2 bg-white"
+                      className="mb-2 h-11 bg-white text-base"
                     />
                     <div className="flex items-end gap-2">
-                      <div className="w-20">
+                      <div className="w-16">
                         <Label className="mb-1 block text-[11px] text-gray-500">{m.qty}</Label>
                         <Input
                           type="number"
@@ -254,7 +255,7 @@ export function InvoiceBuilder({
                           step="any"
                           value={l.qty}
                           onChange={(e) => updateLine(i, { qty: e.target.value })}
-                          className="bg-white"
+                          className="h-11 bg-white text-base"
                         />
                       </div>
                       <div className="flex-1">
@@ -269,13 +270,13 @@ export function InvoiceBuilder({
                             value={l.price}
                             onChange={(e) => updateLine(i, { price: e.target.value })}
                             placeholder="0.00"
-                            className="bg-white pl-6"
+                            className="h-11 bg-white pl-6 text-base"
                           />
                         </div>
                       </div>
-                      <div className="w-24 text-right">
+                      <div className="w-20 text-right">
                         <Label className="mb-1 block text-[11px] text-gray-500">{m.total}</Label>
-                        <p className="h-9 pt-2 text-sm font-medium tabular-nums text-[#14241d]">
+                        <p className="h-9 pt-2 text-sm font-medium tabular-nums text-[#0B2027]">
                           ${money(Math.round(qtyOf(l.qty) * dollarsToCents(l.price)))}
                         </p>
                       </div>
@@ -304,7 +305,7 @@ export function InvoiceBuilder({
             <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between py-1 text-sm">
                 <span className="text-gray-600">{m.subtotal}</span>
-                <span className="font-medium tabular-nums text-[#14241d]">${money(subtotalCents)}</span>
+                <span className="font-medium tabular-nums text-[#0B2027]">${money(subtotalCents)}</span>
               </div>
               <div className="flex items-center justify-between gap-3 py-1 text-sm">
                 <span className="text-gray-600">{m.tax}</span>
@@ -324,7 +325,7 @@ export function InvoiceBuilder({
                 </div>
               </div>
               <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-3">
-                <span className="text-base font-semibold text-[#14241d]">{m.total}</span>
+                <span className="text-base font-semibold text-[#0B2027]">{m.total}</span>
                 <span className="text-lg font-bold tabular-nums text-[#028090]">${money(totalCents)}</span>
               </div>
             </section>

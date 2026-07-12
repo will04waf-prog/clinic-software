@@ -142,6 +142,9 @@ export const es = {
     number: (n: number) => `Estimado #${n}`,
     errNoClient: 'Elija un cliente primero.',
     errNoLines: 'Agregue al menos un concepto.',
+    sentWhatsApp: 'Enviado por WhatsApp',
+    sentSms: 'Enviado por SMS',
+    shareLink: 'Comparta este enlace con su cliente',
   },
 
   // Facturas — el paso "cobrar" del ciclo. Efectivo/Zelle/cheque; sin

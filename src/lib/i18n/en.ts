@@ -132,6 +132,9 @@ export const en: Messages = {
     number: (n: number) => `Estimate #${n}`,
     errNoClient: 'Choose a client first.',
     errNoLines: 'Add at least one line item.',
+    sentWhatsApp: 'Sent by WhatsApp',
+    sentSms: 'Sent by SMS',
+    shareLink: 'Share this link with your client',
   },
 
   invoice: {

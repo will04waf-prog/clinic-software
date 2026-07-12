@@ -23,19 +23,37 @@ import { verifyCapabilityToken } from '@/lib/tokens/capability-token'
 import { dict, resolveLocale, type Locale } from '@/lib/i18n'
 import { ApproveView } from './approve-view'
 
-export const metadata: Metadata = {
-  title: 'Estimado',
-  // No-index — the URL carries a capability token. Keep it out of search
-  // indexes even if it leaks into a referrer header.
-  robots: { index: false, follow: false },
+// Dynamic title/OG so the WhatsApp link preview carries the BUSINESS's
+// name — the homeowner's first impression is the chat bubble, and
+// "Estimado de Jardinería García" reads like a real company, not a
+// mystery link. Still no-index: the URL carries a capability token.
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params
+  const fallback: Metadata = { title: 'Estimado', robots: { index: false, follow: false } }
+  const estimateId = verifyCapabilityToken('estimate_approve', token)
+  if (!estimateId) return fallback
+  const { data } = await supabaseAdmin
+    .from('estimates')
+    .select('organization_id, organizations(name)')
+    .eq('id', estimateId)
+    .maybeSingle()
+  const org = (data?.organizations ?? null) as { name?: string } | null
+  if (!org?.name) return fallback
+  const title = `Estimado de ${org.name}`
+  return {
+    title,
+    description: 'Revise el trabajo y el precio, y apruébelo con un toque.',
+    robots: { index: false, follow: false },
+    openGraph: { title, description: 'Revise el trabajo y el precio, y apruébelo con un toque.', siteName: org.name },
+  }
 }
 
 function StatusScreen({ locale, message }: { locale: Locale; message: string }) {
   const t = dict(locale)
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F5EFE1] px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-[#14241d]/10 bg-white p-6 text-center shadow-sm">
-        <p className="text-[15px] leading-relaxed text-[#14241d]">{message}</p>
+      <div className="w-full max-w-md rounded-2xl border border-[#0B2027]/10 bg-white p-6 text-center shadow-sm">
+        <p className="text-[15px] leading-relaxed text-[#0B2027]">{message}</p>
         <p className="mt-5 text-[11px] uppercase tracking-wider text-[#7E8C90]">{t.approve.poweredBy}</p>
       </div>
     </div>

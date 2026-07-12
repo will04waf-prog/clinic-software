@@ -132,7 +132,7 @@ html.lenis body {
       100deg,
       rgba(255, 255, 255, 0) 0%,
       rgba(255, 255, 255, 0) 38%,
-      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0.18) 50%,
       rgba(255, 255, 255, 0) 62%,
       rgba(255, 255, 255, 0) 100%
     );
@@ -264,7 +264,7 @@ html.lenis body {
         90deg,
         transparent 0px,
         transparent 200px,
-        rgba(255, 255, 255, 0.55) 300px,
+        rgba(255, 255, 255, 0.18) 300px,
         transparent 400px,
         transparent 600px
       ),
@@ -281,7 +281,7 @@ html.lenis body {
         90deg,
         transparent 0px,
         transparent 200px,
-        rgba(255, 255, 255, 0.55) 300px,
+        rgba(255, 255, 255, 0.18) 300px,
         transparent 400px,
         transparent 600px
       ),

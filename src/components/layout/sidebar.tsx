@@ -54,7 +54,7 @@ const NAV_ITEMS = [
  * Dashboard sidebar. Long vertical gradient that starts on cream #F5EFE1
  * at the top — same color as the rest of the app body, so the logo and
  * nav appear to grow out of the page — then fades down into forest
- * #14241d where the bottom action buttons sit. Active nav items light up
+ * #0B2027 where the bottom action buttons sit. Active nav items light up
  * in mint #02C39A.
  *
  * Solid-cream portion (top 55%) covers the logo and every nav item with
@@ -134,11 +134,11 @@ export function Sidebar({
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 active:scale-[0.98]',
                 active
-                  ? 'bg-[#02C39A]/15 text-[#14241d]'
-                  : 'text-[#14241d]/75 hover:bg-[#14241d]/[0.06] hover:text-[#14241d]'
+                  ? 'bg-[#02C39A]/15 text-[#0B2027]'
+                  : 'text-[#0B2027]/75 hover:bg-[#0B2027]/[0.06] hover:text-[#0B2027]'
               )}
             >
-              <Icon className={cn('h-4 w-4', active ? 'text-[#02C39A]' : 'text-[#14241d]/55')} />
+              <Icon className={cn('h-4 w-4', active ? 'text-[#02C39A]' : 'text-[#0B2027]/55')} />
               <span className="flex-1">{label}</span>
               {tierBadge && (
                 <span className="inline-flex items-center rounded-full bg-[#028090]/15 px-1.5 py-0 text-[9.5px] font-semibold uppercase tracking-wide text-[#028090]">
@@ -151,7 +151,7 @@ export function Sidebar({
       </nav>
 
       {/* Bottom actions — same cream bg, forest text */}
-      <div className="border-t border-[#14241d]/10 p-3 space-y-0.5">
+      <div className="border-t border-[#0B2027]/10 p-3 space-y-0.5">
         {isOwner && (
           <Link
             href="/settings/team"
@@ -159,11 +159,11 @@ export function Sidebar({
             className={cn(
               'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 active:scale-[0.98]',
               pathname.startsWith('/settings/team')
-                ? 'bg-[#02C39A]/15 text-[#14241d]'
-                : 'text-[#14241d]/75 hover:bg-[#14241d]/[0.06] hover:text-[#14241d]',
+                ? 'bg-[#02C39A]/15 text-[#0B2027]'
+                : 'text-[#0B2027]/75 hover:bg-[#0B2027]/[0.06] hover:text-[#0B2027]',
             )}
           >
-            <UserCog className={cn('h-4 w-4', pathname.startsWith('/settings/team') ? 'text-[#02C39A]' : 'text-[#14241d]/55')} />
+            <UserCog className={cn('h-4 w-4', pathname.startsWith('/settings/team') ? 'text-[#02C39A]' : 'text-[#0B2027]/55')} />
             Team
           </Link>
         )}
@@ -189,9 +189,9 @@ export function Sidebar({
         )}
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#14241d]/75 hover:bg-[#14241d]/[0.06] hover:text-[#14241d] transition-colors duration-150 active:scale-[0.98]"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#0B2027]/75 hover:bg-[#0B2027]/[0.06] hover:text-[#0B2027] transition-colors duration-150 active:scale-[0.98]"
         >
-          <LogOut className="h-4 w-4 text-[#14241d]/55" />
+          <LogOut className="h-4 w-4 text-[#0B2027]/55" />
           Sign out
         </button>
       </div>

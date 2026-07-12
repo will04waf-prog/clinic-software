@@ -68,7 +68,7 @@ function DesktopPill({
       transition={SPRING}
       className="fixed right-4 top-[70px] z-40"
     >
-      <div className="flex items-center gap-1 rounded-full border border-brand-500/40 bg-[#FAF6EC]/95 pl-4 pr-1 shadow-lg shadow-[#14241D]/10 backdrop-blur-sm">
+      <div className="flex items-center gap-1 rounded-full border border-brand-500/40 bg-[#FAF6EC]/95 pl-4 pr-1 shadow-lg shadow-[#0B2027]/10 backdrop-blur-sm">
         <a
           href={telHref}
           aria-label={callLabel}
@@ -91,7 +91,7 @@ function DesktopPill({
           type="button"
           onClick={onDismiss}
           aria-label={dismissLabel}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[#14241D]/5 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#028090]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[#0B2027]/5 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#028090]"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -112,7 +112,7 @@ function MobileBar({
       className="fixed inset-x-3 z-40"
       style={{ bottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >
-      <div className="flex h-12 items-center overflow-hidden rounded-full bg-[#14241D] text-[#F5EFE1] shadow-lg shadow-[#14241D]/30">
+      <div className="flex h-12 items-center overflow-hidden rounded-full bg-[#0B2027] text-[#F5EFE1] shadow-lg shadow-[#0B2027]/30">
         <a
           href={telHref}
           aria-label={callLabel}
