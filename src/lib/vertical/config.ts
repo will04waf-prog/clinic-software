@@ -16,7 +16,7 @@
  *     (Phase 2/3).
  */
 
-export type Vertical = 'medspa' | 'trades' | 'food' | 'general'
+export type Vertical = 'medspa' | 'trades' | 'food' | 'general' | 'landscaping'
 export type OwnerLanguage = 'en' | 'es'
 export type CallerLanguage = 'en' | 'es'
 export type NotificationChannel = 'sms' | 'whatsapp' | 'both'
@@ -158,6 +158,35 @@ const CONFIG: Record<Vertical, VerticalConfig> = {
     intakeQuestions: [
       'the reason for the call',
       'a preferred day and time',
+    ],
+    phiScrub: false,
+    extraTools: [],
+  },
+  // CRM pivot: landscaping is the first deep-built vertical of the
+  // Spanish-first CRM. It is its own vertical (not squatting on 'trades')
+  // so it can diverge from construction later, but its terms/intake mirror
+  // the trades template — a landscaping engagement is a 'job'/'trabajo'.
+  // Spanish-native terms; the loop UI ("presupuesto"/estimate) lives in the
+  // i18n dictionary, not here — VerticalTerms drives the existing bilingual
+  // SMS/email/voice layer. Reuses the trades voice prompt fragment (Layla
+  // is a Phase-4 add-on for this segment).
+  landscaping: {
+    vertical: 'landscaping',
+    terms: {
+      engagement: 'job', engagementEs: 'trabajo',
+      engagementPlural: 'jobs', engagementPluralEs: 'trabajos',
+      provider: 'crew', providerEs: 'cuadrilla',
+      business: 'business', businessEs: 'negocio',
+      customer: 'customer', customerEs: 'cliente',
+      customerPlural: 'customers', customerPluralEs: 'clientes',
+      serviceExample: 'Corte de césped — semanal',
+    },
+    promptFragment: 'trades',
+    intakeQuestions: [
+      'the service address (where the work happens)',
+      'a short description of the job',
+      'a preferred day and time window',
+      'any access notes — gate code, pets, where to park',
     ],
     phiScrub: false,
     extraTools: [],
