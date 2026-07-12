@@ -31,6 +31,7 @@ const SmsSettingsSchema = z.object({
   sms_reminder_24h_enabled:  z.boolean(),
   sms_reminder_2h_enabled:   z.boolean(),
   sms_template_confirmation: templateField,
+  sms_template_confirmation_es: templateField,
   sms_template_reminder_24h: templateField,
   sms_template_reminder_2h:  templateField,
 })
@@ -54,6 +55,7 @@ export async function PATCH(request: Request) {
   const update = {
     ...parsed.data,
     sms_template_confirmation: parsed.data.sms_template_confirmation?.trim() || null,
+    sms_template_confirmation_es: parsed.data.sms_template_confirmation_es?.trim() || null,
     sms_template_reminder_24h: parsed.data.sms_template_reminder_24h?.trim() || null,
     sms_template_reminder_2h:  parsed.data.sms_template_reminder_2h?.trim() || null,
   }

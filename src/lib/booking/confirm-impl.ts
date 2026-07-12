@@ -175,15 +175,15 @@ export async function confirmBookingInternal(rawInput: unknown): Promise<Confirm
         supabaseAdmin
           .from('organizations')
           .select(`
-            name, timezone,
+            name, timezone, vertical,
             sms_enabled, sms_confirmation_enabled,
-            sms_template_confirmation
+            sms_template_confirmation, sms_template_confirmation_es
           `)
           .eq('id', data.organization_id)
           .single(),
         supabaseAdmin
           .from('contacts_active')
-          .select('id, first_name, phone, opted_out_sms, sms_consent')
+          .select('id, first_name, phone, opted_out_sms, sms_consent, preferred_language')
           .eq('id', data.contact_id)
           .single(),
       ])

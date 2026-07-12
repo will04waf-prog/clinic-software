@@ -1,9 +1,15 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 type TestBanner = { kind: 'success' | 'warning' | 'error'; text: string }
 
+// Med-spa preview baseline — kept verbatim so the med-spa owner's
+// settings preview is unchanged. (These mirror the English defaults in
+// src/lib/sms-messages.ts minus {{manage_url}}, which the preview omits.
+// The card can't import that module — it pulls in the Twilio SDK — so
+// the non-med-spa previews below are rebuilt from getVerticalConfig.)
 const PLACEHOLDER_CONFIRMATION =
   'Hi {{first_name}}, your consultation with {{clinic_name}} is confirmed for {{date}} at {{time}}. Reply STOP to opt out.'
 const PLACEHOLDER_24H =
@@ -11,17 +17,61 @@ const PLACEHOLDER_24H =
 const PLACEHOLDER_2H =
   'Hi {{first_name}}, your consultation with {{clinic_name}} is in about 2 hours at {{time}}. See you soon! Reply STOP to opt out.'
 
+type PreviewType = 'confirmation' | 'reminder_24h' | 'reminder_2h'
+
+const MEDSPA_PREVIEW: Record<PreviewType, string> = {
+  confirmation: PLACEHOLDER_CONFIRMATION,
+  reminder_24h: PLACEHOLDER_24H,
+  reminder_2h:  PLACEHOLDER_2H,
+}
+
+/** Per-vertical English preview of the default template. Med-spa returns
+ *  the frozen literals above; other verticals swap the scheduled-thing
+ *  noun (terms.engagement) and use the neutral {{business_name}} tag. */
+function smsPreview(type: PreviewType, cfg: ReturnType<typeof getVerticalConfig>): string {
+  if (cfg.vertical === 'medspa') return MEDSPA_PREVIEW[type]
+  const noun = cfg.terms.engagement
+  const en: Record<PreviewType, string> = {
+    confirmation:
+      `Hi {{first_name}}, your ${noun} with {{business_name}} is confirmed for {{date}} at {{time}}. Reply STOP to opt out.`,
+    reminder_24h:
+      `Hi {{first_name}}, reminder: your ${noun} with {{business_name}} is tomorrow at {{time}}. Reply STOP to opt out.`,
+    reminder_2h:
+      `Hi {{first_name}}, your ${noun} with {{business_name}} is in about 2 hours at {{time}}. See you soon! Reply STOP to opt out.`,
+  }
+  return en[type]
+}
+
 type SmsSettings = {
   sms_enabled:               boolean
   sms_confirmation_enabled:  boolean
   sms_reminder_24h_enabled:  boolean
   sms_reminder_2h_enabled:   boolean
   sms_template_confirmation: string | null
+  sms_template_confirmation_es: string | null
   sms_template_reminder_24h: string | null
   sms_template_reminder_2h:  string | null
 }
 
-export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
+export function SmsSettingsCard({
+  initial,
+  // Absent/unknown → med-spa, so an org whose vertical isn't threaded in
+  // (or a med-spa) sees the exact copy it does today. Non-med-spa orgs
+  // get their own noun ('job'/'order'/…) and customer wording.
+  vertical,
+}: {
+  initial: SmsSettings
+  vertical?: string | null
+}) {
+  const cfg = getVerticalConfig(vertical)
+  const isMedspa = cfg.vertical === 'medspa'
+  // On this surface the med-spa scheduled-thing literal is 'consultation'
+  // (its inconsistent baseline), NOT terms.engagement ('appointment') —
+  // so branch to keep med-spa byte-identical.
+  const engagementWord = isMedspa ? 'consultation' : cfg.terms.engagement
+  const customersPlural = cfg.terms.customerPlural
+  const CustomersPlural = customersPlural.charAt(0).toUpperCase() + customersPlural.slice(1)
+
   const [settings, setSettings] = useState<SmsSettings>(initial)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -93,9 +143,13 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
     }
   }
 
+  // {{clinic_name}} stays a supported (legacy) tag; med-spa still shows it
+  // as the primary name tag (byte-identical), other verticals surface the
+  // neutral {{business_name}} and note that {{clinic_name}} also works.
+  const nameTag = isMedspa ? '{{clinic_name}}' : '{{business_name}}'
   const vars = (
     <span className="font-mono text-brand-600">
-      {'{{first_name}} {{clinic_name}} {{date}} {{time}}'}
+      {`{{first_name}} ${nameTag} {{date}} {{time}}`}
     </span>
   )
 
@@ -110,7 +164,7 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-medium text-gray-900">Enable SMS reminders</div>
-            <div className="text-xs text-gray-400 mt-0.5">Master switch — turns off all SMS for this clinic</div>
+            <div className="text-xs text-gray-400 mt-0.5">Master switch — turns off all SMS for this {cfg.terms.business}</div>
           </div>
           <button
             type="button"
@@ -135,9 +189,9 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
             {/* Per-type toggles */}
             {(
               [
-                { key: 'sms_confirmation_enabled',  label: 'Confirmation SMS',   desc: 'Sent immediately when a consultation is booked' },
-                { key: 'sms_reminder_24h_enabled',  label: '24-hour reminder',    desc: 'Sent 24 hours before the consultation' },
-                { key: 'sms_reminder_2h_enabled',   label: '2-hour reminder',     desc: 'Sent 2 hours before the consultation' },
+                { key: 'sms_confirmation_enabled',  label: 'Confirmation SMS',   desc: `Sent immediately when a ${engagementWord} is booked` },
+                { key: 'sms_reminder_24h_enabled',  label: '24-hour reminder',    desc: `Sent 24 hours before the ${engagementWord}` },
+                { key: 'sms_reminder_2h_enabled',   label: '2-hour reminder',     desc: `Sent 2 hours before the ${engagementWord}` },
               ] as { key: keyof SmsSettings; label: string; desc: string }[]
             ).map(({ key, label, desc }) => (
               <div key={key} className="flex items-center justify-between">
@@ -169,14 +223,17 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
                 <p className="font-medium text-gray-900 mb-1">Message templates</p>
                 <p className="text-xs text-gray-400">
                   Leave blank to use the default. Available variables: {vars}
+                  {!isMedspa && (
+                    <span className="text-gray-300"> ({'{{clinic_name}}'} also works)</span>
+                  )}
                 </p>
               </div>
 
               {(
                 [
-                  { key: 'sms_template_confirmation',  label: 'Confirmation',   placeholder: PLACEHOLDER_CONFIRMATION },
-                  { key: 'sms_template_reminder_24h',  label: '24-hour',        placeholder: PLACEHOLDER_24H },
-                  { key: 'sms_template_reminder_2h',   label: '2-hour',         placeholder: PLACEHOLDER_2H },
+                  { key: 'sms_template_confirmation',  label: 'Confirmation',   placeholder: smsPreview('confirmation', cfg) },
+                  { key: 'sms_template_reminder_24h',  label: '24-hour',        placeholder: smsPreview('reminder_24h', cfg) },
+                  { key: 'sms_template_reminder_2h',   label: '2-hour',         placeholder: smsPreview('reminder_2h', cfg) },
                 ] as { key: keyof SmsSettings; label: string; placeholder: string }[]
               ).map(({ key, label, placeholder }) => (
                 <div key={key}>
@@ -194,13 +251,36 @@ export function SmsSettingsCard({ initial }: { initial: SmsSettings }) {
                   </p>
                 </div>
               ))}
+
+              {/* Spanish confirmation template — only for the bilingual
+                  (non-med-spa) segment. When a caller booked in Spanish
+                  and this is set, it's used instead of the English
+                  confirmation; blank falls back to the English one. */}
+              {!isMedspa && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Confirmation (Spanish)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={settings.sms_template_confirmation_es ?? ''}
+                    onChange={(e) => setTemplate('sms_template_confirmation_es', e.target.value)}
+                    placeholder={`Hola {{first_name}}, su ${cfg.terms.engagementEs} con {{business_name}} está confirmada para {{date}} a las {{time}}. Responda STOP para no recibir más.`}
+                    maxLength={320}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none"
+                  />
+                  <p className="text-right text-xs text-gray-300 mt-0.5">
+                    {(settings.sms_template_confirmation_es ?? '').length}/320
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Note about consent */}
         <p className="text-xs text-gray-400 border-t border-gray-100 pt-4">
-          SMS is only sent to patients who provided consent during intake and have not opted out. Patients who enter their phone number on your capture form will see an SMS consent checkbox.
+          SMS is only sent to {customersPlural} who provided consent during intake and have not opted out. {CustomersPlural} who enter their phone number on your capture form will see an SMS consent checkbox.
         </p>
 
         {error && (

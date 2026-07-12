@@ -14,6 +14,9 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
       SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+      // Dummy so modules that construct the Stripe client at import time
+      // (via the twilio → metered-usage chain) don't throw. Never used to connect.
+      STRIPE_SECRET_KEY: 'sk_test_dummy',
     },
   },
   resolve: {
