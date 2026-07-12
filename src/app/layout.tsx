@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     'cobrar con tarjeta',
     'CRM para negocios de servicios',
     'app para landscaping',
-    'presupuestos por WhatsApp',
+    'estimados por WhatsApp',
     'CRM for landscaping',
     'estimates by WhatsApp',
     'Spanish CRM for contractors',
