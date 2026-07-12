@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
     // prompts as well.
     "/api/org/language-notifications": ["./src/voice/prompts/**/*.md"],
   },
+  // Med-spa wind-down: the standalone med-spa marketing page redirects to
+  // the loop homepage. Permanent (301) so search engines follow it.
+  async redirects() {
+    return [
+      { source: '/med-spa-crm', destination: '/', permanent: true },
+    ]
+  },
 };
 
 export default nextConfig;
