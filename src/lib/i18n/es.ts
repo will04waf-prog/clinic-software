@@ -197,6 +197,34 @@ export const es = {
     noPayments: 'Aún no hay pagos registrados.',
     paidInFull: 'Pagada por completo',
     markedPaid: (name: string) => `Pago registrado para ${name}.`,
+    // Cobro con tarjeta (enlace público /pagar)
+    cardSectionTitle: 'Cobrar con tarjeta',
+    payLinkLabel: 'Enlace de pago',
+    copyLink: 'Copiar enlace',
+    copied: 'Copiado',
+    sendPayLink: 'Enviar por WhatsApp',
+    sendingPayLink: 'Enviando…',
+    payLinkSent: 'Enlace de pago enviado.',
+    enableCardHint: 'Active los cobros con tarjeta en Ajustes para cobrar en línea.',
+    payLinkShare: (link: string) => `Puede pagar su factura con tarjeta aquí: ${link}`,
+  },
+
+  // Public, client-facing CARD PAYMENT page (/pagar) — Spanish-first, no login.
+  pay: {
+    fromBusiness: (biz: string) => `${biz} le envió una factura`,
+    number: (n: number) => `Factura #${n}`,
+    total: 'Total',
+    balance: 'Saldo',
+    payCta: 'Pagar con tarjeta',
+    opening: 'Abriendo pago seguro…',
+    paidTitle: '¡Pago recibido!',
+    paidBody: (biz: string) => `Gracias. Su pago a ${biz} quedó registrado.`,
+    alreadyPaid: 'Esta factura ya está pagada.',
+    notAvailable: 'Los cobros con tarjeta no están disponibles para esta factura.',
+    notFound: 'No encontramos esta factura.',
+    secure: 'Pago seguro procesado por Stripe.',
+    poweredBy: 'Enviado con Tarhunna',
+    errorGeneric: 'No pudimos abrir el pago. Intente de nuevo.',
   },
 
   // Public, client-facing approval page — Spanish-first, no login.
@@ -226,6 +254,38 @@ export const es = {
     statusScheduled: 'Programado',
     statusInProgress: 'En progreso',
     statusCompleted: 'Completado',
+  },
+
+  // Cobros con tarjeta (Stripe Connect) — tarjeta del dueño en Ajustes.
+  connect: {
+    title: 'Cobros con tarjeta',
+    subtitle: 'Deje que sus clientes paguen sus facturas con tarjeta. Efectivo, Zelle y cheque siempre son gratis.',
+    statusInactive: 'Sin activar',
+    statusPending: 'En revisión',
+    statusActive: 'Activado',
+    activateCta: 'Activar cobros con tarjeta',
+    continueCta: 'Continuar configuración',
+    activeNote: 'Sus clientes ya pueden pagar con tarjeta.',
+    pendingNote: 'Stripe está terminando de verificar su cuenta. Puede continuar si falta información.',
+    rateNote: 'Tarjeta: 3.9% + 30¢ por pago. Efectivo, Zelle y cheque: sin cargo.',
+    starting: 'Abriendo…',
+    errorGeneric: 'No pudimos abrir la configuración. Intente de nuevo.',
+  },
+
+  // Suscripción (el plan de Tarhunna) — tarjeta en Ajustes / cobro al fin de prueba.
+  subscription: {
+    title: 'Su plan',
+    planName: 'Tarhunna',
+    priceLine: '$39/mes',
+    trialActive: (days: number) => `Prueba gratis — ${days} ${days === 1 ? 'día restante' : 'días restantes'}.`,
+    trialEnded: 'Su prueba terminó.',
+    active: 'Plan activo.',
+    pastDue: 'Su pago no se procesó. Actualice su tarjeta.',
+    subscribeCta: 'Suscribirse — $39/mes',
+    manageCta: 'Administrar suscripción',
+    starting: 'Abriendo…',
+    noCardNote: 'No se cobra durante la prueba. Cancele cuando quiera.',
+    errorGeneric: 'No pudimos abrir el cobro. Intente de nuevo.',
   },
 }
 

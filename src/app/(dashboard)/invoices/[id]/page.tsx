@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveLocale } from '@/lib/i18n'
+import { signCapabilityToken } from '@/lib/tokens/capability-token'
 import { InvoiceDetail, type InvoiceDetailData } from './invoice-detail'
 
 // Owner-facing invoice detail. Server component: resolves the owner's
@@ -14,12 +15,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, organizations(owner_language)')
+    .select('organization_id, organizations(owner_language, connect_charges_enabled)')
     .eq('id', user.id)
     .single()
   if (!profile) redirect('/login')
 
-  const org = (profile.organizations ?? null) as { owner_language?: string } | null
+  const org = (profile.organizations ?? null) as { owner_language?: string; connect_charges_enabled?: boolean } | null
   const locale = resolveLocale(org?.owner_language)
 
   const { data: invoice } = await supabase
@@ -45,7 +46,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .order('created_at', { ascending: false })
 
   const contact = (Array.isArray(invoice.contact) ? invoice.contact[0] : invoice.contact) as
-    | { first_name?: string }
+    | { first_name?: string; phone?: string }
     | null
 
   const data: InvoiceDetailData = {
@@ -73,5 +74,19 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     })),
   }
 
-  return <InvoiceDetail locale={locale} invoice={data} />
+  // Public card-pay link (owner shares it with the client). Only usable
+  // once the org has Connect charges enabled — the detail view gates the
+  // affordance on that flag.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tarhunna.net'
+  const payLink = `${appUrl}/pagar/${signCapabilityToken('invoice_pay', invoice.id)}`
+
+  return (
+    <InvoiceDetail
+      locale={locale}
+      invoice={data}
+      connectChargesEnabled={org?.connect_charges_enabled === true}
+      payLink={payLink}
+      clientPhone={contact?.phone ?? ''}
+    />
+  )
 }

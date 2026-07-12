@@ -1,0 +1,98 @@
+/**
+ * /pagar/[token] — CRM-pivot LOOP. PUBLIC client-facing CARD PAYMENT page.
+ *
+ * Mirrors /aprobar: Spanish-first, mobile-first, no login. Reads the
+ * invoice via SERVICE-ROLE (never anon) gated by an HMAC capability token
+ * bound to purpose 'invoice_pay'. proxy.ts allowlists /pagar.
+ *
+ * When Stripe redirects back with ?session_id=..., we reconcile the
+ * payment (idempotent) before rendering the paid state — so the ledger is
+ * authoritative even without a configured Connect webhook.
+ */
+import type { Metadata } from 'next'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { verifyCapabilityToken } from '@/lib/tokens/capability-token'
+import { resolveLocale } from '@/lib/i18n'
+import { reconcileInvoicePayment } from '@/lib/stripe/reconcile-invoice-payment'
+import { PayView, PayStatus } from './pay-view'
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
+
+export default async function PayPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ session_id?: string }>
+}) {
+  const { token } = await params
+  const { session_id } = await searchParams
+
+  const invoiceId = verifyCapabilityToken('invoice_pay', token)
+  if (!invoiceId) return <PayStatus kind="notFound" locale="es" />
+
+  const { data: invoice } = await supabaseAdmin
+    .from('invoices')
+    .select('id, organization_id, invoice_number, title, status, total_cents, amount_paid_cents, contact:contacts(preferred_language)')
+    .eq('id', invoiceId)
+    .maybeSingle()
+  if (!invoice) return <PayStatus kind="notFound" locale="es" />
+
+  const { data: org } = await supabaseAdmin
+    .from('organizations')
+    .select('name, owner_language, stripe_connect_id, connect_charges_enabled')
+    .eq('id', invoice.organization_id)
+    .single()
+
+  const contact = Array.isArray(invoice.contact) ? invoice.contact[0] : invoice.contact
+  const locale = resolveLocale(contact?.preferred_language ?? org?.owner_language)
+  const businessName = org?.name || 'Tarhunna'
+
+  // Returned from Stripe Checkout → reconcile before deciding what to show.
+  if (session_id && org?.stripe_connect_id) {
+    try {
+      await reconcileInvoicePayment({
+        invoiceId: invoice.id,
+        organizationId: invoice.organization_id,
+        connectedAccountId: org.stripe_connect_id,
+        sessionId: session_id,
+      })
+    } catch (err) {
+      console.error('[pagar] reconcile failed:', err instanceof Error ? err.message : err)
+    }
+    return <PayStatus kind="paid" locale={locale} businessName={businessName} />
+  }
+
+  // Re-read status after any reconcile (fresh row).
+  const { data: fresh } = await supabaseAdmin
+    .from('invoices')
+    .select('status, total_cents, amount_paid_cents')
+    .eq('id', invoice.id)
+    .single()
+
+  const status = fresh?.status ?? invoice.status
+  const total = fresh?.total_cents ?? invoice.total_cents ?? 0
+  const paid = fresh?.amount_paid_cents ?? invoice.amount_paid_cents ?? 0
+  const balance = Math.max(0, total - paid)
+
+  if (status === 'void') return <PayStatus kind="notAvailable" locale={locale} />
+  if (status === 'paid' || balance <= 0) {
+    return <PayStatus kind="alreadyPaid" locale={locale} businessName={businessName} />
+  }
+  if (!org?.stripe_connect_id || !org.connect_charges_enabled) {
+    return <PayStatus kind="notAvailable" locale={locale} />
+  }
+
+  return (
+    <PayView
+      token={token}
+      locale={locale}
+      businessName={businessName}
+      invoiceNumber={invoice.invoice_number}
+      totalCents={total}
+      balanceCents={balance}
+    />
+  )
+}

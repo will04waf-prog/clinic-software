@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { after } from 'next/server'
 import Stripe from 'stripe'
-import { stripe } from '@/lib/stripe'
+import { stripe, isCrmPrice } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { tierFromPriceId } from '@/lib/billing/tiers'
 import { sendPaymentFailedEmail, sendSubscriptionCanceledEmail } from '@/lib/billing-lifecycle-emails'
@@ -74,6 +74,9 @@ export async function POST(req: NextRequest) {
         const sub     = await stripe.subscriptions.retrieve(subscriptionId)
         const priceId = sub.items.data[0]?.price.id ?? null
         const tier    = priceId ? tierFromPriceId(priceId) : null
+        // CRM $39/mo plan isn't a med-spa tier — map it to the generic
+        // paid marker 'pro' so plan reflects "subscribed".
+        const planValue = tier ?? (isCrmPrice(priceId) ? 'pro' : null)
 
         const update: Record<string, unknown> = {
           stripe_customer_id:     customerId,
@@ -85,8 +88,8 @@ export async function POST(req: NextRequest) {
           winback_sent_at:        null,
           updated_at:             new Date().toISOString(),
         }
-        if (tier) {
-          update.plan = tier
+        if (planValue) {
+          update.plan = planValue
         } else {
           console.error(`[stripe-webhook] checkout.session.completed: unknown price ${priceId} on sub ${subscriptionId} — leaving plan column unchanged`)
         }
@@ -166,6 +169,9 @@ export async function POST(req: NextRequest) {
             update.ai_twin_auto_send_rollout_pct = 100
             update.ai_twin_auto_send_shadow_mode = false
           }
+        } else if (isCrmPrice(priceId)) {
+          // CRM $39/mo plan → generic paid marker.
+          update.plan = 'pro'
         } else if (priceId) {
           console.error(`[stripe-webhook] customer.subscription.updated: unknown price ${priceId} on sub ${sub.id} — leaving plan column unchanged`)
         }
