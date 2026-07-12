@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ALL_PRESET_LABELS } from '@/components/settings/procedure-picker'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 export default function CaptureFormPage({ params }: { params: Promise<{ slug: string }> }) {
   const [slug, setSlug]         = useState('')
   const [orgName, setOrgName]   = useState('')
+  const [vertical, setVertical] = useState<string | null>(null)
   const [procedureList, setProcedureList] = useState<string[]>([])
   const [loading, setLoading]   = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -35,6 +37,10 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
             setNotFound(true)
           } else {
             setOrgName(j.org.name)
+            // Vertical drives the scheduled-thing noun ('consultation' for
+            // med-spa, terms.engagement for others). Defaults to null →
+            // med-spa in getVerticalConfig if the API doesn't return it.
+            setVertical(j.org.vertical ?? null)
             // Use org's custom procedure list if set, otherwise fall back to all presets
             setProcedureList(
               Array.isArray(j.org.procedures) && j.org.procedures.length > 0
@@ -87,6 +93,17 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
     }
   }
 
+  // Scheduled-thing noun for this surface. The med-spa literal here is
+  // 'consultation' (the inconsistent baseline), so med-spa branches to the
+  // literal to stay byte-identical; every other vertical uses its own
+  // engagement noun ('job', 'order', 'appointment').
+  const terms = getVerticalConfig(vertical).terms
+  const engagement = vertical === 'medspa' ? 'consultation' : terms.engagement
+  const engagementTitle =
+    vertical === 'medspa'
+      ? 'Consultation'
+      : terms.engagement.charAt(0).toUpperCase() + terms.engagement.slice(1)
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F5EFE1]">
@@ -99,7 +116,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5EFE1] p-6 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Form not found</h1>
-        <p className="mt-2 text-gray-500">This consultation request form is not available.</p>
+        <p className="mt-2 text-gray-500">This {engagement} request form is not available.</p>
       </div>
     )
   }
@@ -124,7 +141,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">{orgName}</h1>
-          <p className="mt-1 text-gray-500">Request a consultation</p>
+          <p className="mt-1 text-gray-500">Request a {engagement}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-8 shadow-sm space-y-5">
@@ -177,7 +194,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Anything you'd like us to know before your consultation..."
+              placeholder={`Anything you'd like us to know before your ${engagement}...`}
               rows={3}
             />
           </div>
@@ -192,7 +209,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
               />
               <span className="text-xs text-gray-500 leading-relaxed">
-                I agree to receive appointment reminders by SMS from {orgName}. Message and data rates may apply. Reply STOP at any time to opt out.
+                I agree to receive {terms.engagement} reminders by SMS from {orgName}. Message and data rates may apply. Reply STOP at any time to opt out.
               </span>
             </label>
           )}
@@ -202,7 +219,7 @@ export default function CaptureFormPage({ params }: { params: Promise<{ slug: st
           )}
 
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Request Consultation'}
+            {submitting ? 'Submitting...' : `Request ${engagementTitle}`}
           </Button>
 
           <p className="text-center text-xs text-gray-400">

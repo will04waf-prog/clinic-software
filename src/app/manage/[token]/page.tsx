@@ -39,7 +39,7 @@ export default async function ManagePage({
 
   const consultationId = verifyManageToken(token)
   if (!consultationId) {
-    return <ManageView state={{ kind: 'invalid' }} />
+    return <ManageView state={{ kind: 'invalid' }} vertical={null} />
   }
 
   // Resolve the booking + its surrounding context. We need the org
@@ -51,7 +51,7 @@ export default async function ManagePage({
     .select(`
       id, organization_id, contact_id, provider_id, service_id,
       scheduled_at, duration_min, status,
-      organization:organizations(id, name, slug, timezone, booking_enabled),
+      organization:organizations(id, name, slug, timezone, booking_enabled, vertical),
       service:services(id, name, duration_min, lead_time_hours, booking_horizon_days),
       provider:providers(id, display_name, role_label)
     `)
@@ -59,7 +59,7 @@ export default async function ManagePage({
     .maybeSingle()
 
   if (!consultation) {
-    return <ManageView state={{ kind: 'invalid' }} />
+    return <ManageView state={{ kind: 'invalid' }} vertical={null} />
   }
 
   const org = Array.isArray(consultation.organization)
@@ -73,22 +73,27 @@ export default async function ManagePage({
     : consultation.provider
 
   if (!org || !service) {
-    return <ManageView state={{ kind: 'invalid' }} />
+    return <ManageView state={{ kind: 'invalid' }} vertical={org?.vertical ?? null} />
   }
 
+  // Terminology on this patient-facing page follows the tenant's vertical
+  // ('appointment'/'clinic' → the vertical's nouns), defaulting to
+  // med-spa for null/unknown so existing tenants are unchanged.
+  const vertical: string | null = org.vertical ?? null
+
   if (consultation.status === 'canceled') {
-    return <ManageView state={{ kind: 'canceled', orgName: org.name }} />
+    return <ManageView state={{ kind: 'canceled', orgName: org.name }} vertical={vertical} />
   }
 
   const scheduledMs = new Date(consultation.scheduled_at).getTime()
   if (scheduledMs <= Date.now()) {
-    return <ManageView state={{ kind: 'past', orgName: org.name }} />
+    return <ManageView state={{ kind: 'past', orgName: org.name }} vertical={vertical} />
   }
 
   if (!['scheduled', 'confirmed'].includes(consultation.status)) {
     // hold / completed / no_show / rescheduled — none of which the
     // patient can act on from this page. Surface a soft message.
-    return <ManageView state={{ kind: 'invalid' }} />
+    return <ManageView state={{ kind: 'invalid' }} vertical={vertical} />
   }
 
   const state: ManageState = {
@@ -107,5 +112,5 @@ export default async function ManagePage({
       : null,
     scheduledAtUtc: consultation.scheduled_at,
   }
-  return <ManageView state={state} />
+  return <ManageView state={state} vertical={vertical} />
 }

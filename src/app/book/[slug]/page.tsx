@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { BookingView } from './booking-view'
 
 /**
@@ -20,9 +21,29 @@ export const metadata: Metadata = {
 
 export default async function PublicBookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { slug } = await params
-  return <BookingView slug={slug} />
+  const sp = await searchParams
+
+  // Layla texts Spanish callers a booking link with ?lang=es; honor it so
+  // the customer-facing page renders in Spanish. Anything else = English
+  // (the med-spa default path — unchanged).
+  const lang = sp.lang === 'es' ? 'es' : 'en'
+
+  // Terminology on this public page follows the tenant's vertical so
+  // trades/food/general customers stop seeing med-spa nouns. Fetched
+  // here (server) with an explicit single-column select and defaulted to
+  // null → med-spa in getVerticalConfig, so a missing/unknown value is
+  // byte-identical to today.
+  const { data: org } = await supabaseAdmin
+    .from('organizations')
+    .select('vertical')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  return <BookingView slug={slug} vertical={org?.vertical ?? null} lang={lang} />
 }
