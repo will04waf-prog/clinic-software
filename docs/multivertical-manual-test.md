@@ -23,9 +23,14 @@ sales-demo path.
   references the new columns. Verified: all existing rows carry the
   defaults (10 orgs medspa/en/{en}/sms; 21 call_logs not-urgent, null
   language; 550 contacts null preferred_language).
-- **The DB is currently AHEAD of the deployed code.** All Phase 1–4
-  *code* is uncommitted on `main`'s working tree — nothing is committed,
-  pushed, or deployed. None of the new behavior is live yet.
+- **DB and code are now IN SYNC and LIVE (updated 2026-07-12).** The
+  Phase 1–7 multi-vertical code is committed, merged to `main`, and
+  deployed to prod; two further migrations shipped 2026-07-12
+  (`20260712000000` revoke-anon-read on organizations = a P0 security
+  fix, and `20260712000001` add `sms_template_confirmation_es`). The
+  "AFTER deploy" gating in §2b and the §3 checklist now apply to the
+  live system. Med-spa surfaces are byte-identical; trades/food/general
+  and Spanish surfaces are active.
 
 ### Deploy path (to make the new code live)
 
