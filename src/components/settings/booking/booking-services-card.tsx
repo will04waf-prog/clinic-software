@@ -56,11 +56,13 @@ const EMPTY_DRAFT: DraftService = {
 }
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120]
-// Brand palette only — every preset must be in the approved set
-// (#02C39A, #04B08C, #028090, #026B78, #14241D, #B5710F). The earlier
-// list shipped #036b78 (typo), #7c3aed (purple), #db2777 (pink) which
+// Brand palette only — every preset must be a canonical brand token
+// (#02C39A mint, #028090 teal, #026B78 brand-700, #054C57 brand-800,
+// #0B2027 navy, #B5710F amber). Off-palette values are NOT allowed here:
+// #04B08C (mint near-miss) and #14241D (legacy forest) were removed, as
+// were #036b78 (typo), #7c3aed (purple), #db2777 (pink) — any of which
 // would let an owner stamp non-brand colors into calendar tiles.
-const COLOR_PRESETS = ['#02C39A', '#04B08C', '#028090', '#026B78', '#14241D', '#B5710F']
+const COLOR_PRESETS = ['#02C39A', '#028090', '#026B78', '#054C57', '#0B2027', '#B5710F']
 
 function priceDollars(cents: number | null): string {
   if (cents === null) return ''

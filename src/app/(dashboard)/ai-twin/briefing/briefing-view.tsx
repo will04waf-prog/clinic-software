@@ -59,7 +59,7 @@ function EmptyState() {
       <p className="mt-3 text-[14px] text-[#14241D]">
         No AI Twin activity in the last 24 hours. The briefing will populate once your twin
         handles inbounds — see{' '}
-        <Link href="/ai-drafts/review" className="font-medium text-[#028090] hover:text-[#026976]">
+        <Link href="/ai-drafts/review" className="font-medium text-[#028090] hover:text-[#026B78]">
           Review drafts
         </Link>
         .
@@ -266,7 +266,7 @@ function PendingSection({ data }: { data: BriefingPayload }) {
         </h3>
         <Link
           href="/ai-drafts/review"
-          className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#028090] hover:text-[#026976]"
+          className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#028090] hover:text-[#026B78]"
         >
           Review all
           <ArrowRight className="h-3 w-3" />
