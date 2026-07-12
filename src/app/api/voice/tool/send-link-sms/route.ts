@@ -84,6 +84,7 @@ import { toolCallFromVapiPayload, toolCallResponseForVapi } from '@/lib/voice-ag
 import { normalizePhone } from '@/lib/validators'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { signManageToken } from '@/lib/booking/manage-token'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 
 const LINK_KINDS = ['booking', 'manage', 'intake', 'directions'] as const
@@ -252,7 +253,7 @@ export async function POST(req: Request) {
   const { data: org } = await supabaseAdmin
     .from('organizations')
     .select(
-      'id, name, slug, timezone, call_agent_enabled, call_agent_baa_attested_at, sms_enabled, sms_confirmation_enabled, intake_form_url, address_line1, address_line2, city, region, postal_code, country_code, google_place_id',
+      'id, name, slug, vertical, timezone, call_agent_enabled, call_agent_baa_attested_at, sms_enabled, sms_confirmation_enabled, intake_form_url, address_line1, address_line2, city, region, postal_code, country_code, google_place_id',
     )
     .eq('twilio_phone_number', toE164)
     .maybeSingle()
@@ -333,8 +334,17 @@ export async function POST(req: Request) {
   // caller is speaking right now; default English. STOP disclaimer is
   // TCPA-mandatory in both languages.
   const lang: 'en' | 'es' = args.language === 'es' ? 'es' : 'en'
+  // Multi-vertical Phase 2: the scheduled-thing / org / customer nouns
+  // in the link copy follow the tenant's vertical. medspa values in the
+  // terms table reproduce today's literals byte-for-byte.
+  const { vertical, terms } = getVerticalConfig(org.vertical)
   const linkSmsCopy = (lead: string, linkUrl: string): string => {
-    const name = org.name ?? (lang === 'es' ? 'Su negocio' : 'Your clinic')
+    // Fallback display name when the org has no stored name. The ES
+    // fallback is generic ('Su negocio') for every vertical — that IS
+    // med-spa's baseline, so it stays a literal. The EN fallback keeps
+    // the "Your " prefix and swaps only the noun: medspa terms.business
+    // is 'clinic', so 'Your clinic' is unchanged; others get 'Your business'.
+    const name = org.name ?? (lang === 'es' ? 'Su negocio' : `Your ${terms.business}`)
     const stop = lang === 'es'
       ? 'Responda STOP para no recibir mensajes.'
       : 'Reply STOP to opt out.'
@@ -364,6 +374,13 @@ export async function POST(req: Request) {
       if (matched) {
         bookingUrl += `?service=${encodeURIComponent(serviceSlug)}`
       }
+    }
+    // Cross-task contract: a Spanish-speaking caller gets the public
+    // booking page pre-switched to ES via ?lang=es (the /book/[slug]
+    // page renders ES off that param). Use the right separator since a
+    // ?service= qs may already be present.
+    if (lang === 'es') {
+      bookingUrl += bookingUrl.includes('?') ? '&lang=es' : '?lang=es'
     }
     url = bookingUrl
     bodyCopy = linkSmsCopy(lang === 'es' ? 'reserve aquí' : 'book here', url)
@@ -398,14 +415,29 @@ export async function POST(req: Request) {
       return wontSend('manage_token_unavailable')
     }
     url = `${getAppUrl()}/manage/${token}`
-    bodyCopy = linkSmsCopy(lang === 'es' ? 'gestione su cita' : 'manage your appointment', url)
+    // engagement is the /manage voice word, whose med-spa literal IS
+    // 'appointment'/'cita' — so terms.engagement is byte-identical here
+    // and non-medspa tenants get 'job'/'order'/'trabajo'/'pedido'.
+    bodyCopy = linkSmsCopy(
+      lang === 'es' ? `gestione su ${terms.engagementEs}` : `manage your ${terms.engagement}`,
+      url,
+    )
   } else if (linkKind === 'intake') {
     const raw = typeof org.intake_form_url === 'string' ? org.intake_form_url.trim() : ''
     if (!raw || !URL_RE.test(raw)) {
       return wontSend('no_intake_form_configured')
     }
     url = raw
-    bodyCopy = linkSmsCopy(lang === 'es' ? 'formulario de nuevo paciente' : 'new-patient form', url)
+    // The intake noun has no term in the config; med-spa's literal is
+    // 'new-patient form' (kept byte-identical via the medspa branch),
+    // while other verticals get a neutral customer-intake phrase built
+    // from terms.customer/customerEs ('customer intake form').
+    bodyCopy = linkSmsCopy(
+      vertical === 'medspa'
+        ? (lang === 'es' ? 'formulario de nuevo paciente' : 'new-patient form')
+        : (lang === 'es' ? `formulario de registro de ${terms.customerEs}` : `${terms.customer} intake form`),
+      url,
+    )
   } else if (linkKind === 'directions') {
     const placeId = typeof org.google_place_id === 'string' ? org.google_place_id.trim() : ''
     const line1   = typeof org.address_line1   === 'string' ? org.address_line1.trim()   : ''
