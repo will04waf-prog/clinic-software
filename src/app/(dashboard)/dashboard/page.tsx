@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Plus, Sun } from 'lucide-react'
+import { Plus, Sun, CalendarDays, FileText } from 'lucide-react'
 import { BriefHero } from '@/components/dashboard/morning/brief-hero'
 import { WaitingHero } from '@/components/dashboard/morning/waiting-hero'
 import { ActionStack } from '@/components/dashboard/morning/action-stack'
@@ -14,9 +14,136 @@ import { AiTwinTile } from '@/components/dashboard/morning/ai-twin-tile'
 import { AnalyticsSections } from '@/components/dashboard/analytics/analytics-sections'
 import { SetupGuide } from '@/components/dashboard/setup-guide'
 import { PhoneNumberBanner } from '@/components/onboarding/phone-number-banner'
+import { LandscapingEmptyState } from '@/components/dashboard/landscaping-empty-state'
+import { dict, resolveLocale, type Locale } from '@/lib/i18n'
 import type { MorningResponse } from '@/components/dashboard/morning/types'
 
 const POLL_INTERVAL_MS = 60_000
+
+/**
+ * Vertical-aware dashboard entry.
+ *
+ * The home screen serves two very different tenants now. Med-spa orgs
+ * get the Layla-centric "Morning Briefing" below, byte-for-byte
+ * unchanged. Landscaping (and any non-med-spa) orgs get the Spanish
+ * loop empty-state instead — never the Layla setup guide, phone banner,
+ * or morning briefing.
+ *
+ * We learn the vertical client-side from /api/jobs (the only
+ * client-reachable endpoint that resolves the org's vertical + owner
+ * context). Until it resolves we show a neutral gate so a landscaping
+ * owner never flashes the med-spa surface. On any failure we fall back
+ * to the med-spa dashboard — the existing tenants' unchanged behavior.
+ */
+export default function DashboardPage() {
+  const [context, setContext] = useState<{
+    vertical: string
+    ownerLanguage: string
+    ownerName: string | null
+  } | null>(null)
+  const [resolved, setResolved] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const fallback = { vertical: 'medspa', ownerLanguage: 'es', ownerName: null }
+    fetch('/api/jobs', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => {
+        if (cancelled) return
+        setContext(b?.context ?? fallback)
+        setResolved(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setContext(fallback)
+        setResolved(true)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  if (!resolved) return <VerticalGate />
+
+  if (context && context.vertical !== 'medspa') {
+    return (
+      <LandscapingDashboard
+        locale={resolveLocale(context.ownerLanguage)}
+        ownerName={context.ownerName}
+      />
+    )
+  }
+
+  return <MedspaDashboard />
+}
+
+/** Neutral loading gate shown while the vertical resolves. */
+function VerticalGate() {
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="h-16 shrink-0 border-b border-[#02C39A]/35 bg-[#F5EFE1]" />
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="mx-auto max-w-[1240px] animate-pulse space-y-6">
+          <div className="h-10 w-64 rounded bg-[#0B2027]/5" />
+          <div className="h-32 rounded-2xl bg-[#0B2027]/5" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Landscaping (loop) home — the Spanish empty-state plus two quick
+ * links into the loop's core surfaces. No Layla anything.
+ */
+function LandscapingDashboard({ locale, ownerName }: { locale: Locale; ownerName: string | null }) {
+  const d = dict(locale).dashboard
+  const job = dict(locale).job
+
+  const quickLinks = [
+    { href: '/schedule', label: job.scheduleTitle, icon: CalendarDays },
+    { href: '/estimates', label: d.estimates, icon: FileText },
+  ]
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[#02C39A]/35 bg-[#F5EFE1] px-4 sm:px-6">
+        <span className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-[#02C39A]/15">
+          <Sun className="h-5 w-5 text-[#028090]" fill="currentColor" />
+        </span>
+        <h1
+          className="text-[#14241D]"
+          style={{
+            fontFamily: 'var(--font-newsreader), Newsreader, Georgia, serif',
+            fontSize: '22px',
+            fontWeight: 600,
+          }}
+        >
+          Tarhunna
+        </h1>
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto flex max-w-[720px] flex-col gap-6">
+          <LandscapingEmptyState locale={locale} ownerName={ownerName} />
+
+          <div className="grid grid-cols-2 gap-3">
+            {quickLinks.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm transition-colors hover:border-[#02C39A]/50 hover:bg-[#02C39A]/5"
+              >
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#02C39A]/12 text-[#028090]">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="text-[15px] font-semibold text-[#14241D]">{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function DashboardSkeleton() {
   return (
@@ -56,7 +183,7 @@ function DashboardSkeleton() {
  * Polls once a minute so the action stack feels alive without slamming
  * the server. The inbox at /leads is the higher-frequency surface.
  */
-export default function DashboardPage() {
+function MedspaDashboard() {
   const searchParams = useSearchParams()
   const heroVariant = searchParams.get('hero') === 'waiting' ? 'waiting' : 'brief'
 
