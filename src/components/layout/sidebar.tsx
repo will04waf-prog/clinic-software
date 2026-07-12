@@ -16,6 +16,8 @@ import {
   UserCog,
   Voicemail,
   PhoneCall,
+  FileText,
+  CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FEATURES } from '@/lib/features'
@@ -23,6 +25,7 @@ import { LogoMark } from '@/components/ui/logo-mark'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { getVerticalConfig, type Vertical } from '@/lib/vertical/config'
+import { dict, resolveLocale } from '@/lib/i18n'
 
 /** Title-case a single lowercase noun ('jobs' → 'Jobs'). */
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -61,10 +64,12 @@ export function Sidebar({
   isSuperAdmin = false,
   isOwner = false,
   vertical = 'medspa',
+  ownerLanguage,
 }: {
   isSuperAdmin?: boolean
   isOwner?: boolean
   vertical?: Vertical
+  ownerLanguage?: string
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -78,6 +83,21 @@ export function Sidebar({
   const terms = getVerticalConfig(vertical).terms
   const consultationsLabel =
     vertical === 'medspa' ? 'Consultations' : cap(terms.engagementPlural)
+
+  // Landscaping (loop) orgs get the Spanish loop nav; med-spa and every
+  // other vertical keep the full CRM sidebar exactly as-is.
+  type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; tierBadge?: 'Pro' }
+  const navItems: NavItem[] = vertical === 'landscaping'
+    ? (() => {
+        const n = dict(resolveLocale(ownerLanguage)).nav
+        return [
+          { href: '/dashboard', label: n.home,      icon: LayoutDashboard },
+          { href: '/estimates', label: n.estimates, icon: FileText },
+          { href: '/schedule',  label: n.schedule,  icon: CalendarDays },
+          { href: '/settings',  label: n.settings,  icon: Settings },
+        ]
+      })()
+    : NAV_ITEMS.filter((item) => item.href !== '/automations' || FEATURES.automations)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -95,7 +115,7 @@ export function Sidebar({
 
       {/* Nav — forest text on cream throughout */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.filter((item) => item.href !== '/automations' || FEATURES.automations).map((item) => {
+        {navItems.map((item) => {
           const { href, icon: Icon } = item
           const label = href === '/consultations' ? consultationsLabel : item.label
           const tierBadge = 'tierBadge' in item ? item.tierBadge : undefined

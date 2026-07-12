@@ -92,6 +92,13 @@ export const es = {
     getPaid: 'Cobrar',
   },
 
+  nav: {
+    home: 'Inicio',
+    estimates: 'Presupuestos',
+    schedule: 'Agenda',
+    settings: 'Ajustes',
+  },
+
   clients: {
     title: 'Clientes',
     empty: 'Aún no tiene clientes. Agregue el primero.',

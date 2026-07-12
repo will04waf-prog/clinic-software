@@ -12,17 +12,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_super_admin, role, organization:organizations(plan_status, trial_ends_at)')
+    .select('is_super_admin, role, organization:organizations(plan_status, trial_ends_at, vertical, owner_language)')
     .eq('id', user.id)
     .single()
 
   const org = profile?.organization as any
+  const vertical = org?.vertical ?? 'medspa'
+  const ownerLanguage = org?.owner_language ?? undefined
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F5EFE1]">
       <Sidebar
         isSuperAdmin={profile?.is_super_admin === true}
         isOwner={profile?.role === 'owner'}
+        vertical={vertical}
+        ownerLanguage={ownerLanguage}
       />
       <main className="flex flex-1 flex-col overflow-hidden pb-16 md:pb-0">
         {org && !profile?.is_super_admin && (
@@ -33,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         )}
         {children}
       </main>
-      <MobileNav />
+      <MobileNav vertical={vertical} ownerLanguage={ownerLanguage} />
     </div>
   )
 }

@@ -82,6 +82,13 @@ export const en: Messages = {
     getPaid: 'Get paid',
   },
 
+  nav: {
+    home: 'Home',
+    estimates: 'Estimates',
+    schedule: 'Schedule',
+    settings: 'Settings',
+  },
+
   clients: {
     title: 'Clients',
     empty: "No clients yet. Add your first one.",
