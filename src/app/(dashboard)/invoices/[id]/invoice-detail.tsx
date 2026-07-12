@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { dict, type Locale } from '@/lib/i18n'
-import { ArrowLeft, Check, Banknote, Smartphone, FileText, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, Check, Banknote, Smartphone, FileText, MoreHorizontal, CreditCard, Copy, Send } from 'lucide-react'
 
 type PaymentMethod = 'cash' | 'zelle' | 'check' | 'other'
 
@@ -50,7 +50,19 @@ const METHODS: { key: PaymentMethod; icon: typeof Banknote }[] = [
   { key: 'other', icon: MoreHorizontal },
 ]
 
-export function InvoiceDetail({ locale, invoice }: { locale: Locale; invoice: InvoiceDetailData }) {
+export function InvoiceDetail({
+  locale,
+  invoice,
+  connectChargesEnabled = false,
+  payLink = '',
+  clientPhone = '',
+}: {
+  locale: Locale
+  invoice: InvoiceDetailData
+  connectChargesEnabled?: boolean
+  payLink?: string
+  clientPhone?: string
+}) {
   const t = dict(locale).invoice
   const c = dict(locale).common
 
@@ -67,6 +79,20 @@ export function InvoiceDetail({ locale, invoice }: { locale: Locale; invoice: In
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const waDigits = clientPhone.replace(/\D/g, '')
+  const waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(t.payLinkShare(payLink))}`
+
+  async function copyPayLink() {
+    try {
+      await navigator.clipboard.writeText(payLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      /* clipboard unavailable — the link is visible in the field to copy manually */
+    }
+  }
 
   const pillClass = isPaid
     ? 'bg-[#02C39A]/15 text-[#0B7A5E]'
@@ -225,6 +251,50 @@ export function InvoiceDetail({ locale, invoice }: { locale: Locale; invoice: In
             {saving ? t.savingPayment : t.savePayment}
           </button>
         </div>
+      )}
+
+      {/* Collect by card — share the public pay link with the client.
+          Gated on Connect being live; otherwise nudge to Settings. */}
+      {!isPaid && (
+        connectChargesEnabled ? (
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="flex items-center gap-2 text-sm font-semibold text-[#14241d]">
+              <CreditCard className="h-4 w-4 text-[#028090]" /> {t.cardSectionTitle}
+            </p>
+            <label className="mb-1 mt-3 block text-xs text-gray-500">{t.payLinkLabel}</label>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={payLink}
+                onFocus={(e) => e.currentTarget.select()}
+                className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 text-xs text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+              />
+              <button
+                type="button"
+                onClick={copyPayLink}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-[#0B7A5E]" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? t.copied : t.copyLink}
+              </button>
+            </div>
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition-transform active:scale-[.99]"
+            >
+              <Send className="h-4 w-4" /> {t.sendPayLink}
+            </a>
+          </div>
+        ) : (
+          <Link
+            href="/settings"
+            className="mt-4 flex items-center gap-2 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3 text-xs text-gray-500 hover:bg-gray-50"
+          >
+            <CreditCard className="h-4 w-4 shrink-0" /> {t.enableCardHint}
+          </Link>
+        )
       )}
 
       {/* Existing payments ledger */}

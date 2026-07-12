@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
+import { ConnectPaymentsCard, type ConnectStatus } from '@/components/settings/connect-payments-card'
+import { SubscriptionCard } from '@/components/settings/subscription-card'
+import { resolveLocale } from '@/lib/i18n'
 import { ServicesCard } from '@/components/settings/services-card'
 import { BookingSettingsLinkCard } from '@/components/settings/booking-settings-link-card'
 import { TeamSettingsLinkCard } from '@/components/settings/team-settings-link-card'
@@ -30,7 +33,8 @@ export default async function SettingsPage() {
     .select(`
       full_name, email, role,
       organization:organizations(
-        name, slug, plan, timezone, plan_status, stripe_customer_id, procedures, vertical,
+        name, slug, plan, timezone, plan_status, trial_ends_at, stripe_customer_id, procedures, vertical,
+        stripe_connect_id, connect_charges_enabled,
         sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
         sms_template_confirmation, sms_template_confirmation_es, sms_template_reminder_24h, sms_template_reminder_2h,
         ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end,
@@ -65,11 +69,39 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <BillingCard
-          plan={org?.plan ?? 'trial'}
-          planStatus={org?.plan_status ?? 'trial'}
-          hasStripeCustomer={!!org?.stripe_customer_id}
-        />
+        {/* CRM (landscaping) orgs get the single $39/mo plan card; med-spa
+            orgs keep the legacy tier BillingCard. */}
+        {org?.vertical === 'landscaping' ? (
+          <SubscriptionCard
+            locale={resolveLocale(org?.owner_language)}
+            planStatus={org?.plan_status ?? 'trial'}
+            trialEndsAt={org?.trial_ends_at ?? null}
+          />
+        ) : (
+          <BillingCard
+            plan={org?.plan ?? 'trial'}
+            planStatus={org?.plan_status ?? 'trial'}
+            hasStripeCustomer={!!org?.stripe_customer_id}
+          />
+        )}
+
+        {/* CRM-pivot: let clients pay invoices by card (Stripe Connect).
+            Owner-only + CRM (landscaping) vertical only — card payments
+            back the loop's invoices, which med-spa orgs don't use, and the
+            connected account is provisioned with a landscaping MCC.
+            Localized by owner language. */}
+        {profile?.role === 'owner' && org?.vertical === 'landscaping' && (
+          <ConnectPaymentsCard
+            locale={resolveLocale(org?.owner_language)}
+            status={
+              (org?.connect_charges_enabled
+                ? 'active'
+                : org?.stripe_connect_id
+                  ? 'pending'
+                  : 'inactive') as ConnectStatus
+            }
+          />
+        )}
 
         {org?.slug && (
           <CaptureFormCard url={`${APP_URL}/capture/${org.slug}`} />
