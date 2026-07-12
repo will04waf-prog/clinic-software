@@ -264,13 +264,13 @@ export async function POST(req: Request) {
     // recoverable" stream.
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
-      error: 'No clinic mapped to this number',
+      error: 'No business mapped to this number',
     }))
   }
   if (!org.call_agent_enabled || !org.call_agent_baa_attested_at) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
-      error: 'Voice agent is not enabled for this clinic',
+      error: 'Voice agent is not enabled for this business',
     }))
   }
   if (!org.sms_enabled) {

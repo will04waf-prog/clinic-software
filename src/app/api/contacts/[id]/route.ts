@@ -99,7 +99,10 @@ export async function PATCH(
   }
 
   // Validate body
-  const body = await req.json()
+  let body: unknown
+  try { body = await req.json() } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
   const parsed = patchSchema.safeParse(body)
   if (!parsed.success) {
     const firstError = parsed.error.issues[0]

@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   // Durable CRM mark — persisted synchronously so the call-end webhook
   // can copy is_urgent onto call_logs even if the alert send is slow.
   const callSid = tc.callSid ?? ''
-  await supabaseAdmin.from('activity_log').insert({
+  const { error: flagInsertError } = await supabaseAdmin.from('activity_log').insert({
     organization_id: org.id,
     action:          'voice_urgent_flag',
     metadata: {
@@ -84,6 +84,9 @@ export async function POST(req: Request) {
       caller_phone: fromE164 ?? null,
     },
   })
+  if (flagInsertError) {
+    console.error('[flag-urgent] activity_log insert failed', { call_sid: callSid, error: flagInsertError.message })
+  }
 
   // Immediate, dedupe-free owner alert. after() so Layla's tool call
   // returns instantly and she keeps talking to the caller.

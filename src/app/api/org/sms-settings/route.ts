@@ -45,7 +45,10 @@ export async function PATCH(request: Request) {
   const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
   if (isDenied(gate)) return gate.response
 
-  const body = await request.json()
+  let body: unknown
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
   const parsed = SmsSettingsSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
