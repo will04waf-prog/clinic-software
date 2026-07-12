@@ -6,6 +6,8 @@ import {
   UserPlus, FileText, MessageCircle, CheckCircle2, CalendarDays, CreditCard,
   ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat,
 } from 'lucide-react'
+import { LogoMark } from '@/components/ui/logo-mark'
+import { SignatureLogo } from '@/components/ui/signature-logo'
 
 type Locale = 'es' | 'en'
 type Variant = 'default' | 'trades'
@@ -117,7 +119,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
     <div className="min-h-screen bg-[#F5EFE1] text-gray-900">
       {/* Top bar */}
       <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-        <span className="text-lg font-bold tracking-tight text-[#14241d]">Tarhunna</span>
+        <LogoMark size="md" standalone priority />
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -133,7 +135,8 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-3xl px-5 pt-8 pb-4 text-center">
+      <section className="mx-auto max-w-3xl px-5 pt-6 pb-4 text-center">
+        <SignatureLogo size="xl" variant="light-bg" animated className="mb-3 block" />
         <p className="text-xs font-semibold uppercase tracking-widest text-[#028090]">{t.eyebrow}</p>
         <h1 className="mx-auto mt-3 max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl text-balance">{h1}</h1>
         <p className="mx-auto mt-5 max-w-xl text-lg text-gray-600">{sub}</p>
