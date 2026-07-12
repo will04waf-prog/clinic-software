@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   UserPlus, FileText, MessageCircle, CheckCircle2, CalendarDays, CreditCard,
-  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat,
+  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone,
 } from 'lucide-react'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
@@ -52,6 +52,7 @@ const COPY = {
     soon: 'más — próximamente',
     laylaTitle: 'Layla, un complemento opcional',
     layla: '¿Le suena el teléfono todo el día? Layla, la recepcionista con IA, contesta y agenda por usted — en inglés y español — cuando usted no puede.',
+    laylaCall: 'Llámela ahora y escúchela',
     laylaCta: 'Conocer a Layla',
     closeTitle: 'Empiece gratis hoy.',
     closeSub: 'Sin tarjeta. Configúrelo en minutos, desde el teléfono.',
@@ -95,6 +96,7 @@ const COPY = {
     soon: 'more — soon',
     laylaTitle: 'Layla, an optional add-on',
     layla: 'Phone ringing all day? Layla, the AI receptionist, answers and books for you — in English and Spanish — when you can’t.',
+    laylaCall: 'Call now and hear her',
     laylaCta: 'Meet Layla',
     closeTitle: 'Start free today.',
     closeSub: 'No card. Set it up in minutes, from your phone.',
@@ -221,6 +223,9 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-gray-900">{t.laylaTitle}</h3>
             <p className="mt-1 text-sm text-gray-600">{t.layla}</p>
+            <a href="tel:+13019622856" className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#028090] hover:underline">
+              <Phone className="h-4 w-4" /> {t.laylaCall} — (301) 962-2856
+            </a>
           </div>
           <Link href="/book-demo" className="shrink-0 text-sm font-semibold text-[#028090] hover:underline">{t.laylaCta} →</Link>
         </div>
