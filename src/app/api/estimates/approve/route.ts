@@ -1,7 +1,7 @@
 /**
  * POST /api/estimates/approve — CRM-pivot LOOP. PUBLIC (no auth).
  *
- * The client taps "Aprobar presupuesto" on /aprobar/[token]; this endpoint
+ * The client taps "Aprobar estimado" on /aprobar/[token]; this endpoint
  * flips the estimate to 'approved' and spins up the follow-on job. The
  * only credential is the single-purpose capability token in the body.
  *
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       const businessName = org?.name || 'Tarhunna'
       const firstName = contact.first_name || ''
       const smsBody = lang === 'es'
-        ? `¡Gracias ${firstName}! Su aprobación del presupuesto de ${businessName} quedó confirmada.`
+        ? `¡Gracias ${firstName}! Su aprobación del estimado de ${businessName} quedó confirmada.`
         : `Thanks ${firstName}! Your approval of ${businessName}'s estimate is confirmed.`
       await notifyClient({
         orgId: updated.organization_id,

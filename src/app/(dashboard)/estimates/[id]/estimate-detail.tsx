@@ -76,7 +76,7 @@ export function EstimateDetail({ locale, estimate }: { locale: Locale; estimate:
   return (
     <div className="mx-auto w-full max-w-md px-4 py-6">
       <Link href="/estimates" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-        <ArrowLeft className="h-4 w-4" /> {t.empty ? 'Presupuestos' : ''}
+        <ArrowLeft className="h-4 w-4" /> {t.empty ? 'Estimados' : ''}
       </Link>
 
       <div className="flex items-center justify-between gap-3">

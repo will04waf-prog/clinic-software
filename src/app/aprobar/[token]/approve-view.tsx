@@ -5,7 +5,7 @@
  * estimate approval surface the CUSTOMER sees.
  *
  * Shows who sent it, the line items + total (rendered from cents), and a
- * big "Aprobar presupuesto" button that POSTs { token } to
+ * big "Aprobar estimado" button that POSTs { token } to
  * /api/estimates/approve. On success — including the idempotent
  * alreadyApproved answer — it swaps to the approved confirmation.
  *

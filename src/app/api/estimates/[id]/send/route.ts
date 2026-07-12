@@ -81,7 +81,7 @@ export async function POST(
   const businessName = org?.name || 'Tarhunna'
   const firstName = contact?.first_name || ''
   const smsBody = lang === 'es'
-    ? `${businessName} le envió un presupuesto: ${link}`
+    ? `${businessName} le envió un estimado: ${link}`
     : `${businessName} sent you an estimate: ${link}`
 
   let channel: 'whatsapp' | 'sms' | 'none' = 'none'

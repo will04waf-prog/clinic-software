@@ -1,7 +1,7 @@
 /**
  * /aprobar/[token] — CRM-pivot LOOP. PUBLIC client-facing approval page.
  *
- * The customer lands here from the "presupuesto listo" WhatsApp/SMS link.
+ * The customer lands here from the "estimado listo" WhatsApp/SMS link.
  * The server verifies the single-purpose capability token, hydrates the
  * estimate via the SERVICE-ROLE client (the customer has no session; the
  * cookie client would see nothing), and decides what to render:
@@ -24,7 +24,7 @@ import { dict, resolveLocale, type Locale } from '@/lib/i18n'
 import { ApproveView } from './approve-view'
 
 export const metadata: Metadata = {
-  title: 'Presupuesto',
+  title: 'Estimado',
   // No-index — the URL carries a capability token. Keep it out of search
   // indexes even if it leaks into a referrer header.
   robots: { index: false, follow: false },

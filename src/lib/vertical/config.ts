@@ -166,7 +166,7 @@ const CONFIG: Record<Vertical, VerticalConfig> = {
   // Spanish-first CRM. It is its own vertical (not squatting on 'trades')
   // so it can diverge from construction later, but its terms/intake mirror
   // the trades template — a landscaping engagement is a 'job'/'trabajo'.
-  // Spanish-native terms; the loop UI ("presupuesto"/estimate) lives in the
+  // Spanish-native terms; the loop UI ("estimado"/estimate) lives in the
   // i18n dictionary, not here — VerticalTerms drives the existing bilingual
   // SMS/email/voice layer. Reuses the trades voice prompt fragment (Layla
   // is a Phase-4 add-on for this segment).
