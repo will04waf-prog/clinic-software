@@ -39,7 +39,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
-    .select('id, name, slug, procedures')
+    .select('id, name, slug, procedures, vertical')
     .eq('slug', slug)
     .single()
 
@@ -62,7 +62,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
-    .select('id, name, plan_status, trial_ends_at, sms_enabled')
+    .select('id, name, plan_status, trial_ends_at, sms_enabled, vertical, owner_language')
     .eq('slug', slug)
     .single()
 

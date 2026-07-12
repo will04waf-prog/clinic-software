@@ -20,6 +20,7 @@ import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { APP_URL, wrap, p, btn } from '@/lib/email/branded'
 import { blockedReason } from '@/lib/billing/org-access'
 import { getOrgOwner } from '@/lib/org-owner'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 export interface CapturedLead {
   contactId: string
@@ -40,6 +41,11 @@ export interface LeadOrg {
   plan_status?: string | null
   trial_ends_at?: string | null
   sms_enabled?: boolean | null
+  /** Tenant vertical — drives the business noun in owner + customer copy.
+   *  Absent/unknown falls back to med-spa ('clinic'), byte-identical. */
+  vertical?: string | null
+  /** Owner's reading language for the owner-facing alert. Defaults 'en'. */
+  owner_language?: string | null
 }
 
 /** Owner alert — one email per new lead, straight to the inbox. */
@@ -53,26 +59,44 @@ export async function notifyOwnerOfLead(org: LeadOrg, lead: CapturedLead): Promi
   const owner = await getOrgOwner(org.id)
   if (!owner) return
 
+  // Multi-vertical: the org noun follows the tenant's vertical, and the
+  // whole owner alert follows owner_language. Both default to med-spa /
+  // English, so an existing med-spa tenant's alert is byte-identical.
+  const terms = getVerticalConfig(org.vertical).terms
+  const ownerLang: 'en' | 'es' = org.owner_language === 'es' ? 'es' : 'en'
+
   const fullName = [lead.firstName, lead.lastName ?? ''].join(' ').trim()
   const interests = (lead.procedureInterest ?? []).join(', ')
+  const label = ownerLang === 'es'
+    ? { name: 'Nombre', phone: 'Teléfono', email: 'Correo', interested: 'Interesado en', notes: 'Notas' }
+    : { name: 'Name', phone: 'Phone', email: 'Email', interested: 'Interested in', notes: 'Notes' }
   const lines = [
-    `Name: ${fullName}`,
-    lead.phone ? `Phone: ${lead.phone}` : '',
-    lead.email ? `Email: ${lead.email}` : '',
-    interests ? `Interested in: ${interests}` : '',
-    lead.notes ? `Notes: ${lead.notes}` : '',
+    `${label.name}: ${fullName}`,
+    lead.phone ? `${label.phone}: ${lead.phone}` : '',
+    lead.email ? `${label.email}: ${lead.email}` : '',
+    interests ? `${label.interested}: ${interests}` : '',
+    lead.notes ? `${label.notes}: ${lead.notes}` : '',
   ].filter(Boolean)
 
-  const html = wrap(`
+  const html = ownerLang === 'es'
+    ? wrap(`
+    ${p(`Acaba de llegar un nuevo prospecto a través de <strong>${escapeHtml(lead.origin)}</strong>:`)}
+    ${lines.map((l) => p(escapeHtml(l))).join('')}
+    ${p(`La rapidez importa — los prospectos contactados rápido reservan mucho más.`)}
+    <p style="margin:24px 0 0 0;">${btn('Abrir el prospecto', `${APP_URL}/leads`)}</p>
+  `, `Tarhunna &middot; Alerta de nuevo prospecto para tu ${terms.businessEs}.`)
+    : wrap(`
     ${p(`A new lead just came in via the <strong>${escapeHtml(lead.origin)}</strong>:`)}
     ${lines.map((l) => p(escapeHtml(l))).join('')}
     ${p(`Speed wins here — leads contacted quickly book at far higher rates.`)}
     <p style="margin:24px 0 0 0;">${btn('Open the lead', `${APP_URL}/leads`)}</p>
-  `, 'Tarhunna &middot; New-lead alert for your clinic.')
+  `, `Tarhunna &middot; New-lead alert for your ${terms.business}.`)
 
   await sendEmail({
     to: owner.email,
-    subject: `New lead: ${fullName}${interests ? ` — ${interests}` : ''}`,
+    subject: ownerLang === 'es'
+      ? `Nuevo prospecto: ${fullName}${interests ? ` — ${interests}` : ''}`
+      : `New lead: ${fullName}${interests ? ` — ${interests}` : ''}`,
     html,
     // One alert per contact per day even if the endpoint re-fires.
     idempotencyKey: `lead-alert:${lead.contactId}`,
@@ -88,11 +112,16 @@ export async function sendLeadAck(org: LeadOrg, lead: CapturedLead): Promise<voi
 
   const firstName = lead.firstName || 'there'
 
+  // Customer-facing copy: the org noun follows the tenant's vertical
+  // (med-spa keeps 'clinic', byte-identical). Language stays English —
+  // the capture flow doesn't carry a caller/contact language yet.
+  const terms = getVerticalConfig(org.vertical).terms
+
   if (lead.email) {
     const body = [
       `Hi ${firstName},`,
       `Thanks for reaching out to ${org.name} — your request is in their hands and someone will be in touch shortly.`,
-      `If it's time-sensitive, calling the clinic directly is always fastest.`,
+      `If it's time-sensitive, calling the ${terms.business} directly is always fastest.`,
     ].join('\n')
     await sendEmail({
       to: lead.email,
