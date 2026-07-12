@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 interface Service {
   id: string
@@ -71,7 +72,10 @@ function formatPrice(cents: number | null): string {
   return `$${(cents / 100).toFixed(2)}`
 }
 
-export function BookingServicesCard() {
+export function BookingServicesCard({ vertical }: { vertical: string | null }) {
+  // Terminology driven by the tenant vertical; NULL/unknown falls back to
+  // med-spa, so existing tenants render byte-identical copy.
+  const terms = getVerticalConfig(vertical).terms
   const [services, setServices] = useState<Service[]>([])
   const [providers, setProviders] = useState<ProviderLite[]>([])
   const [loading, setLoading] = useState(true)
@@ -204,7 +208,7 @@ export function BookingServicesCard() {
   }
 
   async function remove(id: string) {
-    if (!confirm('Deactivate this service? Past bookings stay; it will no longer appear when patients book.')) return
+    if (!confirm(`Deactivate this service? Past bookings stay; it will no longer appear when ${terms.customerPlural} book.`)) return
     try {
       const res = await fetch(`/api/booking/services/${id}`, { method: 'DELETE' })
       if (!res.ok) {
@@ -233,7 +237,7 @@ export function BookingServicesCard() {
           <div>
             <CardTitle>Services</CardTitle>
             <p className="mt-1 text-sm text-gray-500">
-              The appointments patients can book — like "Botox consult — 30 min".
+              The appointments {terms.customerPlural} can book — like "{terms.serviceExample}".
             </p>
           </div>
           <button
@@ -265,7 +269,7 @@ export function BookingServicesCard() {
               <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
                 <p className="text-sm font-medium text-gray-700">No services yet</p>
                 <p className="mt-1 text-xs text-gray-500">
-                  Add the appointments patients can book — like "Botox consult — 30 min".
+                  Add the appointments {terms.customerPlural} can book — like "{terms.serviceExample}".
                 </p>
               </div>
             )
@@ -361,7 +365,7 @@ export function BookingServicesCard() {
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit service' : 'Add service'}</DialogTitle>
             <DialogDescription>
-              Services are the bookable units patients pick. Duration is copied to
+              Services are the bookable units {terms.customerPlural} pick. Duration is copied to
               the booking at insert time, so editing later won't move past bookings.
             </DialogDescription>
           </DialogHeader>
@@ -375,7 +379,7 @@ export function BookingServicesCard() {
                 type="text"
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                placeholder="Botox consult — 30 min"
+                placeholder={terms.serviceExample}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
@@ -387,7 +391,7 @@ export function BookingServicesCard() {
                 rows={2}
                 value={draft.description}
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                placeholder="Short description shown to patients on the booking page"
+                placeholder={`Short description shown to ${terms.customerPlural} on the booking page`}
                 className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
@@ -505,7 +509,7 @@ export function BookingServicesCard() {
                   }
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
-                <p className="mt-1 text-xs text-gray-400">How far out patients can book.</p>
+                <p className="mt-1 text-xs text-gray-400">How far out {terms.customerPlural} can book.</p>
               </div>
             </div>
 

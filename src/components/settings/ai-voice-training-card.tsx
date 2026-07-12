@@ -7,6 +7,7 @@ import {
   isLockedResponse,
   type LockedResponseBody,
 } from '@/components/billing/upgrade-card-locked'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 /**
  * Phase 2 Week 6 — Voice training Settings card.
@@ -61,7 +62,16 @@ function bucketLabel(value: number, labels: string[]): string {
   return labels[idx]
 }
 
-export function AiVoiceTrainingCard() {
+export function AiVoiceTrainingCard({ vertical }: { vertical: string | null }) {
+  // Terminology driven by the tenant vertical; NULL/unknown falls back to
+  // med-spa. isMedspa keys off the resolved config (not the raw column) so
+  // NULL/unknown verticals keep the med-spa 'Clinical' pole byte-identical.
+  const cfg = getVerticalConfig(vertical)
+  const terms = cfg.terms
+  const isMedspa = cfg.vertical === 'medspa'
+  // Warmth pole: med-spa keeps 'Clinical'; other verticals read 'Professional'.
+  const clinicalPole = isMedspa ? 'Clinical' : 'Professional'
+  const toneWarmLabels = [...TONE_WARM_LABELS.slice(0, -1), clinicalPole]
   const [profile, setProfile] = useState<VoiceProfile | null>(null)
   const [examples, setExamples] = useState<VoiceExample[]>([])
   const [loading, setLoading] = useState(true)
@@ -253,7 +263,7 @@ export function AiVoiceTrainingCard() {
           <div>
             <p className="font-medium text-gray-900">Tone</p>
             <p className="text-xs text-gray-400 mt-0.5">
-              How does your clinic naturally talk to patients?
+              How does your {terms.business} naturally talk to {terms.customerPlural}?
             </p>
           </div>
 
@@ -279,7 +289,7 @@ export function AiVoiceTrainingCard() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label htmlFor="tone-warm" className="text-xs text-gray-600">Warmth</label>
-              <span className="text-xs font-medium text-[#028090]">{bucketLabel(profile.tone_warm, TONE_WARM_LABELS)}</span>
+              <span className="text-xs font-medium text-[#028090]">{bucketLabel(profile.tone_warm, toneWarmLabels)}</span>
             </div>
             <input
               id="tone-warm"
@@ -291,7 +301,7 @@ export function AiVoiceTrainingCard() {
               className="w-full accent-[#02C39A]"
             />
             <div className="flex justify-between text-[10px] text-gray-400">
-              <span>Very warm</span><span>Clinical</span>
+              <span>Very warm</span><span>{clinicalPole}</span>
             </div>
           </div>
         </section>
@@ -301,7 +311,7 @@ export function AiVoiceTrainingCard() {
           <div>
             <p className="font-medium text-gray-900">Banned phrases</p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Words the AI must never use. Add anything that doesn't sound like your clinic.
+              Words the AI must never use. Add anything that doesn't sound like your {terms.business}.
             </p>
           </div>
 
@@ -353,7 +363,7 @@ export function AiVoiceTrainingCard() {
           <div>
             <p className="font-medium text-gray-900">Custom sign-off</p>
             <p className="text-xs text-gray-400 mt-0.5">
-              How you usually end a message. Leave blank to use the clinic name only.
+              How you usually end a message. Leave blank to use the {terms.business} name only.
             </p>
           </div>
           <input
@@ -390,7 +400,7 @@ export function AiVoiceTrainingCard() {
           <div>
             <p className="font-medium text-gray-900">Example messages</p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Paste 5-10 short messages you've written to patients. The AI uses these
+              Paste 5-10 short messages you've written to {terms.customerPlural}. The AI uses these
               as examples to match your specific voice. Tag each with what kind of
               message it is.
             </p>

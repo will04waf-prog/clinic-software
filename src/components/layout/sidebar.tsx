@@ -22,6 +22,10 @@ import { FEATURES } from '@/lib/features'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { getVerticalConfig, type Vertical } from '@/lib/vertical/config'
+
+/** Title-case a single lowercase noun ('jobs' → 'Jobs'). */
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 const NAV_ITEMS = [
   { href: '/dashboard',            label: 'Dashboard',        icon: LayoutDashboard },
@@ -56,12 +60,24 @@ const NAV_ITEMS = [
 export function Sidebar({
   isSuperAdmin = false,
   isOwner = false,
+  vertical = 'medspa',
 }: {
   isSuperAdmin?: boolean
   isOwner?: boolean
+  vertical?: Vertical
 }) {
   const pathname = usePathname()
   const router = useRouter()
+
+  // The /consultations nav label is the scheduled-thing noun. Med-spa keeps
+  // its 'Consultations' literal (byte-identical); other verticals surface
+  // their own plural (Jobs / Orders / Appointments). The route path is
+  // unchanged. Its med-spa baseline is 'consultation', so we branch on the
+  // literal rather than reaching for terms.engagement (which is
+  // 'appointment' for med-spa) — see the config.ts BYTE-IDENTICAL note.
+  const terms = getVerticalConfig(vertical).terms
+  const consultationsLabel =
+    vertical === 'medspa' ? 'Consultations' : cap(terms.engagementPlural)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -80,7 +96,8 @@ export function Sidebar({
       {/* Nav — forest text on cream throughout */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {NAV_ITEMS.filter((item) => item.href !== '/automations' || FEATURES.automations).map((item) => {
-          const { href, label, icon: Icon } = item
+          const { href, icon: Icon } = item
+          const label = href === '/consultations' ? consultationsLabel : item.label
           const tierBadge = 'tierBadge' in item ? item.tierBadge : undefined
           const active =
             href === '/settings'

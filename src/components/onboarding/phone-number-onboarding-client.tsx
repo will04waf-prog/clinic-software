@@ -28,12 +28,16 @@ import { BrandRegistrationForm, type BrandData } from '@/components/onboarding/b
 import { NumberSearchForm } from '@/components/onboarding/number-search-form'
 import { ProvisioningProgress } from '@/components/onboarding/provisioning-progress'
 import { provisionNumberAction } from '@/app/onboarding/phone-number/actions'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 interface PhoneNumberOnboardingClientProps {
   orgName:           string
   orgId:             string
   existingBrandData: Record<string, unknown> | null
   a2pStatus:         string
+  /** Tenant vertical — drives business/customer terminology. NULL/unknown
+   *  falls back to med-spa, so existing tenants are byte-identical. */
+  vertical:          string | null
 }
 
 type Step = 'search' | 'register' | 'progress'
@@ -42,8 +46,10 @@ export function PhoneNumberOnboardingClient({
   orgName,
   existingBrandData,
   a2pStatus,
+  vertical,
 }: PhoneNumberOnboardingClientProps) {
   const router = useRouter()
+  const terms = getVerticalConfig(vertical).terms
   // If the org has previously-saved brand data AND the a2p_status is
   // still pending or rejected, jump the owner straight to the progress
   // view — they're mid-flow, not starting fresh. If a2p_status is
@@ -84,13 +90,13 @@ export function PhoneNumberOnboardingClient({
             <LogoMark size="xl" standalone />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {step === 'search' && 'Pick your clinic phone number'}
+            {step === 'search' && `Pick your ${terms.business} phone number`}
             {step === 'register' && 'Register your business for SMS'}
             {step === 'progress' && 'Setting up your number'}
           </h1>
           <p className="mt-2 text-gray-500 max-w-md mx-auto">
             {step === 'search' && (
-              <>This is the number patients will call and text {orgName}. Pick an area code your patients will recognize.</>
+              <>This is the number {terms.customerPlural} will call and text {orgName}. Pick an area code your {terms.customerPlural} will recognize.</>
             )}
             {step === 'register' && (
               <>US carriers require business identity verification before they'll deliver reminders or intake texts.</>

@@ -65,7 +65,7 @@ export default async function PhoneNumberOnboardingPage() {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, vapi_phone_number_id, twilio_phone_number, a2p_status, a2p_brand_data')
+    .select('id, name, vertical, vapi_phone_number_id, twilio_phone_number, a2p_status, a2p_brand_data')
     .eq('id', orgId)
     .single()
 
@@ -84,6 +84,7 @@ export default async function PhoneNumberOnboardingPage() {
       orgId={orgId}
       existingBrandData={(org?.a2p_brand_data as Record<string, unknown> | null) ?? null}
       a2pStatus={(org?.a2p_status as string | null) ?? 'not_started'}
+      vertical={(org?.vertical as string | null) ?? null}
     />
   )
 }
