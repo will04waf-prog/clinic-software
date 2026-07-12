@@ -219,7 +219,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
             <h3 className="font-semibold text-gray-900">{t.laylaTitle}</h3>
             <p className="mt-1 text-sm text-gray-600">{t.layla}</p>
           </div>
-          <Link href="/trades" className="shrink-0 text-sm font-semibold text-[#028090] hover:underline">{t.laylaCta} →</Link>
+          <Link href="/book-demo" className="shrink-0 text-sm font-semibold text-[#028090] hover:underline">{t.laylaCta} →</Link>
         </div>
       </section>
 
