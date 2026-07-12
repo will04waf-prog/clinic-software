@@ -305,3 +305,50 @@ describe('multi-vertical config (Phase 1)', () => {
     expect((body.model.messages[0].content as string)).not.toMatch(/# Vertical:/)
   })
 })
+
+describe('reminder bot multi-vertical (Phase 1)', () => {
+  // ORG has no vertical / caller_languages → defaults path (medspa /
+  // {en}), which must reproduce the prior reminder body exactly.
+  it('med-spa defaults are byte-identical to the pre-multi-vertical reminder body', () => {
+    const body = buildReminderAssistantBody(ORG, APP_URL, 'sec')
+    expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
+    expect(body.transcriber).toEqual({ provider: 'deepgram', model: 'nova-2', language: 'en' })
+    expect(body.model.tools).toHaveLength(7)
+    const sys = (body.model.messages[0].content as string)
+    expect(sys).toContain('# Layla-Reminder — Tarhunna outbound appointment reminder') // base prompt
+    expect(sys).not.toMatch(/# Vertical:/)      // no fragment appended
+    expect(sys).not.toContain('# Bilingual')    // no bilingual directive
+    expect(body.firstMessage).toBe(
+      'Hi, this is Layla calling about your upcoming appointment — do you have a quick moment?',
+    )
+  })
+
+  it('bilingual trades reminder: Spanish voice, multilingual transcriber, trades fragment + bilingual, Spanish opener', () => {
+    const trades = { ...ORG, vertical: 'trades', caller_languages: ['en', 'es'] }
+    const body = buildReminderAssistantBody(trades, APP_URL, 'sec')
+    expect(body.transcriber).toMatchObject({ language: 'multi' })
+    expect((body.voice as { provider: string }).provider).not.toBe('vapi') // not Savannah
+    const sys = (body.model.messages[0].content as string)
+    expect(sys).toContain('# Vertical: home & trade services')
+    expect(sys).toContain('# Bilingual — English & Spanish')
+    // Opener uses the vertical's Spanish engagement noun ('trabajo').
+    expect(body.firstMessage).toBe(
+      'Hola, soy Layla y le llamo sobre su trabajo — ¿tiene un momento?',
+    )
+    // Tool subset stays reminder-specific regardless of vertical.
+    expect(body.model.tools).toHaveLength(7)
+  })
+
+  it('English-caller trades reminder: Savannah + English transcriber, trades fragment, English "job" opener', () => {
+    const trades = { ...ORG, vertical: 'trades', caller_languages: ['en'] }
+    const body = buildReminderAssistantBody(trades, APP_URL, 'sec')
+    expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
+    expect(body.transcriber).toMatchObject({ language: 'en' })
+    const sys = (body.model.messages[0].content as string)
+    expect(sys).toContain('# Vertical: home & trade services')
+    expect(sys).not.toContain('# Bilingual')
+    expect(body.firstMessage).toBe(
+      'Hi, this is Layla calling about your upcoming job — do you have a quick moment?',
+    )
+  })
+})
