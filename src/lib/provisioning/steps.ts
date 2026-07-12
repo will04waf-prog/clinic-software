@@ -367,13 +367,18 @@ const stepRegisterA2pCampaign: StepHandler = async (job) => {
 // set_cnam (placeholder)
 // ──────────────────────────────────────────────────────────────────
 
-const stepSetCnam: StepHandler = async (_job) => {
+const stepSetCnam: StepHandler = async (job) => {
   // Outbound caller-ID name registration. Twilio CNAM updates take
   // 24-72h to propagate carriers and require a separate CNAM-paid
-  // service contract. Returning success keeps the queue clean for
-  // anything that enqueues this step today; a real implementation
-  // lands in a later sweep.
-  return { status: 'ok', payload: { note: 'set_cnam is a no-op placeholder' } }
+  // service contract. NOT implemented yet: rather than record a false
+  // success, we mark the payload skipped:'not_implemented' and log it
+  // so job history doesn't claim CNAM was actually set. The type still
+  // requires 'ok' so the queue doesn't retry a step we intend to skip;
+  // a real implementation lands in a later sweep.
+  console.info(
+    `[provisioning] set_cnam skipped (not_implemented) for job ${job.id} org ${job.organization_id}`,
+  )
+  return { status: 'ok', payload: { skipped: 'not_implemented' } }
 }
 
 // ──────────────────────────────────────────────────────────────────
