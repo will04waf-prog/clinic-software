@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { after } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { enrollContact } from '@/lib/automation-engine'
@@ -26,12 +25,19 @@ const CaptureSchema = z.object({
   origin:              z.enum(['intake', 'waitlist']).optional().default('intake'),
 })
 
-// GET — verify slug is valid (used by the form page to load org info)
+// GET — verify slug is valid (used by the form page to load org info).
+//
+// Reads via the service-role client with an explicit 4-column allowlist,
+// NOT the cookie/anon client. The public visitor has no session, so an
+// anon read would depend on a permissive SELECT RLS policy on
+// organizations — and a blanket anon policy exposes every column of
+// every tenant (Stripe IDs, owner phone, Twilio/A2P config) to anyone
+// with the public key. Service-role + a fixed column list scoped by slug
+// returns only what the form needs and lets that anon policy be dropped.
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const supabase = await createClient()
 
-  const { data: org } = await supabase
+  const { data: org } = await supabaseAdmin
     .from('organizations')
     .select('id, name, slug, procedures')
     .eq('slug', slug)
