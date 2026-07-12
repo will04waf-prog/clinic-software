@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, CalendarCheck, Zap, Settings, FileText, CalendarDays } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarCheck, Zap, Settings, FileText, CalendarDays, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FEATURES } from '@/lib/features'
 import { dict, resolveLocale } from '@/lib/i18n'
@@ -29,6 +29,7 @@ export function MobileNav({ vertical = 'medspa', ownerLanguage }: { vertical?: s
         return [
           { href: '/dashboard', label: n.home,       icon: LayoutDashboard },
           { href: '/estimates', label: n.estimates,  icon: FileText },
+          { href: '/invoices',  label: n.invoices,   icon: Receipt },
           { href: '/schedule',  label: n.schedule,   icon: CalendarDays },
           { href: '/settings',  label: n.settings,   icon: Settings },
         ]

@@ -18,6 +18,7 @@ import {
   PhoneCall,
   FileText,
   CalendarDays,
+  Receipt,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FEATURES } from '@/lib/features'
@@ -93,6 +94,7 @@ export function Sidebar({
         return [
           { href: '/dashboard', label: n.home,      icon: LayoutDashboard },
           { href: '/estimates', label: n.estimates, icon: FileText },
+          { href: '/invoices',  label: n.invoices,  icon: Receipt },
           { href: '/schedule',  label: n.schedule,  icon: CalendarDays },
           { href: '/settings',  label: n.settings,  icon: Settings },
         ]
