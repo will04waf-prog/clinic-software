@@ -19,7 +19,9 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { config as loadEnv } from 'dotenv'
-import { OWNER_ALERT_TEMPLATES, type OwnerAlertTemplate, type TemplateVariant } from '../src/lib/notify/templates'
+import { OWNER_ALERT_TEMPLATES, CLIENT_TEMPLATES, type OwnerAlertTemplate, type ClientTemplate, type TemplateVariant } from '../src/lib/notify/templates'
+
+type AnyTemplate = OwnerAlertTemplate | ClientTemplate
 
 for (const path of ['.env.local', '.env']) {
   const full = resolve(process.cwd(), path)
@@ -40,6 +42,10 @@ const SAMPLES: Record<string, Record<string, string>> = {
   job_summary:          { '1': 'Rivera Landscaping', '2': 'booked a job', '3': 'https://tarhunna.net/calls' },
   booking_confirmation: { '1': 'Rivera Landscaping', '2': 'lawn service, Tue 2:30 PM', '3': 'https://tarhunna.net/calendar' },
   urgent_alert:         { '1': 'Rivera Landscaping', '2': '+13015551234', '3': 'burst pipe flooding the kitchen' },
+  // Client (CRM pivot) templates.
+  estimate_ready:       { '1': 'María', '2': 'Jardinería García', '3': 'https://tarhunna.net/aprobar/ejemplo' },
+  estimate_approved:    { '1': 'María', '2': 'Jardinería García' },
+  job_reminder:         { '1': 'Jardinería García', '2': 'mañana a las 9:00 AM' },
 }
 
 async function api(method: string, path: string, body?: unknown) {
@@ -58,11 +64,11 @@ async function findExisting(friendlyName: string): Promise<string | null> {
   return contents.find(c => c.friendly_name === friendlyName)?.sid ?? null
 }
 
-async function createOne(tpl: OwnerAlertTemplate, v: TemplateVariant): Promise<string | null> {
+async function createOne(tpl: AnyTemplate, v: TemplateVariant): Promise<{ sid: string; created: boolean } | null> {
   const existing = await findExisting(v.name)
   if (existing) {
     console.log(`  reuse   ${v.name} (${v.language}) → ${existing}`)
-    return existing
+    return { sid: existing, created: false }
   }
   const { status, json } = await api('POST', '/Content', {
     friendly_name: v.name,
@@ -75,7 +81,7 @@ async function createOne(tpl: OwnerAlertTemplate, v: TemplateVariant): Promise<s
     return null
   }
   console.log(`  created ${v.name} (${v.language}) → ${json.sid}`)
-  return json.sid as string
+  return { sid: json.sid as string, created: true }
 }
 
 async function submitApproval(sid: string, v: TemplateVariant): Promise<void> {
@@ -97,8 +103,8 @@ async function approvalStatus(sid: string): Promise<string> {
   return wa?.rejection_reason ? `${st} (${wa.rejection_reason})` : st
 }
 
-const VARIANTS: { tpl: OwnerAlertTemplate; v: TemplateVariant }[] = []
-for (const tpl of Object.values(OWNER_ALERT_TEMPLATES)) {
+const VARIANTS: { tpl: AnyTemplate; v: TemplateVariant }[] = []
+for (const tpl of [...Object.values(OWNER_ALERT_TEMPLATES), ...Object.values(CLIENT_TEMPLATES)] as AnyTemplate[]) {
   VARIANTS.push({ tpl, v: tpl.en }, { tpl, v: tpl.es })
 }
 
@@ -115,16 +121,19 @@ async function main() {
     return
   }
 
-  console.log('Creating + submitting 6 WhatsApp templates…')
+  console.log(`Registering ${VARIANTS.length} WhatsApp templates (create + submit only the new ones)…`)
   const sids: Record<string, string> = {}
   for (const { tpl, v } of VARIANTS) {
-    const sid = await createOne(tpl, v)
-    if (sid) {
-      sids[v.contentSidEnv] = sid
-      await submitApproval(sid, v)
-    }
+    const r = await createOne(tpl, v)
+    if (!r) continue
+    sids[v.contentSidEnv] = r.sid
+    // Only submit freshly-created templates. Re-submitting one already
+    // under Meta review (the owner templates) is unnecessary and could
+    // disturb its pending state — reuse leaves it exactly as-is.
+    if (r.created) await submitApproval(r.sid, v)
+    else console.log(`  skip submit ${v.name} (already registered — leaving its approval state untouched)`)
   }
-  console.log('\nEnv vars to set:')
+  console.log('\nEnv vars to set (Vercel prod):')
   for (const [env, sid] of Object.entries(sids)) console.log(`  ${env}=${sid}`)
 }
 

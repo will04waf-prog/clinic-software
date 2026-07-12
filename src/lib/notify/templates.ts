@@ -129,6 +129,84 @@ export const OWNER_ALERT_TEMPLATES: Record<OwnerAlertType, OwnerAlertTemplate> =
   },
 }
 
+// ─────────────────────────────────────────────────────────────────
+// CLIENT templates (CRM pivot). These go to the CUSTOMER, not the owner:
+// the estimate link, the approval confirmation, and the day-before job
+// reminder. Same registration mechanics as the owner templates above;
+// kept in a SEPARATE registry so the owner templates (pending Meta
+// approval, character-for-character) are never disturbed. Bodies are
+// founder-approved 2026-07-12; no variable starts or ends any body.
+export type ClientTemplateType = 'estimate_ready' | 'estimate_approved' | 'job_reminder'
+
+export interface ClientTemplate {
+  type: ClientTemplateType
+  variables: string[]
+  en: TemplateVariant
+  es: TemplateVariant
+}
+
+export const CLIENT_TEMPLATES: Record<ClientTemplateType, ClientTemplate> = {
+  estimate_ready: {
+    type: 'estimate_ready',
+    variables: ['client first name', 'business name', 'approval link'],
+    en: {
+      name: 'estimate_ready',
+      language: 'en',
+      category: 'UTILITY',
+      body: 'Hi {{1}}, {{2}} just sent you an estimate. Review the work and price, then approve with one tap here: {{3}}. Questions? Just reply to this message.',
+      contentSidEnv: 'TWILIO_WA_ESTIMATE_READY_EN_SID',
+    },
+    es: {
+      name: 'presupuesto_listo',
+      language: 'es',
+      category: 'UTILITY',
+      body: 'Hola {{1}}, {{2}} le envió un presupuesto. Revise el trabajo y el precio, y apruébelo con un toque aquí: {{3}}. ¿Tiene preguntas? Responda a este mensaje.',
+      contentSidEnv: 'TWILIO_WA_ESTIMATE_READY_ES_SID',
+    },
+  },
+  estimate_approved: {
+    type: 'estimate_approved',
+    variables: ['client first name', 'business name'],
+    en: {
+      name: 'estimate_approved',
+      language: 'en',
+      category: 'UTILITY',
+      body: "Thanks {{1}}! Your approval of {{2}}'s estimate is confirmed. They'll reach out to schedule the work, and you'll get a reminder before the visit.",
+      contentSidEnv: 'TWILIO_WA_ESTIMATE_APPROVED_EN_SID',
+    },
+    es: {
+      name: 'presupuesto_aprobado',
+      language: 'es',
+      category: 'UTILITY',
+      body: '¡Gracias {{1}}! Su aprobación del presupuesto de {{2}} quedó confirmada. Se comunicarán con usted para agendar el trabajo. Le enviaremos un recordatorio antes de la visita.',
+      contentSidEnv: 'TWILIO_WA_ESTIMATE_APPROVED_ES_SID',
+    },
+  },
+  job_reminder: {
+    type: 'job_reminder',
+    variables: ['business name', 'scheduled date/time'],
+    en: {
+      name: 'job_reminder',
+      language: 'en',
+      category: 'UTILITY',
+      body: 'Reminder from {{1}}: your service is scheduled for {{2}}. Need to change the time? Just reply. See you soon!',
+      contentSidEnv: 'TWILIO_WA_JOB_REMINDER_EN_SID',
+    },
+    es: {
+      name: 'recordatorio_trabajo',
+      language: 'es',
+      category: 'UTILITY',
+      body: 'Recordatorio de {{1}}: su servicio está programado para {{2}}. Si necesita cambiar la hora, responda a este mensaje. ¡Nos vemos pronto!',
+      contentSidEnv: 'TWILIO_WA_JOB_REMINDER_ES_SID',
+    },
+  },
+}
+
+/** Resolve the registered client variant for a type + language. */
+export function clientTemplateVariant(type: ClientTemplateType, lang: TemplateLang): TemplateVariant {
+  return CLIENT_TEMPLATES[type][lang]
+}
+
 /** Resolve the registered variant for an alert type + language. */
 export function templateVariant(type: OwnerAlertType, lang: TemplateLang): TemplateVariant {
   return OWNER_ALERT_TEMPLATES[type][lang]
