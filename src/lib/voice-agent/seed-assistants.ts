@@ -309,6 +309,13 @@ export function buildInboundAssistantBody(org: OrgRow, appUrl: string, webhookSe
     // Vapi's default is a synthetic "office" ambience — real-call
     // feedback: it reads as noise, not realism. Silence is cleaner.
     backgroundSound: 'off',
+    // Noise robustness (founder field-test 2026-07-12): jobsite/street
+    // noise trips raw VAD — the assistant stops mid-sentence for a
+    // caller turn that never comes, then sits silent. Krisp input
+    // denoising + word-gated barge-in: only ≥2 TRANSCRIBED words
+    // interrupt her; mowers, wind, and TV no longer stop her mid-reply.
+    backgroundDenoisingEnabled: true,
+    stopSpeakingPlan: { numWords: 2, voiceSeconds: 0.25, backoffSeconds: 1 },
     // Pipeline-provisioned numbers are answered by Vapi DIRECTLY (the
     // register step binds the number to the assistant and Vapi
     // rewrites the voice webhook) — there is no TwiML preamble. The
@@ -344,6 +351,11 @@ export function buildReminderAssistantBody(org: OrgRow, appUrl: string, webhookS
     voice:       selectVoice(langs),
     transcriber: selectTranscriber(langs),
     backgroundSound: 'off',
+    // Same noise robustness as the inbound receptionist (see above) —
+    // outbound reminder calls land on speakerphones in trucks and
+    // kitchens, the noisiest environments we serve.
+    backgroundDenoisingEnabled: true,
+    stopSpeakingPlan: { numWords: 2, voiceSeconds: 0.25, backoffSeconds: 1 },
     // Outbound: WE call THEM, so the first thing the contact hears IS
     // the assistant — identify and ask in one breath. See
     // reminderFirstMessage for the vertical/language wording.
