@@ -18,7 +18,7 @@ const COPY = {
   es: {
     switch: 'English',
     eyebrow: 'El CRM en español para su negocio',
-    h1: 'Cotice, cobre, y siga trabajando.',
+    h1: 'Mande el estimado hoy. Cobre esta semana.',
     sub: 'Cree un estimado en 2 minutos, mándelo por WhatsApp, y su cliente lo aprueba con un toque. Se convierte en un trabajo en su agenda — y usted cobra con tarjeta, o marca el efectivo o Zelle. Todo desde el teléfono, todo en español.',
     hook: 'Cada estimado que no manda hoy es un trabajo que otro agenda mañana.',
     ctaPrimary: 'Empezar gratis',
@@ -62,7 +62,7 @@ const COPY = {
   en: {
     switch: 'Español',
     eyebrow: 'The Spanish CRM for your business',
-    h1: 'Quote, get paid, and keep working.',
+    h1: 'Send the estimate today. Get paid this week.',
     sub: 'Build an estimate in 2 minutes, send it by WhatsApp, and your client approves it with one tap. It becomes a job on your schedule — and you get paid by card, or mark it cash or Zelle. All from your phone, all in Spanish.',
     hook: 'Every estimate you don’t send today is a job someone else books tomorrow.',
     ctaPrimary: 'Start free',

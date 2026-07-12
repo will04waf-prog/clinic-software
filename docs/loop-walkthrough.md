@@ -12,12 +12,12 @@ so he *sees* a job appear. ~4 minutes. Everything is in Spanish.
 - Open **tarhunna.net/es** → tap **Empezar** (or go straight to **tarhunna.net/signup**).
 - **¿A qué se dedica su negocio?** → tap **Jardinería y paisajismo**.
 - Fill: nombre del negocio, su nombre, **su celular** (required — this is where approvals land), correo, contraseña → **Empezar prueba gratis**.
-- He lands on the **loop intro** (cliente → presupuesto → WhatsApp → cobra) → **Agregar mi primer cliente**.
+- He lands on the **loop intro** (cliente → estimado → WhatsApp → cobra) → **Agregar mi primer cliente**.
 
 *If the industry picker doesn't show Jardinería as tappable → hard-refresh once.*
 
 ## 2. He adds a client + builds an estimate  (his phone)
-- From the dashboard tap **Presupuestos** → **Nuevo presupuesto**.
+- From the dashboard tap **Estimados** → **Nuevo estimado**.
 - **Cliente nuevo**: put a real name and **your** cell number (so the approval link comes to YOUR phone in the demo).
 - **Título:** e.g. "Corte y limpieza de jardín".
 - Add 1–2 **conceptos**: descripción + precio (e.g. Corte de césped $80, Limpieza $40). Watch the **Total** add up.
@@ -30,8 +30,8 @@ so he *sees* a job appear. ~4 minutes. Everything is in Spanish.
 - Today WhatsApp auto-send is pending Meta approval, so it may show the **link** instead of sending — that's fine: tap **copiar** and paste it into his own WhatsApp to you, OR just open the link on your phone. (Once Meta approves the templates, this sends automatically.)
 
 ## 4. You approve  (your phone = the customer)
-- Open the link → a clean Spanish page: **"[su negocio] le envió un presupuesto"**, the line items, the total.
-- Tap **Aprobar presupuesto** → **¡Presupuesto aprobado!**
+- Open the link → a clean Spanish page: **"[su negocio] le envió un estimado"**, the line items, the total.
+- Tap **Aprobar estimado** → **¡Estimado aprobado!**
 
 ## 5. He sees the job  (his phone)
 - Back on his phone → **Agenda**. The approved estimate is now a **scheduled job**.

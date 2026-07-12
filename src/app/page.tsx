@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { LoopLanding } from '@/components/marketing/loop-landing'
 
 export const metadata: Metadata = {
-  title: 'Tarhunna — El CRM en español: cotice, cobre, y siga trabajando',
+  title: 'Tarhunna — Mande el estimado hoy. Cobre esta semana.',
   description:
     'El CRM en español para negocios de servicios. Cree un estimado en 2 minutos, mándelo por WhatsApp, su cliente lo aprueba con un toque, y usted cobra — con tarjeta, efectivo o Zelle. Desde el teléfono.',
   alternates: { canonical: 'https://tarhunna.net' },

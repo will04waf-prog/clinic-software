@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { LoopLanding } from '@/components/marketing/loop-landing'
 
 export const metadata: Metadata = {
-  title: 'Tarhunna — Quote, get paid, keep working. The bilingual CRM for the trades',
+  title: 'Tarhunna — Send the estimate today. Get paid this week. The bilingual CRM for the trades',
   description:
     'Build an estimate in 2 minutes, send it by WhatsApp, your customer approves in one tap, and you get paid — card, cash, or Zelle. And half your customers speak Spanish. Tarhunna handles both.',
   alternates: { canonical: 'https://tarhunna.net/trades' },
