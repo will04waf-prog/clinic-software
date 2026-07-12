@@ -183,6 +183,7 @@ export const es = {
     errAmount: 'Ingrese un monto válido.',
     // Cobrar / registrar pago
     recordPayment: 'Registrar pago',
+    feeNote: 'Efectivo, Zelle y cheque: sin cargo. Tarjeta (pronto): 3.9% + 30¢.',
     paymentMethod: 'Método de pago',
     methodCash: 'Efectivo',
     methodZelle: 'Zelle',

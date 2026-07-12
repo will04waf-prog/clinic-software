@@ -161,7 +161,8 @@ export function InvoiceDetail({ locale, invoice }: { locale: Locale; invoice: In
         </div>
       ) : (
         <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-[#14241d]">{t.recordPayment}</p>
+          <p className="text-sm font-semibold text-[#14241d]">{t.recordPayment}</p>
+          <p className="mb-3 mt-0.5 text-[11px] text-gray-400">{t.feeNote}</p>
 
           {/* Method chips */}
           <div className="grid grid-cols-4 gap-2">

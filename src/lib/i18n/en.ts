@@ -169,6 +169,7 @@ export const en: Messages = {
     errNoLines: 'Add at least one line item.',
     errAmount: 'Enter a valid amount.',
     recordPayment: 'Record payment',
+    feeNote: 'Cash, Zelle, and check: no fee. Card (coming soon): 3.9% + 30¢.',
     paymentMethod: 'Payment method',
     methodCash: 'Cash',
     methodZelle: 'Zelle',
