@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   if (!org) {
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
-      error: 'No clinic mapped to this number',
+      error: 'No business mapped to this number',
     }))
   }
   if (!org.call_agent_enabled || !org.call_agent_baa_attested_at) {
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     // org that hasn't enabled the agent.
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
       ok: false,
-      error: 'Voice agent is not enabled for this clinic',
+      error: 'Voice agent is not enabled for this business',
     }))
   }
 

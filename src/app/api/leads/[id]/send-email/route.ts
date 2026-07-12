@@ -44,7 +44,10 @@ export async function POST(
   if (!contact.email) return NextResponse.json({ error: 'Contact has no email address' }, { status: 400 })
 
   // Validate input
-  const rawBody = await request.json()
+  let rawBody: unknown
+  try { rawBody = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
   const parsed  = SendSchema.safeParse(rawBody)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })

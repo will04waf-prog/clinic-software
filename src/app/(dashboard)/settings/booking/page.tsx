@@ -17,15 +17,16 @@ export default async function BookingSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization:organizations(timezone)')
+    .select('organization:organizations(timezone, vertical)')
     .eq('id', user.id)
     .single()
 
   // The PostgREST shape can be array-or-object depending on the join inference;
   // existing settings/page.tsx casts to `any` for the same reason.
   const org = profile?.organization as any
-  const timezone =
-    (Array.isArray(org) ? org[0]?.timezone : org?.timezone) ?? null
+  const orgRow = Array.isArray(org) ? org[0] : org
+  const timezone = orgRow?.timezone ?? null
+  const vertical = (orgRow?.vertical as string | null) ?? null
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -45,7 +46,7 @@ export default async function BookingSettingsPage() {
 
         <BookingMasterToggleCard />
         <BookingProvidersCard />
-        <BookingServicesCard />
+        <BookingServicesCard vertical={vertical} />
         <ProviderWeeklyHoursCard timezone={timezone} />
         <AvailabilityOverridesCard timezone={timezone} />
         <AvailabilityPreviewCard timezone={timezone} />

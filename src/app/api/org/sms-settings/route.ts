@@ -31,6 +31,7 @@ const SmsSettingsSchema = z.object({
   sms_reminder_24h_enabled:  z.boolean(),
   sms_reminder_2h_enabled:   z.boolean(),
   sms_template_confirmation: templateField,
+  sms_template_confirmation_es: templateField,
   sms_template_reminder_24h: templateField,
   sms_template_reminder_2h:  templateField,
 })
@@ -44,7 +45,10 @@ export async function PATCH(request: Request) {
   const gate = await requireRole(supabase, user.id, OWNER_ADMIN)
   if (isDenied(gate)) return gate.response
 
-  const body = await request.json()
+  let body: unknown
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
   const parsed = SmsSettingsSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
@@ -54,6 +58,7 @@ export async function PATCH(request: Request) {
   const update = {
     ...parsed.data,
     sms_template_confirmation: parsed.data.sms_template_confirmation?.trim() || null,
+    sms_template_confirmation_es: parsed.data.sms_template_confirmation_es?.trim() || null,
     sms_template_reminder_24h: parsed.data.sms_template_reminder_24h?.trim() || null,
     sms_template_reminder_2h:  parsed.data.sms_template_reminder_2h?.trim() || null,
   }

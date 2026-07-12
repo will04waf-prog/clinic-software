@@ -130,16 +130,18 @@ function readVerticalFragment(name: string): string {
   return readFileSync(resolve(process.cwd(), 'src/voice/prompts/verticals', `${name}.md`), 'utf8')
 }
 
-// Base receptionist prompt + the vertical's terminology-reframe
-// fragment (med-spa appends nothing → identical to today) + the
-// bilingual directive when the line serves Spanish callers. The 911
-// safety rail lives in the base prompt and every fragment preserves it.
-function composeInboundPrompt(
+// Append the vertical's terminology-reframe fragment (med-spa appends
+// nothing → identical to today) and the bilingual directive when the
+// line serves Spanish callers. Shared by the inbound + reminder prompt
+// composers so both reframe terminology identically. The 911 safety
+// rail lives in each base prompt and every fragment preserves it.
+function appendVerticalFragments(
+  base: string,
   vertical: string | null | undefined,
   langs: readonly string[],
 ): string {
   const cfg = getVerticalConfig(vertical)
-  let prompt = readPrompt('receptionist.md')
+  let prompt = base
   if (cfg.promptFragment) {
     prompt += '\n\n' + readVerticalFragment(cfg.promptFragment)
   }
@@ -149,6 +151,39 @@ function composeInboundPrompt(
     )
   }
   return prompt
+}
+
+// Base receptionist prompt + vertical fragment + bilingual directive.
+function composeInboundPrompt(
+  vertical: string | null | undefined,
+  langs: readonly string[],
+): string {
+  return appendVerticalFragments(readPrompt('receptionist.md'), vertical, langs)
+}
+
+// Base outbound-reminder prompt + vertical fragment + bilingual
+// directive. Med-spa / English → reminder.md alone, identical to today.
+function composeReminderPrompt(
+  vertical: string | null | undefined,
+  langs: readonly string[],
+): string {
+  return appendVerticalFragments(readPrompt('reminder.md'), vertical, langs)
+}
+
+// Outbound opener. WE call THEM, so the first thing the contact hears IS
+// the assistant — identify, state the engagement, ask in one breath.
+// Wording follows the vertical's engagement noun + caller language;
+// Spanish-capable lines open in Spanish. Med-spa / English reproduces
+// the prior hardcoded line byte-for-byte (medspa engagement ===
+// 'appointment').
+function reminderFirstMessage(
+  vertical: string | null | undefined,
+  langs: readonly string[],
+): string {
+  const terms = getVerticalConfig(vertical).terms
+  return langs.includes('es')
+    ? `Hola, soy Layla y le llamo sobre su ${terms.engagementEs} — ¿tiene un momento?`
+    : `Hi, this is Layla calling about your upcoming ${terms.engagement} — do you have a quick moment?`
 }
 
 // Tools wired only for specific verticals — excluded from the base
@@ -292,21 +327,27 @@ export function buildInboundAssistantBody(org: OrgRow, appUrl: string, webhookSe
 }
 
 export function buildReminderAssistantBody(org: OrgRow, appUrl: string, webhookSecret: string | undefined) {
+  // Multi-vertical: prompt, voice, transcriber, and the outbound opener
+  // all derive from the org's vertical + caller_languages, exactly as
+  // buildInboundAssistantBody does. Defaults (medspa / {en}) reproduce
+  // the prior body byte-for-byte. The tool set stays reminder-specific.
+  const langs = resolveCallerLanguages(org.caller_languages)
   return {
     name: `${org.name} reminder bot`,
     model: {
       provider: 'openai',
       model:    'gpt-4o-mini',
-      messages: [{ role: 'system', content: readPrompt('reminder.md') }],
+      messages: [{ role: 'system', content: composeReminderPrompt(org.vertical, langs) }],
       tools:    wireTools(REMINDER_ROUTE_BY_TOOL, REMINDER_TOOL_NAMES, appUrl, webhookSecret),
       temperature: 0.4,
     },
-    voice:       { provider: VOICE_PROVIDER(), voiceId: VOICE_ID() },
-    transcriber: { provider: 'deepgram', model: 'nova-2', language: 'en' },
+    voice:       selectVoice(langs),
+    transcriber: selectTranscriber(langs),
     backgroundSound: 'off',
-    // Outbound: WE call THEM, so the first thing the patient hears IS
-    // the assistant — identify and ask in one breath.
-    firstMessage: 'Hi, this is Layla calling about your upcoming appointment — do you have a quick moment?',
+    // Outbound: WE call THEM, so the first thing the contact hears IS
+    // the assistant — identify and ask in one breath. See
+    // reminderFirstMessage for the vertical/language wording.
+    firstMessage: reminderFirstMessage(org.vertical, langs),
     serverUrl:        `${appUrl}/api/webhooks/vapi/call-end`,
     serverUrlSecret:  webhookSecret ?? undefined,
     serverMessages: ['end-of-call-report', 'status-update', 'hang'],

@@ -30,6 +30,7 @@ import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 import { blockedReason } from '@/lib/billing/org-access'
 import { renderSmsForConsultation, type SmsMessageType } from '@/lib/sms-messages'
+import { getVerticalConfig } from '@/lib/vertical/config'
 import { withCronLock } from '@/lib/cron-locks'
 import { isFeatureAllowedForPlan, planToTier } from '@/lib/billing/enforce-tier'
 
@@ -43,7 +44,7 @@ export async function sendConsultationReminders() {
     const window2End    = new Date(now.getTime() +  3 * 3600_000).toISOString()
 
     const orgSelect = `
-      name, timezone, plan, plan_status, trial_ends_at,
+      name, timezone, vertical, plan, plan_status, trial_ends_at,
       sms_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
       sms_template_reminder_24h, sms_template_reminder_2h,
       phone, email
@@ -51,7 +52,7 @@ export async function sendConsultationReminders() {
 
     const contactSelect = `
       id, first_name, email, phone,
-      opted_out_sms, sms_consent
+      opted_out_sms, sms_consent, preferred_language
     `
 
     // ┌─ Contract for the public-booking flow (Phase 4 W2/W4): ────┐
@@ -219,10 +220,39 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
     })
 
     const is24h = type === 'reminder_24h'
-    const subject = is24h ? 'Reminder: Your consultation tomorrow' : 'Your consultation is in 2 hours'
-    const body = is24h
-      ? `Hi ${contact.first_name},\n\nThis is a reminder that you have a consultation scheduled for ${dateStr}.\n\nIf you need to reschedule, please contact us as soon as possible.\n\nWe look forward to seeing you!`
-      : `Hi ${contact.first_name},\n\nJust a reminder that your consultation is coming up at ${dateStr}.\n\nSee you soon!`
+
+    // Multi-vertical: the scheduled-thing noun + the email language.
+    // Med-spa keeps its exact English 'consultation' literals (the
+    // engagement baseline on this surface is 'consultation', NOT
+    // terms.engagement) so its output stays byte-for-byte identical.
+    // Other verticals swap in terms.engagement, and — keyed off the
+    // CONTACT's preferred_language, not the owner's — render a Spanish
+    // variant when the customer is Spanish-preferring.
+    const cfg = getVerticalConfig(org.vertical)
+    const isMedspa = cfg.vertical === 'medspa'
+    const emailLang: 'en' | 'es' =
+      !isMedspa && contact.preferred_language === 'es' ? 'es' : 'en'
+
+    let subject: string
+    let body: string
+    if (isMedspa) {
+      subject = is24h ? 'Reminder: Your consultation tomorrow' : 'Your consultation is in 2 hours'
+      body = is24h
+        ? `Hi ${contact.first_name},\n\nThis is a reminder that you have a consultation scheduled for ${dateStr}.\n\nIf you need to reschedule, please contact us as soon as possible.\n\nWe look forward to seeing you!`
+        : `Hi ${contact.first_name},\n\nJust a reminder that your consultation is coming up at ${dateStr}.\n\nSee you soon!`
+    } else if (emailLang === 'es') {
+      const noun = cfg.terms.engagementEs
+      subject = is24h ? `Recordatorio: su ${noun} es mañana` : `Su ${noun} es en 2 horas`
+      body = is24h
+        ? `Hola ${contact.first_name},\n\nLe recordamos su ${noun}: ${dateStr}.\n\nSi necesita reprogramar, contáctenos lo antes posible.\n\n¡Esperamos verle pronto!`
+        : `Hola ${contact.first_name},\n\nSu ${noun} es en aproximadamente 2 horas: ${dateStr}.\n\n¡Nos vemos pronto!`
+    } else {
+      const noun = cfg.terms.engagement
+      subject = is24h ? `Reminder: Your ${noun} tomorrow` : `Your ${noun} is in 2 hours`
+      body = is24h
+        ? `Hi ${contact.first_name},\n\nThis is a reminder that you have a ${noun} scheduled for ${dateStr}.\n\nIf you need to reschedule, please contact us as soon as possible.\n\nWe look forward to seeing you!`
+        : `Hi ${contact.first_name},\n\nJust a reminder that your ${noun} is coming up at ${dateStr}.\n\nSee you soon!`
+    }
 
     const queuedRow = await findOrInsertQueuedReminderEmailRow({
       organization_id: consultation.organization_id,
@@ -239,10 +269,15 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
       let providerId: string | undefined
       let sendError: string | undefined
       try {
+        // Brand fallback when the org has no name: 'your <business noun>'.
+        // Med-spa's terms.business is 'clinic', so this stays 'your clinic'
+        // (byte-identical); other verticals get 'your business' / 'su negocio'.
+        const businessFallback =
+          emailLang === 'es' ? `su ${cfg.terms.businessEs}` : `your ${cfg.terms.business}`
         const result = await sendEmail({
           to: contact.email,
           subject,
-          html: wrapEmailHtml(body, org.name ?? 'your clinic'),
+          html: wrapEmailHtml(body, org.name ?? businessFallback),
           idempotencyKey: queuedRow.id,
         })
         providerId = result.provider_id
@@ -307,6 +342,10 @@ export async function sendConsultationSms({
   org: {
     name: string
     timezone: string
+    /** Drives per-vertical customer copy in renderSmsForConsultation.
+     *  Callers that don't select it (unknown → med-spa) stay
+     *  byte-identical. */
+    vertical?: string | null
     sms_enabled?: boolean
     sms_confirmation_enabled?: boolean
     sms_reminder_24h_enabled?: boolean
@@ -330,6 +369,9 @@ export async function sendConsultationSms({
     phone?: string | null
     opted_out_sms?: boolean
     sms_consent?: boolean
+    /** Selects the customer-facing SMS language for non-med-spa
+     *  verticals; absent → English. */
+    preferred_language?: string | null
   }
   consultation: { id: string; organization_id: string; scheduled_at: string }
   /**

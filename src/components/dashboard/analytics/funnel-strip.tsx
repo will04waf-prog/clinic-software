@@ -32,7 +32,7 @@ export function FunnelStrip({ funnel }: Props) {
     <section className="flex flex-col gap-3">
       <header className="flex items-baseline gap-3">
         <h2 className="text-[17px] font-bold text-[#14241D]">Conversion funnel</h2>
-        <span className="text-[12.5px] text-[#7E8C90]">Lead → patient over the period</span>
+        <span className="text-[12.5px] text-[#7E8C90]">Lead → booked over the period</span>
       </header>
 
       <div className="rounded-2xl bg-white p-5 shadow-[0_1px_2px_rgba(11,32,39,0.05)]">

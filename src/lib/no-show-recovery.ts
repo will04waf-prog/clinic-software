@@ -177,6 +177,7 @@ export async function sendNoShowRecovery(): Promise<{ considered: number; sent: 
               idempotencyKey: `no-show-recovery:${raw.id}`,
             })
             sent = true
+            channel = 'email'
           } catch (err) {
             console.error(`[no-show-recovery] email failed for consultation ${raw.id}:`, err instanceof Error ? err.message : err)
           }
@@ -188,7 +189,7 @@ export async function sendNoShowRecovery(): Promise<{ considered: number; sent: 
             organization_id: raw.organization_id,
             contact_id: contact.id,
             action: 'no_show_recovery_sent',
-            metadata: { consultation_id: raw.id, channel: canSms ? 'sms' : 'email' },
+            metadata: { consultation_id: raw.id, channel },
           })
         } else {
           // Nothing sendable (no consented phone, no email) — release

@@ -26,7 +26,7 @@ function email7d(firstName: string, orgName: string) {
       </ul>
       ${p(`You have 7 days left on your trial. Subscribe anytime to keep full access.`)}
       <p style="margin:24px 0 8px 0;">${btn('Go to your dashboard', `${APP_URL}/dashboard`)}</p>
-      <p style="margin:8px 0 0 0;">${btn('Subscribe now', `${APP_URL}/settings`, '#111827')}</p>
+      <p style="margin:8px 0 0 0;">${btn('Subscribe now', `${APP_URL}/settings`)}</p>
     `),
   }
 }

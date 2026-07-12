@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Not source: agent worktrees + design-sync bundles were dragging
+    // ~1,370 vendored files (80k problems) into the lint run, making
+    // `npm run lint` useless as a gate.
+    ".claude/**",
+    "ds-bundle/**",
+    ".design-sync/**",
+    ".ds-sync/**",
+    "node_modules/**",
   ]),
 ]);
 

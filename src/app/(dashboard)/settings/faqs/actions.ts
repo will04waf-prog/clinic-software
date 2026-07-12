@@ -83,7 +83,7 @@ async function requireOwner(): Promise<{ ok: true; organizationId: string } | { 
     .single()
   if (profileError || !profile)    return { ok: false, error: 'Profile not found' }
   if (profile.is_active === false) return { ok: false, error: 'Account deactivated' }
-  if (profile.role !== 'owner')    return { ok: false, error: 'Only the clinic owner can edit FAQs.' }
+  if (profile.role !== 'owner')    return { ok: false, error: 'Only the business owner can edit FAQs.' }
   if (!profile.organization_id)    return { ok: false, error: 'No organization on profile' }
   return { ok: true, organizationId: profile.organization_id as string }
 }
@@ -146,7 +146,7 @@ async function writeFaqs(organizationId: string, rows: FaqRow[]): Promise<FaqAct
   // before the DB CHECK does — friendlier error, and avoids any
   // partial-write ambiguity. The DB CHECK is the authoritative gate.
   if (rows.length > MAX_FAQS) {
-    return { ok: false, error: `At most ${MAX_FAQS} FAQs per clinic` }
+    return { ok: false, error: `At most ${MAX_FAQS} FAQs per business` }
   }
   const normalized = repositionInPlace(rows)
   const { error } = await supabaseAdmin
@@ -186,7 +186,7 @@ export async function addFaq(input: {
 
   const current = await loadFaqs(auth.organizationId)
   if (current.length >= MAX_FAQS) {
-    return { ok: false, error: `At most ${MAX_FAQS} FAQs per clinic` }
+    return { ok: false, error: `At most ${MAX_FAQS} FAQs per business` }
   }
   // New entries land at the bottom of the list — owners who care
   // about order can drag/up-down to reposition. Appending preserves

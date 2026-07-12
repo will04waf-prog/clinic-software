@@ -30,9 +30,9 @@ export default async function SettingsPage() {
     .select(`
       full_name, email, role,
       organization:organizations(
-        name, slug, plan, timezone, plan_status, stripe_customer_id, procedures,
+        name, slug, plan, timezone, plan_status, stripe_customer_id, procedures, vertical,
         sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
-        sms_template_confirmation, sms_template_reminder_24h, sms_template_reminder_2h,
+        sms_template_confirmation, sms_template_confirmation_es, sms_template_reminder_24h, sms_template_reminder_2h,
         ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end,
         caller_languages, owner_language, notification_channel, owner_notify_e164
       )
@@ -125,9 +125,10 @@ export default async function SettingsPage() {
           sms_reminder_24h_enabled:  org?.sms_reminder_24h_enabled  ?? true,
           sms_reminder_2h_enabled:   org?.sms_reminder_2h_enabled   ?? true,
           sms_template_confirmation: org?.sms_template_confirmation ?? null,
+          sms_template_confirmation_es: org?.sms_template_confirmation_es ?? null,
           sms_template_reminder_24h: org?.sms_template_reminder_24h ?? null,
           sms_template_reminder_2h:  org?.sms_template_reminder_2h  ?? null,
-        }} />
+        }} vertical={(org?.vertical as string | null) ?? null} />
 
         {/* AI Twin sits under SMS — it's downstream of SMS being on. */}
         <AiTwinSettingsCard initial={{
@@ -140,7 +141,7 @@ export default async function SettingsPage() {
             + /api/org/voice-examples, so no server prefetch needed.
             The anchor is the SetupGuide's "Add voice examples" target. */}
         <div id="ai-twin-training" className="scroll-mt-24">
-          <AiVoiceTrainingCard />
+          <AiVoiceTrainingCard vertical={(org?.vertical as string | null) ?? null} />
         </div>
 
         {/* Voice training health (Phase 2 W8). Loads via /api/org/voice-health

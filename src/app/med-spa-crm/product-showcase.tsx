@@ -33,7 +33,7 @@ const NAV_ITEMS = [
 const RECENT_LEADS = [
   { name: 'Sofia Martinez',  contact: 'sofia.m@email.com',  stage: 'New Inquiry',    color: '#02C39A', time: '2h ago'    },
   { name: 'Emma Chen',       contact: 'emma.c@email.com',   stage: 'Follow-Up Sent', color: '#d97706', time: '5h ago'    },
-  { name: 'Olivia Patel',    contact: 'olivia.p@email.com', stage: 'Consult Booked', color: '#059669', time: 'Yesterday' },
+  { name: 'Olivia Patel',    contact: 'olivia.p@email.com', stage: 'Consult Booked', color: '#02C39A', time: 'Yesterday' },
   { name: 'Isabella Torres', contact: 'isa.t@email.com',    stage: 'New Inquiry',    color: '#02C39A', time: 'Yesterday' },
 ]
 
@@ -60,7 +60,7 @@ const PIPELINE = [
     ],
   },
   {
-    name: 'Consult Booked', color: '#059669',
+    name: 'Consult Booked', color: '#02C39A',
     leads: [
       { name: 'Olivia Patel', procedure: 'Laser Resurfacing' },
       { name: 'James Wilson', procedure: 'Botox'             },

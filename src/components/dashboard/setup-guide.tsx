@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   CheckCircle2, Circle, Lock, ArrowRight, Sparkles, X, type LucideIcon,
 } from 'lucide-react'
+import { getVerticalConfig, type Vertical } from '@/lib/vertical/config'
 
 // ── Shape returned by /api/dashboard/setup-status ──────────────────
 interface SetupStatus {
@@ -62,7 +63,7 @@ const DISMISS_KEY = 'tarhunna:setup-upsell-dismissed'
  * Fetches once on mount. Failures are silent — the dashboard must keep
  * rendering — exactly like the phone-number banner it sits above.
  */
-export function SetupGuide() {
+export function SetupGuide({ vertical = 'medspa' }: { vertical?: Vertical } = {}) {
   const [status, setStatus] = useState<SetupStatus | null>(null)
   const [dismissedUpsell, setDismissedUpsell] = useState(false)
 
@@ -82,7 +83,10 @@ export function SetupGuide() {
   if (!status) return null
 
   const { signals: s, capabilities: caps } = status
-  const groups = buildGroups(status)
+  // Business noun for owner-facing copy. Med-spa resolves to 'clinic'
+  // (byte-identical to today); other verticals get 'business'.
+  const businessTerm = getVerticalConfig(vertical).terms.business
+  const groups = buildGroups(status, vertical)
 
   // Progress is measured only over steps the org can actually act on —
   // locked (higher-tier) groups don't count against them.
@@ -139,7 +143,7 @@ export function SetupGuide() {
           </div>
           <h3 className="mt-2 text-lg font-bold text-[#14241d]">Finish setting up your front desk</h3>
           <p className="mt-1 text-sm text-gray-600">
-            A few steps stand between you and Layla answering your clinic&apos;s calls.
+            A few steps stand between you and Layla answering your {businessTerm}&apos;s calls.
           </p>
         </div>
         <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#028090] ring-1 ring-[#02C39A]/30">
@@ -239,14 +243,16 @@ function GroupBlock({ group }: { group: Group }) {
  * step lists. Copy is owner-facing and benefit-led; hrefs point at the
  * exact settings surface for each step.
  */
-function buildGroups(status: SetupStatus): Group[] {
+function buildGroups(status: SetupStatus, vertical: Vertical): Group[] {
   const { signals: s, capabilities: caps, bookingSlug } = status
   const bookingHref = '/settings/booking'
+  // Business noun ('clinic' for med-spa — byte-identical; 'business' otherwise).
+  const businessTerm = getVerticalConfig(vertical).terms.business
 
   const foundation: Group = {
     key: 'foundation',
     title: 'Build your booking engine',
-    blurb: 'The essentials every clinic needs to take bookings.',
+    blurb: `The essentials every ${businessTerm} needs to take bookings.`,
     icon: Sparkles,
     locked: false,
     steps: [
@@ -291,7 +297,7 @@ function buildGroups(status: SetupStatus): Group[] {
   const aiTwin: Group = {
     key: 'ai-twin',
     title: 'Train your AI Twin',
-    blurb: "Teach the AI to text clients back in your clinic's own voice.",
+    blurb: `Teach the AI to text clients back in your ${businessTerm}'s own voice.`,
     icon: Sparkles,
     locked: !caps.aiTwin,
     unlockPlan: 'Professional',
@@ -319,13 +325,13 @@ function buildGroups(status: SetupStatus): Group[] {
       {
         key: 'phone',
         title: "Get Layla's phone number",
-        description: 'Provision the number Layla answers, then forward your clinic line to it.',
+        description: `Provision the number Layla answers, then forward your ${businessTerm} line to it.`,
         href: '/settings/call-agent',
         done: s.hasPhoneNumber,
       },
       {
         key: 'address',
-        title: 'Add your clinic address',
+        title: `Add your ${businessTerm} address`,
         description: '"Where are you located?" is a top call — give Layla the answer and directions.',
         href: '/settings/call-agent',
         done: s.hasAddress,

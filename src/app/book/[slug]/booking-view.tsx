@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CalendarCheck,
 } from 'lucide-react'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 /**
  * /book/[slug] — Phase 4 W2 patient-facing booking flow.
@@ -98,7 +99,133 @@ function priceDollars(cents: number | null): string | null {
   return `$${(cents / 100).toFixed(0)}`
 }
 
-export function BookingView({ slug }: { slug: string }) {
+// ── Vertical + language string table ─────────────────────────
+// Every customer-facing string is driven from here so (a) trades/food/
+// general tenants stop seeing med-spa nouns ('clinic'/'appointment')
+// and (b) a Spanish caller who followed Layla's ?lang=es link reads the
+// page in Spanish. The EN + med-spa branch of every entry reproduces the
+// exact literal this page showed before, so med-spa output is unchanged.
+// The scheduled-thing noun on this surface is 'appointment' for med-spa
+// (matching the SMS-consent copy), so terms.engagement is byte-identical
+// and used directly.
+type Strings = ReturnType<typeof buildStrings>
+
+function buildStrings(lang: 'en' | 'es', vertical: string | null | undefined) {
+  const terms = getVerticalConfig(vertical).terms
+  const es = lang === 'es'
+  const biz = es ? terms.businessEs : terms.business
+  const engagement = es ? terms.engagementEs : terms.engagement
+  // Spanish article/demonstrative agreement: among the current verticals
+  // only med-spa's 'clínica' is feminine; every other business noun is
+  // 'negocio' (masculine). Local gender flag — see needs_config_term note.
+  const fem = vertical === 'medspa'
+  const el = fem ? 'la' : 'el'
+  const este = fem ? 'esta' : 'este'
+  const Este = fem ? 'Esta' : 'Este'
+  return {
+    errBookingDisabledTitle: es ? 'Las reservas en línea están pausadas' : 'Online booking is paused',
+    errNotFoundTitle: es ? `No pudimos encontrar ${este} ${biz}` : `We couldn't find this ${biz}`,
+    errSetupTitle: es ? 'Configuración incompleta' : 'Setup not complete',
+    errGenericTitle: es ? 'Algo salió mal' : 'Something went wrong',
+    errBookingDisabledBody: es
+      ? `${Este} ${biz} no está aceptando reservas en línea en este momento. Comunícate directamente.`
+      : `This ${biz} isn't taking online bookings right now. Please reach out to them directly.`,
+    errNotFoundBody: es
+      ? `Revisa el enlace o comunícate directamente con ${el} ${biz}.`
+      : `Double-check the link or contact the ${biz} directly.`,
+    errGenericBody: es ? 'Inténtalo de nuevo en un momento.' : 'Please try again in a moment.',
+    loading: es ? 'Cargando…' : 'Loading…',
+
+    labelService: es ? 'Elige un servicio' : 'Pick a service',
+    labelSlot: es ? 'Elige un horario' : 'Pick a time',
+    labelDetails: es ? 'Tus datos' : 'Your details',
+    labelDone: es ? 'Reservado' : 'Booked',
+    held: es ? 'Apartado' : 'Held',
+
+    chooseBook: es ? '¿Qué te gustaría reservar?' : "Choose what you'd like to book.",
+    noServicesTitle: es ? 'Aún no hay servicios disponibles' : 'No services available yet',
+    noServicesBody: es
+      ? `${Este} ${biz} aún no ha configurado las reservas en línea. Comunícate directamente para agendar.`
+      : `This ${biz} hasn't set up online booking yet. Please contact them directly to schedule.`,
+
+    changeService: es ? 'Cambiar servicio' : 'Change service',
+    loadingTimes: es ? 'Cargando horarios…' : 'Loading times…',
+    couldntLoadTimes: es ? 'No se pudieron cargar los horarios' : "Couldn't load times",
+    noAvailability: es ? 'No hay disponibilidad en este momento.' : 'No availability right now.',
+    lookupFailed: es ? 'La búsqueda falló' : 'Lookup failed',
+
+    reachYouError: es
+      ? `Deja un teléfono o correo para que ${el} ${biz} pueda contactarte.`
+      : `Leave a phone number or email so the ${biz} can reach you.`,
+    enterNameError: es ? 'Por favor ingresa tu nombre.' : 'Please enter your name.',
+    onListTitle: es ? 'Estás en la lista' : "You're on the list",
+    onListBody: (orgName: string) => es
+      ? `${orgName} tiene tus datos y te contactará en cuanto se abra un horario.`
+      : `${orgName} has your details and will reach out as soon as a time opens up.`,
+    noTimesTitle: es ? 'No hay horarios disponibles ahora' : 'No times are open right now',
+    noTimesBody: (orgName: string) => es
+      ? `Deja tus datos y ${orgName} te contactará en cuanto se abra algo.`
+      : `Leave your details and ${orgName} will reach out as soon as something opens up.`,
+    phName: es ? 'Tu nombre' : 'Your name',
+    phPhone: es ? 'Teléfono' : 'Phone',
+    phEmailWaitlist: es ? 'Correo (opcional si dejaste teléfono)' : 'Email (optional if you left a phone)',
+    waitlistConsentPre: es ? 'Acepto recibir mensajes de ' : 'OK to text me from ',
+    waitlistConsentPost: es
+      ? ' sobre disponibilidad. Responde STOP para cancelar. Pueden aplicar tarifas de mensajes y datos.'
+      : ' about openings. Reply STOP to opt out. Message and data rates may apply.',
+    notifyBtn: es ? 'Avísame cuando haya horario' : 'Notify me when a time opens',
+    sending: es ? 'Enviando…' : 'Sending…',
+    somethingWrong: es ? 'Algo salió mal. Inténtalo de nuevo.' : 'Something went wrong — please try again.',
+
+    changeTime: es ? 'Cambiar horario' : 'Change time',
+    withLabel: es ? 'con' : 'with',
+    allTimesIn: (tz: string) => (es ? `Todos los horarios en ${tz}` : `All times in ${tz}`),
+    labelYourName: es ? 'Tu nombre' : 'Your name',
+    labelPhone: es ? 'Teléfono' : 'Phone',
+    labelEmailOpt: es ? 'Correo (opcional)' : 'Email (optional)',
+    labelNotes: es ? '¿Algo que debamos saber? (opcional)' : 'Anything we should know? (optional)',
+    smsConsentPre: es ? 'Acepto recibir mensajes SMS de ' : 'I agree to receive SMS messages from ',
+    smsConsentPost: es
+      ? ` sobre mi ${engagement} (confirmación + recordatorios). Responde STOP para cancelar. Pueden aplicar tarifas de mensajes y datos.`
+      : ` about my ${engagement} (confirmation + reminders). Reply STOP to opt out. Message and data rates may apply.`,
+    booking: es ? 'Reservando…' : 'Booking…',
+    confirmBooking: es ? 'Confirmar reserva' : 'Confirm booking',
+
+    errNamePhone: es ? 'Por favor ingresa tu nombre y teléfono.' : 'Please enter your name and phone number.',
+    errConsent: es
+      ? 'Marca la casilla de consentimiento SMS para recibir tu confirmación.'
+      : 'Please check the SMS consent box to receive your confirmation.',
+    errSlotTaken: es ? 'Ese horario acaba de ocuparse. Por favor elige otro.' : 'That slot was just taken — please pick another time.',
+    errTooMany: es ? 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.' : 'Too many requests. Please wait a moment and try again.',
+    errCouldNotHold: es ? 'No se pudo apartar este horario. Inténtalo de nuevo.' : 'Could not hold this slot. Please try again.',
+    errHoldExpired: es ? 'Tu reserva temporal expiró. Por favor elige un horario de nuevo.' : 'Your hold expired. Please pick a slot again.',
+    errCouldNotConfirm: es ? 'No se pudo confirmar tu reserva. Inténtalo de nuevo.' : 'Could not confirm your booking. Please try again.',
+    errNetwork: es ? 'Error de red. Inténtalo de nuevo.' : 'Network error. Please try again.',
+    errHoldExpiredCountdown: es
+      ? 'Tu reserva temporal expiró. Por favor elige un horario de nuevo — no queremos perder tu lugar.'
+      : "Your hold expired. Please pick a slot again — we don't want to lose your spot.",
+
+    doneTitle: es ? 'Tu reserva está confirmada' : "You're booked",
+    doneBody: es
+      ? 'Recibirás una confirmación y un recordatorio por mensaje de texto si tu teléfono está inscrito para mensajes.'
+      : "You'll get a confirmation and a reminder by text if your phone is opted in for messages.",
+    atLabel: es ? 'en' : 'at',
+    doneChange: (orgName: string) => es
+      ? `¿Necesitas cambiar tu horario? Contacta a ${orgName} y lo moverán.`
+      : `Need to change your time? Contact ${orgName} and they'll move it.`,
+  }
+}
+
+export function BookingView({
+  slug,
+  vertical = null,
+  lang = 'en',
+}: {
+  slug: string
+  vertical?: string | null
+  lang?: 'en' | 'es'
+}) {
+  const t = useMemo(() => buildStrings(lang, vertical), [lang, vertical])
   // ── Top-level lookup state ──
   const [lookup, setLookup] = useState<PublicLookup | null>(null)
   const [lookupError, setLookupError] = useState<string | null>(null)
@@ -142,13 +269,13 @@ export function BookingView({ slug }: { slug: string }) {
         // Soft expiry — clear hold state, ask patient to pick again.
         setHoldInfo(null)
         setStep('slot')
-        setFormError("Your hold expired. Please pick a slot again — we don't want to lose your spot.")
+        setFormError(t.errHoldExpiredCountdown)
       }
     }
     tick()
     const id = window.setInterval(tick, 1000)
     return () => window.clearInterval(id)
-  }, [holdInfo])
+  }, [holdInfo, t])
 
   // ── Initial org lookup ──
   useEffect(() => {
@@ -192,18 +319,18 @@ export function BookingView({ slug }: { slug: string }) {
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        setSlotsError(typeof body.message === 'string' ? body.message : 'No availability right now.')
+        setSlotsError(typeof body.message === 'string' ? body.message : t.noAvailability)
         setSlots([])
         return
       }
       const json = (await res.json()) as { slots: Slot[] }
       setSlots(json.slots ?? [])
     } catch (err) {
-      setSlotsError(err instanceof Error ? err.message : 'Lookup failed')
+      setSlotsError(err instanceof Error ? err.message : t.lookupFailed)
     } finally {
       setSlotsLoading(false)
     }
-  }, [slug])
+  }, [slug, t])
 
   useEffect(() => {
     if (step === 'slot' && serviceId) {
@@ -265,11 +392,11 @@ export function BookingView({ slug }: { slug: string }) {
     if (!serviceId || !selectedSlot || !selectedProviderId || !lookup) return
     setFormError(null)
     if (!name.trim() || !phone.trim()) {
-      setFormError('Please enter your name and phone number.')
+      setFormError(t.errNamePhone)
       return
     }
     if (!smsConsent) {
-      setFormError('Please check the SMS consent box to receive your confirmation.')
+      setFormError(t.errConsent)
       return
     }
 
@@ -293,13 +420,13 @@ export function BookingView({ slug }: { slug: string }) {
       const holdBody = await holdRes.json().catch(() => ({}))
       if (!holdRes.ok) {
         if (holdRes.status === 409) {
-          setFormError('That slot was just taken — please pick another time.')
+          setFormError(t.errSlotTaken)
           setStep('slot')
           if (serviceId) void loadSlots(serviceId)
         } else if (holdRes.status === 429) {
-          setFormError(holdBody.message ?? 'Too many requests. Please wait a moment and try again.')
+          setFormError(holdBody.message ?? t.errTooMany)
         } else {
-          setFormError(holdBody.message ?? holdBody.error ?? 'Could not hold this slot. Please try again.')
+          setFormError(holdBody.message ?? holdBody.error ?? t.errCouldNotHold)
         }
         return
       }
@@ -323,12 +450,12 @@ export function BookingView({ slug }: { slug: string }) {
       const confirmBody = await confirmRes.json().catch(() => ({}))
       if (!confirmRes.ok) {
         if (confirmRes.status === 410) {
-          setFormError(confirmBody.message ?? 'Your hold expired. Please pick a slot again.')
+          setFormError(confirmBody.message ?? t.errHoldExpired)
           setHoldInfo(null)
           setStep('slot')
           if (serviceId) void loadSlots(serviceId)
         } else {
-          setFormError(confirmBody.message ?? 'Could not confirm your booking. Please try again.')
+          setFormError(confirmBody.message ?? t.errCouldNotConfirm)
         }
         return
       }
@@ -339,7 +466,7 @@ export function BookingView({ slug }: { slug: string }) {
       })
       setStep('done')
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Network error. Please try again.')
+      setFormError(err instanceof Error ? err.message : t.errNetwork)
     } finally {
       setHolding(false)
       setConfirming(false)
@@ -352,18 +479,18 @@ export function BookingView({ slug }: { slug: string }) {
       <FullPage>
         <ErrorCard
           title={
-            lookupError === 'booking_disabled' ? 'Online booking is paused' :
-            lookupError === 'not_found' ? "We couldn't find this clinic" :
-            lookupError === 'org_timezone_missing' ? 'Setup not complete' :
-            'Something went wrong'
+            lookupError === 'booking_disabled' ? t.errBookingDisabledTitle :
+            lookupError === 'not_found' ? t.errNotFoundTitle :
+            lookupError === 'org_timezone_missing' ? t.errSetupTitle :
+            t.errGenericTitle
           }
           body={
             lookupErrorMessage ??
             (lookupError === 'booking_disabled'
-              ? 'This clinic isn\'t taking online bookings right now. Please reach out to them directly.'
+              ? t.errBookingDisabledBody
               : lookupError === 'not_found'
-              ? 'Double-check the link or contact the clinic directly.'
-              : 'Please try again in a moment.')
+              ? t.errNotFoundBody
+              : t.errGenericBody)
           }
         />
       </FullPage>
@@ -374,7 +501,7 @@ export function BookingView({ slug }: { slug: string }) {
       <FullPage>
         <div className="flex items-center gap-2 text-sm text-[#7E8C90]">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading…
+          {t.loading}
         </div>
       </FullPage>
     )
@@ -387,6 +514,7 @@ export function BookingView({ slug }: { slug: string }) {
         step={step}
         secondsLeft={secondsLeft}
         showCountdown={step === 'details' && holdInfo !== null}
+        t={t}
       />
 
       <main className="mx-auto w-full max-w-2xl px-5 py-8">
@@ -394,7 +522,7 @@ export function BookingView({ slug }: { slug: string }) {
             step-in slide plays; reduced-motion disables it globally. */}
         <div key={step} className="step-in">
         {step === 'service' && (
-          <ServiceStep services={lookup.services} onPick={pickService} />
+          <ServiceStep services={lookup.services} onPick={pickService} t={t} />
         )}
         {step === 'slot' && service && (
           <SlotStep
@@ -407,6 +535,7 @@ export function BookingView({ slug }: { slug: string }) {
             onBack={backToServices}
             slug={slug}
             orgName={lookup.org.name}
+            t={t}
           />
         )}
         {step === 'details' && service && selectedSlot && (
@@ -428,6 +557,7 @@ export function BookingView({ slug }: { slug: string }) {
             onSubmit={submitBooking}
             onBack={backToSlots}
             orgName={lookup.org.name}
+            t={t}
           />
         )}
         {step === 'done' && service && confirmed && (
@@ -440,6 +570,7 @@ export function BookingView({ slug }: { slug: string }) {
             providerId={selectedProviderId}
             longFmt={longFmt}
             timeFmt={timeFmt}
+            t={t}
           />
         )}
         </div>
@@ -465,17 +596,19 @@ function Header({
   step,
   secondsLeft,
   showCountdown,
+  t,
 }: {
   orgName: string
   step: Step
   secondsLeft: number
   showCountdown: boolean
+  t: Strings
 }) {
   const labels: Record<Step, string> = {
-    service: 'Pick a service',
-    slot:    'Pick a time',
-    details: 'Your details',
-    done:    'Booked',
+    service: t.labelService,
+    slot:    t.labelSlot,
+    details: t.labelDetails,
+    done:    t.labelDone,
   }
   return (
     <header className="border-b border-[#0B2027]/10 bg-[#FAF6EC]">
@@ -495,7 +628,7 @@ function Header({
               : 'bg-[#02C39A]/15 text-[#04B08C]'
           }`}>
             <Clock className="h-3 w-3" />
-            Held {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
+            {t.held} {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
           </div>
         )}
       </div>
@@ -519,7 +652,7 @@ function ErrorCard({ title, body }: { title: string; body: string }) {
  * rides the existing /api/capture endpoint (dedup + automations +
  * owner alert + patient ack) tagged origin:'waitlist'.
  */
-export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; orgName: string; serviceName: string }) {
+export function WaitlistForm({ slug, orgName, serviceName, t }: { slug: string; orgName: string; serviceName: string; t: Strings }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -529,8 +662,8 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
   const [error, setError] = useState<string | null>(null)
 
   async function submit() {
-    if (!name.trim()) { setError('Please enter your name.'); return }
-    if (!phone.trim() && !email.trim()) { setError('Leave a phone number or email so the clinic can reach you.'); return }
+    if (!name.trim()) { setError(t.enterNameError); return }
+    if (!phone.trim() && !email.trim()) { setError(t.reachYouError); return }
     setSubmitting(true)
     setError(null)
     try {
@@ -550,11 +683,11 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? 'Something went wrong — please try again.')
+        throw new Error(body.error ?? t.somethingWrong)
       }
       setDone(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong — please try again.')
+      setError(err instanceof Error ? err.message : t.somethingWrong)
     } finally {
       setSubmitting(false)
     }
@@ -564,9 +697,9 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
     return (
       <div className="pop-in rounded-2xl border border-[#02C39A]/30 bg-[#FAF6EC] p-6 text-center">
         <CalendarCheck className="mx-auto h-6 w-6 text-[#02C39A]" />
-        <h3 className="mt-3 text-base font-semibold text-[#14241D]">You&apos;re on the list</h3>
+        <h3 className="mt-3 text-base font-semibold text-[#14241D]">{t.onListTitle}</h3>
         <p className="mt-1 text-[13px] text-[#4A5A60]">
-          {orgName} has your details and will reach out as soon as a time opens up.
+          {t.onListBody(orgName)}
         </p>
       </div>
     )
@@ -576,25 +709,24 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
 
   return (
     <div className="rounded-2xl border border-[#0B2027]/10 bg-[#FAF6EC] p-5">
-      <h3 className="text-[15px] font-semibold text-[#14241D]">No times are open right now</h3>
+      <h3 className="text-[15px] font-semibold text-[#14241D]">{t.noTimesTitle}</h3>
       <p className="mt-1 text-[13px] text-[#4A5A60]">
-        Leave your details and {orgName} will reach out as soon as something opens up.
+        {t.noTimesBody(orgName)}
       </p>
       <div className="mt-4 space-y-3">
         <input type="text" value={name} onChange={e => setName(e.target.value)}
-          placeholder="Your name" aria-label="Your name" autoComplete="name" className={inputCls} />
+          placeholder={t.phName} aria-label={t.phName} autoComplete="name" className={inputCls} />
         <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-          placeholder="Phone" aria-label="Phone" autoComplete="tel" className={inputCls} />
+          placeholder={t.phPhone} aria-label={t.phPhone} autoComplete="tel" className={inputCls} />
         <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-          placeholder="Email (optional if you left a phone)" aria-label="Email (optional if you left a phone)"
+          placeholder={t.phEmailWaitlist} aria-label={t.phEmailWaitlist}
           autoComplete="email" className={inputCls} />
         {phone.trim() !== '' && (
           <label className="flex items-start gap-2 rounded-lg border border-[#0B2027]/10 bg-white p-3 text-[12px] text-[#4A5A60]">
             <input type="checkbox" checked={smsConsent} onChange={e => setSmsConsent(e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-[#0B2027]/30 text-[#02C39A] focus:ring-[#02C39A]" />
             <span>
-              OK to text me from <strong>{orgName}</strong> about openings. Reply STOP to opt out.
-              Message and data rates may apply.
+              {t.waitlistConsentPre}<strong>{orgName}</strong>{t.waitlistConsentPost}
             </span>
           </label>
         )}
@@ -605,7 +737,7 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
           disabled={submitting}
           className="w-full rounded-lg bg-[#028090] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[#026B78] disabled:opacity-60 transition-colors"
         >
-          {submitting ? 'Sending…' : 'Notify me when a time opens'}
+          {submitting ? t.sending : t.notifyBtn}
         </button>
       </div>
     </div>
@@ -615,22 +747,24 @@ export function WaitlistForm({ slug, orgName, serviceName }: { slug: string; org
 function ServiceStep({
   services,
   onPick,
+  t,
 }: {
   services: Service[]
   onPick: (id: string) => void
+  t: Strings
 }) {
   if (services.length === 0) {
     return (
       <ErrorCard
-        title="No services available yet"
-        body="This clinic hasn't set up online booking yet. Please contact them directly to schedule."
+        title={t.noServicesTitle}
+        body={t.noServicesBody}
       />
     )
   }
   return (
     <div className="space-y-3">
       <p className="text-[13px] text-[#4A5A60]">
-        Choose what you'd like to book.
+        {t.chooseBook}
       </p>
       <ul className="space-y-2">
         {services.map(s => (
@@ -676,6 +810,7 @@ function SlotStep({
   onBack,
   slug,
   orgName,
+  t,
 }: {
   service: Service
   slotsByDay: Array<{ day: string; items: Slot[] }>
@@ -686,6 +821,7 @@ function SlotStep({
   onBack: () => void
   slug: string
   orgName: string
+  t: Strings
 }) {
   return (
     <div className="space-y-4">
@@ -695,7 +831,7 @@ function SlotStep({
         className="inline-flex items-center gap-1 text-[12px] font-medium text-[#7E8C90] hover:text-[#14241D]"
       >
         <ChevronLeft className="h-3.5 w-3.5" />
-        Change service
+        {t.changeService}
       </button>
 
       <div className="rounded-xl border border-[#0B2027]/10 bg-[#FAF6EC] p-3 text-[13px] text-[#14241D]">
@@ -706,14 +842,14 @@ function SlotStep({
       {slotsLoading && (
         <div className="flex items-center gap-2 text-sm text-[#7E8C90]">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading times…
+          {t.loadingTimes}
         </div>
       )}
       {slotsError && !slotsLoading && (
-        <ErrorCard title="Couldn't load times" body={slotsError} />
+        <ErrorCard title={t.couldntLoadTimes} body={slotsError} />
       )}
       {!slotsLoading && !slotsError && slotsByDay.length === 0 && (
-        <WaitlistForm slug={slug} orgName={orgName} serviceName={service.name} />
+        <WaitlistForm slug={slug} orgName={orgName} serviceName={service.name} t={t} />
       )}
 
       <div className="space-y-4">
@@ -759,6 +895,7 @@ function DetailsStep({
   onSubmit,
   onBack,
   orgName,
+  t,
 }: {
   service: Service
   slot: Slot
@@ -777,6 +914,7 @@ function DetailsStep({
   onSubmit: () => void
   onBack: () => void
   orgName: string
+  t: Strings
 }) {
   const provider = providers.find(p => p.id === providerId) ?? null
   return (
@@ -787,7 +925,7 @@ function DetailsStep({
         className="inline-flex items-center gap-1 text-[12px] font-medium text-[#7E8C90] hover:text-[#14241D]"
       >
         <ChevronLeft className="h-3.5 w-3.5" />
-        Change time
+        {t.changeTime}
       </button>
 
       <div className="rounded-xl border border-[#02C39A]/30 bg-white p-4 text-[13px] text-[#14241D]">
@@ -802,15 +940,15 @@ function DetailsStep({
         </p>
         {provider && (
           <p className="mt-1 text-[12px] text-[#7E8C90]">
-            with {provider.display_name}
+            {t.withLabel} {provider.display_name}
             {provider.role_label ? `, ${provider.role_label}` : ''}
           </p>
         )}
-        <p className="mt-1 text-[11px] text-[#7E8C90]">All times in {tz}</p>
+        <p className="mt-1 text-[11px] text-[#7E8C90]">{t.allTimesIn(tz)}</p>
       </div>
 
       <div className="space-y-3">
-        <FormRow label="Your name">
+        <FormRow label={t.labelYourName}>
           <input
             type="text"
             value={name}
@@ -819,7 +957,7 @@ function DetailsStep({
             className="w-full rounded-lg border border-[#0B2027]/15 bg-white px-3 py-2 text-[14px] text-[#14241D] focus:border-[#02C39A] focus:outline-none focus:ring-1 focus:ring-[#02C39A]"
           />
         </FormRow>
-        <FormRow label="Phone">
+        <FormRow label={t.labelPhone}>
           <input
             type="tel"
             value={phone}
@@ -829,7 +967,7 @@ function DetailsStep({
             className="w-full rounded-lg border border-[#0B2027]/15 bg-white px-3 py-2 text-[14px] text-[#14241D] focus:border-[#02C39A] focus:outline-none focus:ring-1 focus:ring-[#02C39A]"
           />
         </FormRow>
-        <FormRow label="Email (optional)">
+        <FormRow label={t.labelEmailOpt}>
           <input
             type="email"
             value={email}
@@ -838,7 +976,7 @@ function DetailsStep({
             className="w-full rounded-lg border border-[#0B2027]/15 bg-white px-3 py-2 text-[14px] text-[#14241D] focus:border-[#02C39A] focus:outline-none focus:ring-1 focus:ring-[#02C39A]"
           />
         </FormRow>
-        <FormRow label="Anything we should know? (optional)">
+        <FormRow label={t.labelNotes}>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
@@ -855,8 +993,7 @@ function DetailsStep({
             className="mt-0.5 h-4 w-4 rounded border-[#0B2027]/30 text-[#02C39A] focus:ring-[#02C39A]"
           />
           <span>
-            I agree to receive SMS messages from <strong>{orgName}</strong> about my appointment
-            (confirmation + reminders). Reply STOP to opt out. Message and data rates may apply.
+            {t.smsConsentPre}<strong>{orgName}</strong>{t.smsConsentPost}
           </span>
         </label>
       </div>
@@ -877,12 +1014,12 @@ function DetailsStep({
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Booking…
+            {t.booking}
           </>
         ) : (
           <>
             <CalendarCheck className="h-4 w-4" />
-            Confirm booking
+            {t.confirmBooking}
           </>
         )}
       </button>
@@ -899,6 +1036,7 @@ function DoneStep({
   providerId,
   longFmt,
   timeFmt,
+  t,
 }: {
   orgName: string
   service: Service
@@ -908,6 +1046,7 @@ function DoneStep({
   providerId: string | null
   longFmt: Intl.DateTimeFormat
   timeFmt: Intl.DateTimeFormat
+  t: Strings
 }) {
   const provider = providers.find(p => p.id === providerId) ?? null
   return (
@@ -916,14 +1055,14 @@ function DoneStep({
         <Check className="pop-in h-6 w-6 text-[#04B08C]" style={{ animationDelay: '120ms' }} />
       </div>
       <div>
-        <h2 className="text-[18px] font-semibold text-[#14241D]">You're booked</h2>
+        <h2 className="text-[18px] font-semibold text-[#14241D]">{t.doneTitle}</h2>
         <p className="mt-1 text-[13px] text-[#4A5A60]">
-          You'll get a confirmation and a reminder by text if your phone is opted in for messages.
+          {t.doneBody}
         </p>
       </div>
       <div className="mx-auto max-w-md rounded-xl border border-[#02C39A]/30 bg-white p-4 text-left text-[13px] text-[#14241D]">
         <p className="text-[11.5px] font-semibold uppercase tracking-wider text-[#04B08C]">
-          {service.name} at {orgName}
+          {service.name} {t.atLabel} {orgName}
         </p>
         <p className="mt-1 text-[15px] font-semibold">
           {longFmt.format(new Date(scheduledAt))}
@@ -934,13 +1073,13 @@ function DoneStep({
         </p>
         {provider && (
           <p className="mt-1 text-[12px] text-[#7E8C90]">
-            with {provider.display_name}
+            {t.withLabel} {provider.display_name}
             {provider.role_label ? `, ${provider.role_label}` : ''}
           </p>
         )}
       </div>
       <p className="text-[11.5px] text-[#7E8C90]">
-        Need to change your time? Contact {orgName} and they'll move it.
+        {t.doneChange(orgName)}
       </p>
     </div>
   )

@@ -74,7 +74,7 @@ const VERTICAL_OPTIONS: Array<{ value: BrandData['vertical']; label: string; exa
 ]
 
 const DEFAULT_SAMPLE = (
-  'Hi {{first_name}}, reminder of your appointment at {{clinic_name}} tomorrow at {{time}}. ' +
+  'Hi {{first_name}}, a reminder from {{business_name}} about tomorrow at {{time}}. ' +
   'Reply Y to confirm, R to reschedule, or STOP to opt out.'
 )
 
@@ -262,7 +262,7 @@ export function BrandRegistrationForm({
 
       {/* ── Campaign ─────────────────────────────────────── */}
       <Section title="Messaging campaign">
-        <Field label="Clinic vertical" required>
+        <Field label="Business category" required>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {VERTICAL_OPTIONS.map(opt => (
               <label

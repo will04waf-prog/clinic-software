@@ -17,6 +17,8 @@
   --color-brand-800: #054c57;
   --color-brand-900: #0b2027;
   --color-ivory-50: #faf8f3;
+  --color-ivory: #faf6ec;
+  --color-cream: #f5efe1;
 }
 
 /* Lenis smooth-scroll baseline (recommended defaults) */
@@ -283,7 +285,7 @@ html.lenis body {
         transparent 400px,
         transparent 600px
       ),
-      linear-gradient(90deg, #036b78 0%, #02b08c 100%);
+      linear-gradient(90deg, var(--color-brand-700) 0%, #02b08c 100%);
   }
 
   @media (prefers-reduced-motion: reduce) {

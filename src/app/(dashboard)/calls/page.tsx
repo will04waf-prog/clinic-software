@@ -19,6 +19,7 @@ import { Phone, PhoneIncoming, PhoneOutgoing, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
+import { CallLanguageBadge } from '@/components/calls/call-language-badge'
 
 const PAGE_SIZE = 50
 
@@ -78,7 +79,7 @@ export default async function CallsIndexPage({
 
   let query = supabase
     .from('call_logs')
-    .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, intent, contact:contacts!call_logs_contact_id_fkey(id, first_name, last_name)', { count: 'exact' })
+    .select('id, call_sid, direction, from_e164, to_e164, started_at, ended_at, duration_sec, outcome, intent, detected_language, is_urgent, urgency_reason, contact:contacts!call_logs_contact_id_fkey(id, first_name, last_name)', { count: 'exact' })
     .eq('organization_id', profile.organization_id as string)
     .order('started_at', { ascending: false, nullsFirst: false })
     .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
@@ -145,6 +146,7 @@ export default async function CallsIndexPage({
                     <th className="px-4 py-2.5 font-medium">When</th>
                     <th className="px-4 py-2.5 font-medium">Duration</th>
                     <th className="px-4 py-2.5 font-medium">Outcome</th>
+                    <th className="px-4 py-2.5 font-medium">Language</th>
                     <th className="px-4 py-2.5 font-medium">Intent</th>
                   </tr>
                 </thead>
@@ -185,6 +187,14 @@ export default async function CallsIndexPage({
                           {c.outcome && (
                             <span className={outcomeBadge}>{OUTCOME_LABEL[c.outcome] ?? c.outcome}</span>
                           )}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <CallLanguageBadge
+                            detectedLanguage={c.detected_language}
+                            isUrgent={c.is_urgent}
+                            urgencyReason={c.urgency_reason}
+                            variant="short"
+                          />
                         </td>
                         <td className="px-4 py-2.5 text-gray-600">{c.intent ?? '—'}</td>
                       </tr>

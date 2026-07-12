@@ -23,6 +23,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   Calendar, CalendarCheck, Check, AlertCircle, Loader2, X,
 } from 'lucide-react'
+import { getVerticalConfig, type VerticalTerms } from '@/lib/vertical/config'
 
 export type ManageState =
   | { kind: 'invalid' }
@@ -43,20 +44,24 @@ interface Slot { startUtc: string; endUtc: string; providerId: string }
 
 const SEARCH_HORIZON_DAYS = 14
 
-export function ManageView({ state }: { state: ManageState }) {
+export function ManageView({ state, vertical }: { state: ManageState; vertical: string | null }) {
+  // Terminology follows the tenant's vertical. The med-spa literal on this
+  // surface is 'appointment' (not 'consultation'), so terms.engagement is
+  // byte-identical for med-spa and used directly; clinic → terms.business.
+  const terms = getVerticalConfig(vertical).terms
   return (
     <div className="min-h-screen bg-[#FAF6EC] py-10 px-4">
       <div className="mx-auto max-w-xl rounded-2xl border border-[#0B2027]/10 bg-white p-6 shadow-sm">
-        {state.kind === 'invalid'  && <InvalidView />}
-        {state.kind === 'canceled' && <CanceledView orgName={state.orgName} />}
-        {state.kind === 'past'     && <PastView orgName={state.orgName} />}
-        {state.kind === 'active'   && <ActiveView state={state} />}
+        {state.kind === 'invalid'  && <InvalidView terms={terms} />}
+        {state.kind === 'canceled' && <CanceledView orgName={state.orgName} terms={terms} />}
+        {state.kind === 'past'     && <PastView orgName={state.orgName} terms={terms} />}
+        {state.kind === 'active'   && <ActiveView state={state} terms={terms} />}
       </div>
     </div>
   )
 }
 
-function InvalidView() {
+function InvalidView({ terms }: { terms: VerticalTerms }) {
   return (
     <div className="space-y-3 text-center">
       <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#B5710F]/15">
@@ -64,37 +69,35 @@ function InvalidView() {
       </div>
       <h1 className="text-[17px] font-semibold text-[#14241D]">This link can't be used</h1>
       <p className="text-[13px] text-[#4A5A60]">
-        The booking management link is invalid or has expired. If you need to change your
-        appointment, contact your clinic directly.
+        The booking management link is invalid or has expired. If you need to change your {terms.engagement}, contact your {terms.business} directly.
       </p>
     </div>
   )
 }
 
-function CanceledView({ orgName }: { orgName: string }) {
+function CanceledView({ orgName, terms }: { orgName: string; terms: VerticalTerms }) {
   return (
     <div className="space-y-3 text-center">
-      <h1 className="text-[17px] font-semibold text-[#14241D]">Your appointment is canceled</h1>
+      <h1 className="text-[17px] font-semibold text-[#14241D]">Your {terms.engagement} is canceled</h1>
       <p className="text-[13px] text-[#4A5A60]">
-        This appointment at {orgName} has been canceled. To book a new visit, contact the clinic
-        or visit their booking page.
+        This {terms.engagement} at {orgName} has been canceled. To book a new visit, contact the {terms.business} or visit their booking page.
       </p>
     </div>
   )
 }
 
-function PastView({ orgName }: { orgName: string }) {
+function PastView({ orgName, terms }: { orgName: string; terms: VerticalTerms }) {
   return (
     <div className="space-y-3 text-center">
-      <h1 className="text-[17px] font-semibold text-[#14241D]">This appointment has passed</h1>
+      <h1 className="text-[17px] font-semibold text-[#14241D]">This {terms.engagement} has passed</h1>
       <p className="text-[13px] text-[#4A5A60]">
-        Your visit at {orgName} is already in the past. To book a new visit, contact the clinic.
+        Your visit at {orgName} is already in the past. To book a new visit, contact the {terms.business}.
       </p>
     </div>
   )
 }
 
-function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }> }) {
+function ActiveView({ state, terms }: { state: Extract<ManageState, { kind: 'active' }>; terms: VerticalTerms }) {
   type Mode = 'view' | 'reschedule' | 'confirm-cancel' | 'canceled-done' | 'rescheduled-done'
   const [mode, setMode]   = useState<Mode>('view')
   const [error, setError] = useState<string>('')
@@ -117,7 +120,7 @@ function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }>
         </div>
         <h1 className="text-[17px] font-semibold text-[#14241D]">Canceled</h1>
         <p className="text-[13px] text-[#4A5A60]">
-          Your appointment at {state.orgName} has been canceled. You can close this page.
+          Your {terms.engagement} at {state.orgName} has been canceled. You can close this page.
         </p>
       </div>
     )
@@ -131,7 +134,7 @@ function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }>
         </div>
         <h1 className="text-[17px] font-semibold text-[#14241D]">Rescheduled</h1>
         <p className="text-[13px] text-[#4A5A60]">
-          Your new appointment at {state.orgName} is {longFmt.format(new Date(newScheduledAt))} at
+          Your new {terms.engagement} at {state.orgName} is {longFmt.format(new Date(newScheduledAt))} at
           {' '}{timeFmt.format(new Date(newScheduledAt))}. A confirmation text is on its way if your
           phone is opted in.
         </p>
@@ -142,7 +145,7 @@ function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }>
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[17px] font-semibold text-[#14241D]">Your appointment</h1>
+        <h1 className="text-[17px] font-semibold text-[#14241D]">Your {terms.engagement}</h1>
         <p className="text-[12.5px] text-[#7E8C90]">at {state.orgName}</p>
       </header>
 
@@ -169,7 +172,7 @@ function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }>
             onClick={() => { setError(''); setMode('confirm-cancel') }}
             className="w-full rounded-lg border border-[#0B2027]/15 bg-white px-4 py-3 text-[13px] font-medium text-[#B5710F] hover:bg-[#B5710F]/5"
           >
-            Cancel appointment
+            Cancel {terms.engagement}
           </button>
         </div>
       )}
@@ -177,6 +180,7 @@ function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }>
       {mode === 'reschedule' && (
         <ReschedulePicker
           state={state}
+          terms={terms}
           onCancel={() => { setError(''); setMode('view') }}
           onError={setError}
           onSuccess={(iso) => {
@@ -189,6 +193,7 @@ function ActiveView({ state }: { state: Extract<ManageState, { kind: 'active' }>
       {mode === 'confirm-cancel' && (
         <CancelConfirm
           state={state}
+          terms={terms}
           onBack={() => { setError(''); setMode('view') }}
           onError={setError}
           onSuccess={() => setMode('canceled-done')}
@@ -238,9 +243,10 @@ function BookingCard({
 }
 
 function CancelConfirm({
-  state, onBack, onError, onSuccess,
+  state, terms, onBack, onError, onSuccess,
 }: {
   state: Extract<ManageState, { kind: 'active' }>
+  terms: VerticalTerms
   onBack: () => void
   onError: (msg: string) => void
   onSuccess: () => void
@@ -264,7 +270,7 @@ function CancelConfirm({
         return
       }
       const j = await res.json().catch(() => ({}))
-      onError(j.message || 'Could not cancel. Please try again or call the clinic.')
+      onError(j.message || `Could not cancel. Please try again or call the ${terms.business}.`)
     } catch {
       onError('Network problem. Please try again.')
     } finally {
@@ -274,7 +280,7 @@ function CancelConfirm({
   return (
     <div className="rounded-lg border border-[#B5710F]/30 bg-[#B5710F]/5 p-4">
       <p className="text-[13px] text-[#14241D]">
-        Are you sure you want to cancel your appointment? This can't be undone — you'd need to book again.
+        Are you sure you want to cancel your {terms.engagement}? This can't be undone — you'd need to book again.
       </p>
       <div className="mt-3 flex gap-2">
         <button
@@ -299,9 +305,10 @@ function CancelConfirm({
 }
 
 function ReschedulePicker({
-  state, onCancel, onError, onSuccess,
+  state, terms, onCancel, onError, onSuccess,
 }: {
   state: Extract<ManageState, { kind: 'active' }>
+  terms: VerticalTerms
   onCancel: () => void
   onError: (msg: string) => void
   onSuccess: (newIso: string) => void
@@ -429,7 +436,7 @@ function ReschedulePicker({
 
       {!loading && slots && slots.length === 0 && (
         <p className="text-[12.5px] text-[#7E8C90]">
-          No open times in the next {SEARCH_HORIZON_DAYS} days. Contact the clinic to find a slot.
+          No open times in the next {SEARCH_HORIZON_DAYS} days. Contact the {terms.business} to find a slot.
         </p>
       )}
 

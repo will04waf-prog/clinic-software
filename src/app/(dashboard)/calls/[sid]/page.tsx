@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header'
 import { CallMetadataCard } from '@/components/calls/call-metadata-card'
 import { RecordingPlayer } from '@/components/calls/recording-player'
 import { TranscriptRenderer } from '@/components/calls/transcript-renderer'
+import { CallLanguageBadge } from '@/components/calls/call-language-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 /**
@@ -54,7 +55,7 @@ export default async function CallTranscriptPage({ params }: PageProps) {
   const { data: call } = await supabase
     .from('call_logs')
     .select(
-      'id, call_sid, from_e164, to_e164, direction, started_at, ended_at, duration_sec, intent, transcript, recording_url, recording_consent_obtained, safety_trigger_label, outcome, followup_summary'
+      'id, call_sid, from_e164, to_e164, direction, started_at, ended_at, duration_sec, intent, transcript, recording_url, recording_consent_obtained, safety_trigger_label, outcome, followup_summary, detected_language, is_urgent, urgency_reason'
     )
     .eq('call_sid', sid)
     .eq('organization_id', profile.organization_id as string)
@@ -88,6 +89,13 @@ export default async function CallTranscriptPage({ params }: PageProps) {
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to voice messages
         </Link>
+
+        {/* Detected language + urgency (renders nothing for old/null rows). */}
+        <CallLanguageBadge
+          detectedLanguage={call.detected_language}
+          isUrgent={call.is_urgent}
+          urgencyReason={call.urgency_reason}
+        />
 
         <CallMetadataCard
           fromE164={call.from_e164}

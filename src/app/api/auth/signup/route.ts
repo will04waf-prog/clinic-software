@@ -109,6 +109,11 @@ export async function POST(req: NextRequest) {
             ownerEmail: email,
             ownerFullName: full_name,
             trialEndsAt: trialEndsAt,
+            // Signup doesn't collect a vertical or owner language yet, so
+            // these default to the med-spa / English baseline. A future
+            // vertical picker will thread real values through here.
+            vertical: 'medspa',
+            ownerLanguage: 'en',
           })
         } catch (err) {
           console.error('[signup] welcome email failed (non-fatal):', err instanceof Error ? err.message : err)

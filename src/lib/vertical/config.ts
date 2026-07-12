@@ -23,13 +23,40 @@ export type NotificationChannel = 'sms' | 'whatsapp' | 'both'
 
 export const DEFAULT_VERTICAL: Vertical = 'medspa'
 
-/** Customer-facing noun for the thing Layla schedules, EN + neutral
- *  Latin-American ES. Used in the prompt and in customer confirmations. */
+/** Customer-facing nouns for how a vertical talks about itself, EN +
+ *  neutral Latin-American ES. Used in the voice prompt, customer
+ *  confirmations, owner notifications, and dashboard/settings labels.
+ *
+ *  BYTE-IDENTICAL CONTRACT: every `medspa` value below reproduces the
+ *  string med-spa surfaces show today, so a consumer that swaps a
+ *  hardcoded noun for the matching term keeps med-spa output unchanged.
+ *  The ONE exception is the scheduled-thing noun: med-spa says
+ *  "consultation" on the booking/SMS/capture surfaces but "appointment"
+ *  in /manage and the voice line — an inconsistent baseline. So
+ *  `engagement`/`engagementPlural` carry med-spa's *voice* word
+ *  ('appointment'); a surface whose med-spa literal is "consultation"
+ *  must branch `vertical === 'medspa' ? 'consultation' : terms.engagement`
+ *  rather than reach for the term, to stay byte-identical. */
 export interface VerticalTerms {
+  /** The thing Layla schedules (voice + owner alerts). */
   engagement: string
   engagementEs: string
+  /** Plural of engagement (nav counts, digests). */
+  engagementPlural: string
+  engagementPluralEs: string
+  /** Who performs the work. */
   provider: string
   providerEs: string
+  /** The organization noun: 'clinic' | 'business'. */
+  business: string
+  businessEs: string
+  /** The person who calls/books: 'patient' | 'customer'. */
+  customer: string
+  customerEs: string
+  customerPlural: string
+  customerPluralEs: string
+  /** A concrete bookable-service example for settings placeholder copy. */
+  serviceExample: string
 }
 
 export interface VerticalConfig {
@@ -60,7 +87,15 @@ export interface VerticalConfig {
 const CONFIG: Record<Vertical, VerticalConfig> = {
   medspa: {
     vertical: 'medspa',
-    terms: { engagement: 'appointment', engagementEs: 'cita', provider: 'provider', providerEs: 'especialista' },
+    terms: {
+      engagement: 'appointment', engagementEs: 'cita',
+      engagementPlural: 'appointments', engagementPluralEs: 'citas',
+      provider: 'provider', providerEs: 'especialista',
+      business: 'clinic', businessEs: 'clínica',
+      customer: 'patient', customerEs: 'paciente',
+      customerPlural: 'patients', customerPluralEs: 'pacientes',
+      serviceExample: 'Botox consult — 30 min',
+    },
     promptFragment: null,
     intakeQuestions: [],
     phiScrub: true,
@@ -68,7 +103,15 @@ const CONFIG: Record<Vertical, VerticalConfig> = {
   },
   trades: {
     vertical: 'trades',
-    terms: { engagement: 'job', engagementEs: 'trabajo', provider: 'technician', providerEs: 'técnico' },
+    terms: {
+      engagement: 'job', engagementEs: 'trabajo',
+      engagementPlural: 'jobs', engagementPluralEs: 'trabajos',
+      provider: 'technician', providerEs: 'técnico',
+      business: 'business', businessEs: 'negocio',
+      customer: 'customer', customerEs: 'cliente',
+      customerPlural: 'customers', customerPluralEs: 'clientes',
+      serviceExample: 'AC repair — 60 min',
+    },
     promptFragment: 'trades',
     intakeQuestions: [
       'the service address (where the work happens)',
@@ -81,7 +124,15 @@ const CONFIG: Record<Vertical, VerticalConfig> = {
   },
   food: {
     vertical: 'food',
-    terms: { engagement: 'order', engagementEs: 'pedido', provider: 'kitchen', providerEs: 'cocina' },
+    terms: {
+      engagement: 'order', engagementEs: 'pedido',
+      engagementPlural: 'orders', engagementPluralEs: 'pedidos',
+      provider: 'kitchen', providerEs: 'cocina',
+      business: 'business', businessEs: 'negocio',
+      customer: 'customer', customerEs: 'cliente',
+      customerPlural: 'customers', customerPluralEs: 'clientes',
+      serviceExample: 'Large pepperoni pizza',
+    },
     promptFragment: 'food',
     intakeQuestions: [
       'the items they want',
@@ -94,7 +145,15 @@ const CONFIG: Record<Vertical, VerticalConfig> = {
   },
   general: {
     vertical: 'general',
-    terms: { engagement: 'appointment', engagementEs: 'cita', provider: 'specialist', providerEs: 'especialista' },
+    terms: {
+      engagement: 'appointment', engagementEs: 'cita',
+      engagementPlural: 'appointments', engagementPluralEs: 'citas',
+      provider: 'specialist', providerEs: 'especialista',
+      business: 'business', businessEs: 'negocio',
+      customer: 'customer', customerEs: 'cliente',
+      customerPlural: 'customers', customerPluralEs: 'clientes',
+      serviceExample: 'Consultation — 30 min',
+    },
     promptFragment: 'general',
     intakeQuestions: [
       'the reason for the call',

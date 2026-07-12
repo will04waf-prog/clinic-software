@@ -41,6 +41,6 @@ export const statRow = (label: string, value: string, sub?: string) => `
       ${sub ? `<br/><span style="font-size:12px;color:#9ca3af;">${sub}</span>` : ''}
     </td>
     <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;">
-      <span style="font-size:20px;font-weight:800;color:#14241d;">${value}</span>
+      <span style="font-size:20px;font-weight:800;color:#0B2027;">${value}</span>
     </td>
   </tr>`

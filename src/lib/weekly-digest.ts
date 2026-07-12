@@ -25,6 +25,7 @@ import { blockedReason } from '@/lib/billing/org-access'
 import { aggregateLaylaImpact, type LaylaImpactAgg } from '@/lib/analytics/layla-impact-agg'
 import { APP_URL, wrap, p, btn, statRow } from '@/lib/email/branded'
 import { getOrgOwner } from '@/lib/org-owner'
+import { getVerticalConfig } from '@/lib/vertical/config'
 
 const money = (cents: number) => `$${Math.round(cents / 100).toLocaleString()}`
 const plural = (n: number, s: string) => `${n} ${s}${n === 1 ? '' : 's'}`
@@ -34,7 +35,67 @@ export function buildDigestEmail(
   firstName: string,
   agg: LaylaImpactAgg,
   newContacts: number,
+  // Multi-vertical: the bookings noun follows the tenant's vertical and
+  // the whole email follows owner_language. Both default to med-spa /
+  // English so an existing tenant's digest is byte-identical.
+  vertical?: string | null,
+  ownerLanguage: 'en' | 'es' = 'en',
 ) {
+  const cfg = getVerticalConfig(vertical)
+  const terms = cfg.terms
+  const isMedspa = cfg.vertical === 'medspa'
+  // The scheduled-thing noun med-spa shows on this surface is
+  // 'consultation'/'consultations' (NOT 'appointment'), so med-spa keeps
+  // the literal to stay byte-identical; other verticals use their term.
+  const engagementNoun = isMedspa ? 'consultation' : terms.engagement
+  const lang: 'en' | 'es' = ownerLanguage === 'es' ? 'es' : 'en'
+
+  // Escape everything owner-typed before it touches HTML (the
+  // subject stays raw — it's plain text).
+  const safeOrg = escapeHtml(orgName)
+  const safeFirst = escapeHtml(firstName)
+
+  if (lang === 'es') {
+    // Count-aware pluralizer for the Spanish body/subject.
+    const esP = (n: number, s: string, pl: string) => `${n} ${n === 1 ? s : pl}`
+    const engEs = agg.bookingsInRange === 1 ? terms.engagementEs : terms.engagementPluralEs
+
+    const subject =
+      agg.callsAnswered > 0
+        ? `${orgName} la semana pasada: ${esP(agg.callsAnswered, 'llamada atendida', 'llamadas atendidas')}, ${money(agg.bookingRevenueCents)} reservado`
+        : agg.bookingsInRange > 0
+          ? `${orgName} la semana pasada: ${money(agg.bookingRevenueCents)} en ${engEs}`
+          : `${orgName} la semana pasada: ${esP(newContacts, 'nuevo prospecto captado', 'nuevos prospectos captados')}`
+
+    const rows = [
+      agg.callsAnswered > 0
+        ? statRow('Llamadas que Layla atendió', String(agg.callsAnswered),
+            `${esP(agg.messagesCaptured, 'mensaje tomado', 'mensajes tomados')} · ${agg.transferredToStaff} transferidas a ti`)
+        : '',
+      agg.bookingsInRange > 0
+        ? statRow('Valor reservado', money(agg.bookingRevenueCents), `${agg.bookingsInRange} ${engEs}`)
+        : '',
+      agg.laylaAssistedBookings > 0
+        ? statRow('Reservado tras una llamada de Layla', String(agg.laylaAssistedBookings),
+            `${money(agg.laylaAssistedRevenueCents)} de personas con las que habló`)
+        : '',
+      agg.reminderCallsPlaced > 0
+        ? statRow('Llamadas de recordatorio realizadas', String(agg.reminderCallsPlaced))
+        : '',
+      newContacts > 0 ? statRow('Nuevos prospectos captados', String(newContacts)) : '',
+    ].filter(Boolean).join('')
+
+    const html = wrap(`
+    ${p(`Hola ${safeFirst},`)}
+    ${p(`Esto es lo que pasó en <strong>${safeOrg}</strong> durante los últimos 7 días:`)}
+    <table style="width:100%;border-collapse:collapse;margin:0 0 20px 0;">${rows}</table>
+    <p style="margin:24px 0 0 0;">${btn('Ver el desglose completo', `${APP_URL}/dashboard#performance`)}</p>
+    ${p(`<span style="font-size:12px;color:#9ca3af;margin-top:16px;display:block;">Estos números cubren los últimos 7 días; tu panel usa una vista de 30 días por defecto.</span>`)}
+  `, "Tarhunna &middot; Tu resumen semanal. ¿Quieres desactivarlo? Responde y dínoslo.")
+
+    return { subject, html }
+  }
+
   // Subjects lead with the best number we actually have — never
   // "$0 booked across 0 consultations" (a churn email, not a
   // retention email). Leads-only weeks celebrate the leads.
@@ -42,13 +103,8 @@ export function buildDigestEmail(
     agg.callsAnswered > 0
       ? `${orgName} last week: ${plural(agg.callsAnswered, 'call')} answered, ${money(agg.bookingRevenueCents)} booked`
       : agg.bookingsInRange > 0
-        ? `${orgName} last week: ${money(agg.bookingRevenueCents)} booked across ${plural(agg.bookingsInRange, 'consultation')}`
+        ? `${orgName} last week: ${money(agg.bookingRevenueCents)} booked across ${plural(agg.bookingsInRange, engagementNoun)}`
         : `${orgName} last week: ${plural(newContacts, 'new lead')} captured`
-
-  // Escape everything owner-typed before it touches HTML (the
-  // subject stays raw — it's plain text).
-  const safeOrg = escapeHtml(orgName)
-  const safeFirst = escapeHtml(firstName)
 
   const rows = [
     agg.callsAnswered > 0
@@ -56,7 +112,7 @@ export function buildDigestEmail(
           `${plural(agg.messagesCaptured, 'message')} taken · ${agg.transferredToStaff} transferred to you`)
       : '',
     agg.bookingsInRange > 0
-      ? statRow('Booked value', money(agg.bookingRevenueCents), `${plural(agg.bookingsInRange, 'consultation')} booked`)
+      ? statRow('Booked value', money(agg.bookingRevenueCents), `${plural(agg.bookingsInRange, engagementNoun)} booked`)
       : '',
     agg.laylaAssistedBookings > 0
       ? statRow('Booked after a Layla call', String(agg.laylaAssistedBookings),
@@ -98,7 +154,7 @@ export async function sendWeeklyDigests(): Promise<DigestOutcome> {
 
     const { data: orgs, error } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, plan_status, trial_ends_at, weekly_digest_last_sent_at')
+      .select('id, name, plan_status, trial_ends_at, weekly_digest_last_sent_at, vertical, owner_language')
       .eq('weekly_digest_enabled', true)
     if (error) {
       console.error('[weekly-digest] org fetch failed:', error.message)
@@ -163,7 +219,16 @@ export async function sendWeeklyDigests(): Promise<DigestOutcome> {
           }
 
           const firstName = (owner.full_name ?? '').split(' ')[0] || 'there'
-          const { subject, html } = buildDigestEmail(org.name, firstName, agg, newContacts)
+          const ownerLang: 'en' | 'es' =
+            (org as { owner_language?: string | null }).owner_language === 'es' ? 'es' : 'en'
+          const { subject, html } = buildDigestEmail(
+            org.name,
+            firstName,
+            agg,
+            newContacts,
+            (org as { vertical?: string | null }).vertical,
+            ownerLang,
+          )
 
           await sendEmail({
             to: owner.email,

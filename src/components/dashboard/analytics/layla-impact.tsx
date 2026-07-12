@@ -83,7 +83,7 @@ export function LaylaImpact({ data, days }: { data: LaylaImpactData; days: numbe
           <PhoneCall className="mx-auto h-8 w-8 text-[#02C39A]" />
           <p className="mt-3 text-sm font-medium text-[#14241d]">Layla hasn&apos;t taken any calls in this window yet.</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-gray-500 leading-relaxed">
-            As soon as she starts answering your clinic&apos;s phone, every call, booking, and message she
+            As soon as she starts answering your business&apos;s phone, every call, booking, and message she
             handles shows up here.
           </p>
         </div>

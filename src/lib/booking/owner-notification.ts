@@ -23,6 +23,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
+import { getVerticalConfig, type VerticalTerms } from '@/lib/vertical/config'
 
 const PUBLIC_APP_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://tarhunna.net'
@@ -49,21 +50,58 @@ const ACTION_BY_KIND: Record<OwnerNotificationKind, string> = {
   confirmed:   'owner_notified_confirm',
 }
 
-const SUBJECT_BY_KIND: Record<OwnerNotificationKind, (orgName: string) => string> = {
-  new:         (n) => `New booking at ${n}`,
-  rescheduled: (n) => `Booking rescheduled at ${n}`,
-  canceled:    (n) => `Booking canceled at ${n}`,
-  confirmed:   (n) => `Appointment confirmed at ${n}`,
-}
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-const BODY_BY_KIND: Record<OwnerNotificationKind, string> = {
-  new:         'You just got a new booking through your public booking page.',
-  rescheduled: 'A patient just rescheduled their appointment through your booking page.',
-  canceled:    'A patient just canceled their appointment through your booking page.',
-  // 'confirmed' is fired by the outbound reminder-call flow when the
-  // patient verbally confirms they're still coming. PHI-free copy —
-  // mirrors the rest of this file.
-  confirmed:   'A patient just confirmed their upcoming appointment on the AI reminder call.',
+/**
+ * Multi-vertical Phase 2: subject + body driven by the tenant's terms
+ * and owner_language. The customer noun ('A patient') and the scheduled-
+ * thing noun ('their appointment' / 'Appointment confirmed') come from
+ * terms.customer / terms.engagement — this surface's med-spa literal is
+ * already 'appointment' (not 'consultation'), so terms.engagement is
+ * byte-identical for med-spa and no consultation branch is needed. The
+ * 'booking' wording is vertical-neutral and stays as-is. English output
+ * for a med-spa tenant is byte-for-byte what it was before.
+ */
+function buildOwnerBookingEmail(
+  kind: OwnerNotificationKind,
+  orgName: string,
+  terms: VerticalTerms,
+  lang: 'en' | 'es',
+): { subject: string; body: string } {
+  const { customer, customerEs, engagement, engagementEs } = terms
+
+  if (lang === 'es') {
+    const subject: Record<OwnerNotificationKind, string> = {
+      new:         `Nueva reserva en ${orgName}`,
+      rescheduled: `Reserva reprogramada en ${orgName}`,
+      canceled:    `Reserva cancelada en ${orgName}`,
+      confirmed:   `Confirmación de ${engagementEs} en ${orgName}`,
+    }
+    const body: Record<OwnerNotificationKind, string> = {
+      new:         'Acabas de recibir una nueva reserva a través de tu página de reservas pública.',
+      rescheduled: `Un ${customerEs} acaba de reprogramar su ${engagementEs} a través de tu página de reservas.`,
+      canceled:    `Un ${customerEs} acaba de cancelar su ${engagementEs} a través de tu página de reservas.`,
+      confirmed:   `Un ${customerEs} acaba de confirmar su ${engagementEs} en la llamada de recordatorio con IA.`,
+    }
+    return { subject: subject[kind], body: body[kind] }
+  }
+
+  const subject: Record<OwnerNotificationKind, string> = {
+    new:         `New booking at ${orgName}`,
+    rescheduled: `Booking rescheduled at ${orgName}`,
+    canceled:    `Booking canceled at ${orgName}`,
+    confirmed:   `${cap(engagement)} confirmed at ${orgName}`,
+  }
+  const body: Record<OwnerNotificationKind, string> = {
+    new:         'You just got a new booking through your public booking page.',
+    rescheduled: `A ${customer} just rescheduled their ${engagement} through your booking page.`,
+    canceled:    `A ${customer} just canceled their ${engagement} through your booking page.`,
+    // 'confirmed' is fired by the outbound reminder-call flow when the
+    // customer verbally confirms they're still coming. PHI-free copy —
+    // mirrors the rest of this file.
+    confirmed:   `A ${customer} just confirmed their upcoming ${engagement} on the AI reminder call.`,
+  }
+  return { subject: subject[kind], body: body[kind] }
 }
 
 /**
@@ -117,13 +155,19 @@ export async function notifyOwnerOfBooking(args: NotifyOwnerArgs): Promise<void>
       .maybeSingle(),
     supabaseAdmin
       .from('organizations')
-      .select('name')
+      .select('name, vertical, owner_language')
       .eq('id', args.organizationId)
       .single(),
   ])
 
   if (!owner?.email) return
-  const orgName = org?.name ?? 'your clinic'
+  // Multi-vertical Phase 2: owner-facing output follows owner_language,
+  // and the terminology follows the tenant's vertical. Both default to
+  // med-spa / English, so an existing med-spa tenant is byte-identical.
+  const terms = getVerticalConfig(org?.vertical).terms
+  const ownerLang: 'en' | 'es' = org?.owner_language === 'es' ? 'es' : 'en'
+  const orgName = org?.name ?? (ownerLang === 'es' ? `tu ${terms.businessEs}` : `your ${terms.business}`)
+  const { subject, body } = buildOwnerBookingEmail(kind, orgName, terms, ownerLang)
 
   // Deep-link to the calendar view directly so the owner lands on the
   // grid (W6) rather than the legacy list — they're tapping a "new
@@ -131,8 +175,10 @@ export async function notifyOwnerOfBooking(args: NotifyOwnerArgs): Promise<void>
   const consultationsUrl = `${PUBLIC_APP_URL}/consultations?view=calendar`
   const html = wrapEmailHtml(
     [
-      BODY_BY_KIND[kind],
-      `Open ClinIQ to see the details: ${consultationsUrl}`,
+      body,
+      ownerLang === 'es'
+        ? `Abre ClinIQ para ver los detalles: ${consultationsUrl}`
+        : `Open ClinIQ to see the details: ${consultationsUrl}`,
     ].join('\n'),
     orgName,
   )
@@ -140,7 +186,7 @@ export async function notifyOwnerOfBooking(args: NotifyOwnerArgs): Promise<void>
   try {
     await sendEmail({
       to: owner.email,
-      subject: SUBJECT_BY_KIND[kind](orgName),
+      subject,
       html,
       // Disambiguator for 'rescheduled' so the 2nd-and-Nth reschedule
       // notifications get a fresh idempotencyKey (Resend would
