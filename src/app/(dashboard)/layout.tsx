@@ -21,14 +21,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const ownerLanguage = org?.owner_language ?? undefined
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5EFE1]">
+    <div className="flex h-dvh overflow-hidden bg-[#F5EFE1] pt-[env(safe-area-inset-top)]">
       <Sidebar
         isSuperAdmin={profile?.is_super_admin === true}
         isOwner={profile?.role === 'owner'}
         vertical={vertical}
         ownerLanguage={ownerLanguage}
       />
-      <main className="flex flex-1 flex-col overflow-hidden pb-16 md:pb-0">
+      <main className="flex flex-1 flex-col overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         {org && !profile?.is_super_admin && (
           <TrialBanner
             planStatus={org.plan_status ?? 'trial'}

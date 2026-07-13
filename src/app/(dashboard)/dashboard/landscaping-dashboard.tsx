@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Sun, CalendarDays, FileText } from 'lucide-react'
+import { Sun, CalendarDays, FileText, Receipt } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
 import { LandscapingEmptyState } from '@/components/dashboard/landscaping-empty-state'
 
@@ -16,6 +16,7 @@ export function LandscapingDashboard({ locale, ownerName }: { locale: Locale; ow
   const quickLinks = [
     { href: '/schedule', label: job.scheduleTitle, icon: CalendarDays },
     { href: '/estimates', label: d.estimates, icon: FileText },
+    { href: '/invoices', label: d.invoices, icon: Receipt },
   ]
 
   return (

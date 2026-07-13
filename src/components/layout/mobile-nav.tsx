@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, CalendarCheck, Zap, Settings, FileText, CalendarDays, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isLoopVertical } from '@/lib/vertical/config'
 import { FEATURES } from '@/lib/features'
 import { dict, resolveLocale } from '@/lib/i18n'
 
@@ -23,13 +24,13 @@ const NAV_ITEMS = [
 export function MobileNav({ vertical = 'medspa', ownerLanguage }: { vertical?: string; ownerLanguage?: string }) {
   const pathname = usePathname()
 
-  const items = vertical === 'landscaping'
+  const items = isLoopVertical(vertical)
     ? (() => {
         const n = dict(resolveLocale(ownerLanguage)).nav
         return [
-          { href: '/dashboard', label: n.home,       icon: LayoutDashboard },
+          { href: '/dashboard', label: n.home,      icon: LayoutDashboard },
+          { href: '/clients',   label: n.clients,    icon: Users },
           { href: '/estimates', label: n.estimates,  icon: FileText },
-          { href: '/invoices',  label: n.invoices,   icon: Receipt },
           { href: '/schedule',  label: n.schedule,   icon: CalendarDays },
           { href: '/settings',  label: n.settings,   icon: Settings },
         ]
@@ -37,7 +38,7 @@ export function MobileNav({ vertical = 'medspa', ownerLanguage }: { vertical?: s
     : NAV_ITEMS.filter((i) => i.href !== '/automations' || FEATURES.automations)
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden bg-[#0B2027] text-[#F5EFE1]">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden bg-[#0B2027] pb-[env(safe-area-inset-bottom)] text-[#F5EFE1]">
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href)
         return (

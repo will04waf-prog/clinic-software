@@ -443,9 +443,11 @@ export function EstimateBuilder({
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
 
-        <Button className="w-full" size="lg" onClick={saveDraft} disabled={saving}>
-          {saving ? common.saving : m.saveDraft}
-        </Button>
+        <div className="sticky bottom-2 z-10 -mx-1 rounded-2xl bg-[#F5EFE1]/90 p-1 backdrop-blur">
+          <Button className="w-full" size="lg" onClick={saveDraft} disabled={saving}>
+            {saving ? common.saving : m.saveDraft}
+          </Button>
+        </div>
       </div>
     </div>
   )

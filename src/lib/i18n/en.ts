@@ -84,10 +84,21 @@ export const en: Messages = {
 
   nav: {
     home: 'Home',
+    clients: 'Clients',
     estimates: 'Estimates',
     invoices: 'Invoices',
     schedule: 'Schedule',
     settings: 'Settings',
+  },
+
+  services: {
+    title: 'Services',
+    hint: 'Your most common services — they appear as suggestions when building estimates.',
+    addPlaceholder: 'Add another service…',
+    add: 'Add',
+    save: 'Save services',
+    saved: 'Services saved.',
+    error: "We couldn't save. Please try again.",
   },
 
   clients: {

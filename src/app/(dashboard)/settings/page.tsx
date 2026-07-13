@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
 import { ConnectPaymentsCard, type ConnectStatus } from '@/components/settings/connect-payments-card'
 import { SubscriptionCard } from '@/components/settings/subscription-card'
+import { LoopServicesCard } from '@/components/settings/loop-services-card'
 import { resolveLocale } from '@/lib/i18n'
+import { isLoopVertical } from '@/lib/vertical/config'
 import { ServicesCard } from '@/components/settings/services-card'
 import { BookingSettingsLinkCard } from '@/components/settings/booking-settings-link-card'
 import { TeamSettingsLinkCard } from '@/components/settings/team-settings-link-card'
@@ -45,7 +47,7 @@ export default async function SettingsPage() {
     .single()
 
   const org = profile?.organization as any
-  const isLoop = org?.vertical === 'landscaping'
+  const isLoop = isLoopVertical(org?.vertical)
   const es = resolveLocale(org?.owner_language) === 'es'
 
   return (
@@ -76,7 +78,7 @@ export default async function SettingsPage() {
 
         {/* CRM (landscaping) orgs get the single $39/mo plan card; med-spa
             orgs keep the legacy tier BillingCard. */}
-        {org?.vertical === 'landscaping' ? (
+        {isLoop ? (
           <SubscriptionCard
             locale={resolveLocale(org?.owner_language)}
             planStatus={org?.plan_status ?? 'trial'}
@@ -95,7 +97,7 @@ export default async function SettingsPage() {
             back the loop's invoices, which med-spa orgs don't use, and the
             connected account is provisioned with a landscaping MCC.
             Localized by owner language. */}
-        {profile?.role === 'owner' && org?.vertical === 'landscaping' && (
+        {profile?.role === 'owner' && isLoop && (
           <ConnectPaymentsCard
             locale={resolveLocale(org?.owner_language)}
             status={
@@ -113,6 +115,17 @@ export default async function SettingsPage() {
         )}
 
         {!isLoop && <ServicesCard initial={org?.procedures ?? null} />}
+
+        {/* Loop orgs: vertical-aware services (presets + custom, Spanish-
+            first) writing to the SAME procedures column — feeds estimate
+            suggestions + the voice agent's catalog. */}
+        {isLoop && (
+          <LoopServicesCard
+            locale={resolveLocale(org?.owner_language)}
+            vertical={(org?.vertical === 'trades' ? 'trades' : 'landscaping')}
+            initial={Array.isArray(org?.procedures) ? org.procedures : null}
+          />
+        )}
 
         {/* Booking calendar — links to /settings/booking. Sits next to
             ServicesCard because the two are conceptually paired: services

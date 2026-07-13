@@ -94,10 +94,21 @@ export const es = {
 
   nav: {
     home: 'Inicio',
+    clients: 'Clientes',
     estimates: 'Estimados',
     invoices: 'Facturas',
     schedule: 'Agenda',
     settings: 'Ajustes',
+  },
+
+  services: {
+    title: 'Servicios',
+    hint: 'Sus servicios más comunes — aparecen como sugerencias al crear estimados.',
+    addPlaceholder: 'Agregar otro servicio…',
+    add: 'Agregar',
+    save: 'Guardar servicios',
+    saved: 'Servicios guardados.',
+    error: 'No pudimos guardar. Intente de nuevo.',
   },
 
   clients: {

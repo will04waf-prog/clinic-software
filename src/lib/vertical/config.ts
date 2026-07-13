@@ -234,3 +234,30 @@ export function isBilingual(
 ): boolean {
   return resolveCallerLanguages(callerLanguages).includes('es')
 }
+
+/**
+ * CRM-pivot "loop family": verticals whose owners get the loop app
+ * shell (Spanish-first nav, loop settings, estimado flow) instead of
+ * the legacy med-spa chrome. The 2026-07-12 P0: gates keyed on
+ * 'landscaping' alone, so the Rivera demo org (vertical='trades') fell
+ * through to the clinic UI. Gate on the FAMILY, never a single vertical.
+ */
+export function isLoopVertical(vertical: string | null | undefined): boolean {
+  return vertical === 'landscaping' || vertical === 'trades'
+}
+
+/**
+ * Owner-selectable service presets for the loop settings card, stored
+ * in organizations.procedures (same column + endpoint the med-spa
+ * picker uses — UI-only difference). Spanish-first per the segment.
+ */
+export const LOOP_SERVICE_PRESETS: Record<'landscaping' | 'trades', { es: string[]; en: string[] }> = {
+  landscaping: {
+    es: ['Corte de césped', 'Limpieza de jardín', 'Mantenimiento mensual', 'Poda de arbustos', 'Acolchado (mulch)', 'Diseño de jardines', 'Riego / irrigación', 'Limpieza de otoño'],
+    en: ['Lawn mowing', 'Yard cleanup', 'Monthly maintenance', 'Bush trimming', 'Mulching', 'Garden design', 'Irrigation', 'Fall cleanup'],
+  },
+  trades: {
+    es: ['Reparación', 'Instalación', 'Mantenimiento', 'Inspección', 'Servicio de emergencia', 'Remodelación'],
+    en: ['Repair', 'Installation', 'Maintenance', 'Inspection', 'Emergency service', 'Remodeling'],
+  },
+}

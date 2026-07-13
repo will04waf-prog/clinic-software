@@ -27,6 +27,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { getVerticalConfig, type Vertical } from '@/lib/vertical/config'
 import { dict, resolveLocale } from '@/lib/i18n'
+import { isLoopVertical } from '@/lib/vertical/config'
 
 /** Title-case a single lowercase noun ('jobs' → 'Jobs'). */
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -88,13 +89,13 @@ export function Sidebar({
   // Landscaping (loop) orgs get the Spanish loop nav; med-spa and every
   // other vertical keep the full CRM sidebar exactly as-is.
   type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; tierBadge?: 'Pro' }
-  const navItems: NavItem[] = vertical === 'landscaping'
+  const navItems: NavItem[] = isLoopVertical(vertical)
     ? (() => {
         const n = dict(resolveLocale(ownerLanguage)).nav
         return [
           { href: '/dashboard', label: n.home,      icon: LayoutDashboard },
+          { href: '/clients',   label: n.clients,   icon: Users },
           { href: '/estimates', label: n.estimates, icon: FileText },
-          { href: '/invoices',  label: n.invoices,  icon: Receipt },
           { href: '/schedule',  label: n.schedule,  icon: CalendarDays },
           { href: '/settings',  label: n.settings,  icon: Settings },
         ]
