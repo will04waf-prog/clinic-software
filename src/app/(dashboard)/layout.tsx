@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { TrialBanner } from '@/components/layout/trial-banner'
 import { MobileNav } from '@/components/layout/mobile-nav'
+import { isLoopVertical } from '@/lib/vertical/config'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -28,7 +29,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
         vertical={vertical}
         ownerLanguage={ownerLanguage}
       />
-      <main className="flex flex-1 flex-col overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+      {/* Loop pages scroll on MAIN itself (they have no inner scrollers —
+          overflow-hidden here left them gesture-dead on real touch/wheel
+          input; only programmatic scrollTop moved them). Med-spa pages
+          keep overflow-hidden: they manage their own inner scroll areas.
+          overscroll-contain stops iOS rubber-banding from chaining. */}
+      <main
+        className={`flex flex-1 flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 ${
+          isLoopVertical(vertical) ? 'overflow-y-auto overscroll-contain' : 'overflow-hidden'
+        }`}
+      >
         {org && !profile?.is_super_admin && (
           <TrialBanner
             planStatus={org.plan_status ?? 'trial'}
