@@ -266,6 +266,7 @@ export const en: Messages = {
     rateNote: 'Card: 3.9% + 30¢ per payment. Cash, Zelle, and check: no fee.',
     starting: 'Opening…',
     errorGeneric: "We couldn't open setup. Please try again.",
+    comingSoon: "Card payments are coming very soon — we're finishing verification with Stripe. Meanwhile, record cash, Zelle, or check payments at no charge.",
   },
 
   subscription: {

@@ -21,7 +21,14 @@ Vercel env vars.
   activated (can process live charges; no outstanding requirements banner).
 - If not activated: complete activation first (business details, bank).
 
-## 2. Confirm Connect live settings (founder, dashboard)
+## 2. Confirm Connect live settings (founder, dashboard) — CONFIRMED BLOCKER
+
+> **Observed in prod 2026-07-13:** tapping "Activar cobros con tarjeta"
+> failed with Stripe's "You must complete your platform profile"
+> (dashboard.stripe.com/connect/accounts/overview) — i.e. prod runs a
+> LIVE key and the live platform-profile questionnaire is NOT done yet.
+> The app now shows a friendly Spanish "muy pronto" state instead of the
+> raw error, but Connect stays unusable until this step is completed.
 
 - Dashboard (live) → **Connect → Settings**:
   - Express accounts enabled; platform profile/questionnaire complete —

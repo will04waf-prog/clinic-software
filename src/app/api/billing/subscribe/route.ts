@@ -69,7 +69,9 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
+    // Same policy as connect/onboard: raw Stripe text never reaches an
+    // owner — log here, return a stable code the card localizes.
     console.error('[billing/subscribe] Stripe error:', err?.message)
-    return NextResponse.json({ error: err?.message ?? 'Failed to start checkout' }, { status: 500 })
+    return NextResponse.json({ error: 'checkout_not_ready' }, { status: 503 })
   }
 }

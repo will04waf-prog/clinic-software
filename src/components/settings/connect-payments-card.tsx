@@ -22,6 +22,7 @@ export function ConnectPaymentsCard({
   const t = dict(locale).connect
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [comingSoon, setComingSoon] = useState(false)
 
   async function start() {
     setError('')
@@ -30,7 +31,11 @@ export function ConnectPaymentsCard({
       const res = await fetch('/api/connect/onboard', { method: 'POST' })
       const body = await res.json().catch(() => null)
       if (!res.ok || !body?.url) {
-        setError(body?.error ?? t.errorGeneric)
+        if (body?.error === 'connect_not_ready') {
+          setComingSoon(true)
+        } else {
+          setError(t.errorGeneric)
+        }
         setLoading(false)
         return
       }
@@ -75,6 +80,9 @@ export function ConnectPaymentsCard({
         <>
           {status === 'pending' && <p className="mt-3 text-sm text-amber-700">{t.pendingNote}</p>}
           <p className="mt-2 text-xs text-gray-400">{t.rateNote}</p>
+          {comingSoon && (
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">{t.comingSoon}</p>
+          )}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
           <button
             type="button"

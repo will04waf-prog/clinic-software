@@ -44,8 +44,12 @@ export async function POST(req: NextRequest) {
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status })
     return NextResponse.json({ url: result.url })
   } catch (err: any) {
+    // Raw Stripe messages are for THIS log line only — owners get a
+    // stable code the card maps to friendly localized copy. (Prod
+    // defect 2026-07-13: the live platform-profile error rendered raw
+    // English in a Spanish owner's Settings.)
     console.error('[connect/onboard] POST error:', err?.message)
-    return NextResponse.json({ error: err?.message ?? 'Could not start onboarding.' }, { status: 500 })
+    return NextResponse.json({ error: 'connect_not_ready' }, { status: 503 })
   }
 }
 
@@ -58,6 +62,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(result.url)
   } catch (err: any) {
     console.error('[connect/onboard] GET error:', err?.message)
-    return NextResponse.redirect(`${new URL(req.url).origin}/settings?pagos=error`)
+    return NextResponse.redirect(`${new URL(req.url).origin}/settings?pagos=pronto`)
   }
 }

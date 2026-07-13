@@ -45,7 +45,7 @@ export function SubscriptionCard({
       const res = await fetch('/api/billing/subscribe', { method: 'POST' })
       const body = await res.json().catch(() => null)
       if (!res.ok || !body?.url) {
-        setError(body?.error ?? t.errorGeneric)
+        setError(t.errorGeneric)
         setLoading(false)
         return
       }

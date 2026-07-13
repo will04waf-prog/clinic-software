@@ -284,6 +284,7 @@ export const es = {
     rateNote: 'Tarjeta: 3.9% + 30¢ por pago. Efectivo, Zelle y cheque: sin cargo.',
     starting: 'Abriendo…',
     errorGeneric: 'No pudimos abrir la configuración. Intente de nuevo.',
+    comingSoon: 'Los cobros con tarjeta estarán disponibles muy pronto — estamos terminando la verificación con Stripe. Mientras tanto, registre pagos en efectivo, Zelle o cheque sin ningún cargo.',
   },
 
   // Suscripción (el plan de Tarhunna) — tarjeta en Ajustes / cobro al fin de prueba.
