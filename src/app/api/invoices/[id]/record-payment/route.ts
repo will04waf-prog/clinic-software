@@ -9,7 +9,14 @@ const recordPaymentSchema = z.object({
   method: z.enum(['cash', 'zelle', 'check', 'other']),
   amount_cents: z.coerce.number().int().positive('Amount must be greater than 0'),
   note: z.string().max(500).optional(),
+  // Client-minted per record-attempt. A double-submit (retry, multi-tab)
+  // reuses the same key → the DB's partial-unique index rejects the dup
+  // and we treat it as already-recorded instead of double-counting.
+  idempotency_key: z.string().uuid().optional(),
 })
+
+// Postgres unique-violation.
+const UNIQUE_VIOLATION = '23505'
 
 async function resolveOrg(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -47,7 +54,7 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-  const { method, amount_cents, note } = parsed.data
+  const { method, amount_cents, note, idempotency_key } = parsed.data
 
   // Verify the invoice is in the caller's org (RLS-scoped read).
   const { data: invoice } = await supabase
@@ -61,6 +68,10 @@ export async function POST(
   }
 
   // Append the payment via service-role (authenticated cannot INSERT).
+  // A duplicate submit with the same idempotency_key hits the partial-
+  // unique index (23505) — that's not an error, it means this exact
+  // payment is already in the ledger. Fall through to recompute + return
+  // the current state rather than double-counting.
   const { error: payError } = await supabaseAdmin.from('payments').insert({
     organization_id: organizationId,
     invoice_id: id,
@@ -69,8 +80,9 @@ export async function POST(
     status: 'succeeded',
     note: note || null,
     created_by: user.id,
+    idempotency_key: idempotency_key ?? null,
   })
-  if (payError) {
+  if (payError && payError.code !== UNIQUE_VIOLATION) {
     return NextResponse.json({ error: payError.message }, { status: 500 })
   }
 

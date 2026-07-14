@@ -80,6 +80,10 @@ export function InvoiceDetail({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  // Stable per record-attempt; reset after a successful record so the
+  // next payment gets a fresh key. A double-submit reuses it → the server
+  // dedupes instead of double-counting.
+  const [idemKey, setIdemKey] = useState(() => crypto.randomUUID())
 
   const waDigits = clientPhone.replace(/\D/g, '')
   const waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(t.payLinkShare(payLink))}`
@@ -112,14 +116,16 @@ export function InvoiceDetail({
       const res = await fetch(`/api/invoices/${invoice.id}/record-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, amount_cents: cents, note: note.trim() || undefined }),
+        body: JSON.stringify({ method, amount_cents: cents, note: note.trim() || undefined, idempotency_key: idemKey }),
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
         setError(body?.error ?? c.loading)
         return
       }
-      // Reflect the new ledger + status in place.
+      // Reflect the new ledger + status in place. amount_paid_cents comes
+      // straight from the server's recompute, so even a deduped retry lands
+      // on the correct total. Arm a fresh key for the next payment.
       setStatus(body.status)
       setAmountPaid(body.amount_paid_cents)
       setPayments((prev) => [
@@ -129,6 +135,7 @@ export function InvoiceDetail({
       const newBalance = Math.max(0, invoice.totalCents - body.amount_paid_cents)
       setAmount((newBalance / 100).toFixed(2))
       setNote('')
+      setIdemKey(crypto.randomUUID())
     } catch {
       setError(c.loading)
     } finally {

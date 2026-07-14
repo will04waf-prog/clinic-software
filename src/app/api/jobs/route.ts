@@ -56,7 +56,7 @@ async function resolveOrg(supabase: Awaited<ReturnType<typeof createClient>>) {
 
   return {
     orgId: profile.organization_id as string,
-    vertical: org?.vertical ?? 'medspa',
+    vertical: org?.vertical ?? 'landscaping',
     ownerLanguage: org?.owner_language ?? 'es',
     ownerName: (profile.full_name as string | null) ?? org?.name ?? null,
   } as const

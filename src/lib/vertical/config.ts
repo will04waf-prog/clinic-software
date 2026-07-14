@@ -21,7 +21,11 @@ export type OwnerLanguage = 'en' | 'es'
 export type CallerLanguage = 'en' | 'es'
 export type NotificationChannel = 'sms' | 'whatsapp' | 'both'
 
-export const DEFAULT_VERTICAL: Vertical = 'medspa'
+// The go-forward product default. med-spa is a retired vertical; a NULL/
+// unknown vertical should resolve to landscaping, not the legacy product.
+// (All real orgs carry an explicit vertical — column is NOT NULL + CHECK —
+// so this only governs the defensive fallback.)
+export const DEFAULT_VERTICAL: Vertical = 'landscaping'
 
 /** Customer-facing nouns for how a vertical talks about itself, EN +
  *  neutral Latin-American ES. Used in the voice prompt, customer

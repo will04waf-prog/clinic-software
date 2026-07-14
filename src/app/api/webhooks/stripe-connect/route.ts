@@ -25,6 +25,7 @@ import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { buildDisputeEvidence } from '@/lib/stripe/dispute-evidence'
+import { reconcileInvoicePayment } from '@/lib/stripe/reconcile-invoice-payment'
 
 const AUTO_SUBMIT_EVIDENCE = false
 
@@ -47,6 +48,36 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error('[stripe-connect-webhook] Signature verification failed:', err.message)
     return NextResponse.json({ error: `Webhook error: ${err.message}` }, { status: 400 })
+  }
+
+  // ── Card payment settled — webhook fallback for the browser-return
+  //    reconcile. If the customer pays but never lands back on
+  //    /pagar/success_url (closed the tab on a jobsite, lost signal), the
+  //    money is captured on the connected account but the CRM invoice
+  //    would stay unpaid forever and the owner dunns a paid customer.
+  //    This settles it authoritatively. reconcileInvoicePayment is
+  //    idempotent, so it's safe alongside the browser-return path.
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session
+    const acct = event.account
+    const invoiceId = session.metadata?.invoice_id
+    const organizationId = session.metadata?.organization_id
+    if (session.payment_status === 'paid' && acct && invoiceId && organizationId) {
+      try {
+        const r = await reconcileInvoicePayment({
+          invoiceId, organizationId, connectedAccountId: acct, sessionId: session.id,
+        })
+        console.log(`[stripe-connect-webhook] checkout.session.completed → invoice ${invoiceId} settled=${r.paid} recorded=${r.recorded}`)
+      } catch (err: any) {
+        // 500 so Stripe retries — reconcile is idempotent, so a retry
+        // after a transient DB blip is safe.
+        console.error(`[stripe-connect-webhook] reconcile failed for invoice ${invoiceId}:`, err?.message)
+        return NextResponse.json({ error: 'reconcile failed' }, { status: 500 })
+      }
+    } else {
+      console.error(`[stripe-connect-webhook] checkout.session.completed ${session.id}: not paid or missing metadata (status=${session.payment_status}, acct=${!!acct}, inv=${!!invoiceId})`)
+    }
+    return NextResponse.json({ received: true })
   }
 
   if (event.type !== 'charge.dispute.created') {

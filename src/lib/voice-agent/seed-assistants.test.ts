@@ -251,7 +251,9 @@ describe('multi-vertical config (Phase 1)', () => {
   // ORG has no vertical / caller_languages → exercises the defaults
   // path (medspa / {en}), which must reproduce the prior body exactly.
   it('med-spa defaults are byte-identical to the pre-multi-vertical body', () => {
-    const body = buildInboundAssistantBody(ORG, APP_URL, 'sec')
+    // Explicit medspa (real med-spa orgs always carry it; DEFAULT_VERTICAL
+    // is now landscaping). This still guards the byte-identical med-spa body.
+    const body = buildInboundAssistantBody({ ...ORG, vertical: 'medspa' }, APP_URL, 'sec')
     expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
     expect(body.transcriber).toEqual({ provider: 'deepgram', model: 'nova-2', language: 'en' })
     expect(body.model.tools).toHaveLength(16)
@@ -297,12 +299,19 @@ describe('multi-vertical config (Phase 1)', () => {
     expect((body.model.messages[0].content as string)).toContain('# Vertical: home & trade services')
   })
 
-  it('unknown/malformed vertical + caller_languages fall back to med-spa / English', () => {
+  it('unknown/malformed vertical falls back to the default (landscaping); bad caller_languages → English', () => {
     const weird = { ...ORG, vertical: 'zzz', caller_languages: ['fr', ''] as string[] }
-    const body = buildInboundAssistantBody(weird, APP_URL, 'sec')
-    expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
-    expect(body.transcriber).toMatchObject({ language: 'en' })
-    expect((body.model.messages[0].content as string)).not.toMatch(/# Vertical:/)
+    const landscaping = { ...ORG, vertical: 'landscaping', caller_languages: ['fr', ''] as string[] }
+    const w = buildInboundAssistantBody(weird, APP_URL, 'sec')
+    const l = buildInboundAssistantBody(landscaping, APP_URL, 'sec')
+    // Unknown vertical resolves to DEFAULT_VERTICAL (landscaping): the
+    // vertical-derived parts must match. (Compare those, not the whole
+    // body — metadata.seededAt is a per-call timestamp.)
+    expect(w.voice).toEqual(l.voice)
+    expect(w.transcriber).toEqual(l.transcriber)
+    expect((w.model.messages[0].content as string)).toEqual(l.model.messages[0].content as string)
+    // bad caller_languages (['fr','']) → English transcriber
+    expect(w.transcriber).toMatchObject({ language: 'en' })
   })
 })
 
@@ -310,7 +319,7 @@ describe('reminder bot multi-vertical (Phase 1)', () => {
   // ORG has no vertical / caller_languages → defaults path (medspa /
   // {en}), which must reproduce the prior reminder body exactly.
   it('med-spa defaults are byte-identical to the pre-multi-vertical reminder body', () => {
-    const body = buildReminderAssistantBody(ORG, APP_URL, 'sec')
+    const body = buildReminderAssistantBody({ ...ORG, vertical: 'medspa' }, APP_URL, 'sec')
     expect(body.voice).toEqual({ provider: 'vapi', voiceId: 'Savannah' })
     expect(body.transcriber).toEqual({ provider: 'deepgram', model: 'nova-2', language: 'en' })
     expect(body.model.tools).toHaveLength(7)

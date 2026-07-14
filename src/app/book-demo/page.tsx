@@ -193,8 +193,6 @@ export default function BookDemoPage() {
       <footer className="py-6 text-center text-sm text-gray-400">
         <a href="/" className="hover:text-gray-600 transition-colors">Tarhunna</a>
         {' · '}
-        <a href="/med-spa-crm" className="hover:text-gray-600 transition-colors">Med Spa CRM</a>
-        {' · '}
         <a href="/privacy" className="hover:text-gray-600 transition-colors">Privacy</a>
         {' · '}
         <a href="/terms" className="hover:text-gray-600 transition-colors">Terms</a>

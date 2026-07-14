@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .single()
 
   const org = profile?.organization as any
-  const vertical = org?.vertical ?? 'medspa'
+  const vertical = org?.vertical ?? 'landscaping'
   const ownerLanguage = org?.owner_language ?? undefined
 
   return (

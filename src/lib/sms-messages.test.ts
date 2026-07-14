@@ -23,9 +23,14 @@ describe('getTemplate — med-spa byte-identical', () => {
     expect(getTemplate('confirmation', { vertical: 'medspa', sms_template_confirmation: custom }, 'en')).toBe(custom)
   })
 
-  it('null/unknown vertical falls back to med-spa', () => {
-    expect(getTemplate('confirmation', { vertical: null }, 'en')).toBe(MEDSPA_CONFIRMATION)
-    expect(getTemplate('confirmation', {}, 'en')).toBe(MEDSPA_CONFIRMATION)
+  it('null/unknown vertical falls back to the default vertical (landscaping)', () => {
+    // DEFAULT_VERTICAL flipped med-spa → landscaping (go-forward product);
+    // all real orgs carry an explicit vertical, so this only governs the
+    // defensive fallback. Assert equality with the explicit landscaping
+    // template rather than hardcoding its text.
+    const landscaping = getTemplate('confirmation', { vertical: 'landscaping' }, 'en')
+    expect(getTemplate('confirmation', { vertical: null }, 'en')).toBe(landscaping)
+    expect(getTemplate('confirmation', {}, 'en')).toBe(landscaping)
   })
 })
 

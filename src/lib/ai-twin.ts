@@ -127,8 +127,19 @@ export function checkGuardrails(
      * ceiling separately.
      */
     allowLengthOverride?: boolean
+    /**
+     * Org vertical. The price/dose/medical-advice/promise/provider rules
+     * are MED-SPA compliance rules — a landscaper's AI MUST quote prices
+     * (it's the whole job). They apply only for med-spa; a non-medspa
+     * vertical skips them. Undefined (legacy callers) defaults to applying
+     * them, so existing med-spa behavior + tests are unchanged.
+     */
+    vertical?: string
   },
 ): { ok: true } | { ok: false; violation: string } {
+  const medspaCompliance = !opts?.vertical || opts.vertical === 'medspa'
+
+  if (medspaCompliance) {
   // Price quoting: $ followed by digits, "20 dollars", "20.00".
   // Kept first — it's the most specific and the highest-stakes rule
   // for med-spa compliance.
@@ -175,6 +186,7 @@ export function checkGuardrails(
   if (/\bwith\s+dr\.?\s+[A-Z][a-z]+\b/.test(body)) {
     return { ok: false, violation: 'named_provider' }
   }
+  } // end med-spa compliance rules
 
   // Calendar commitment — multiple shapes:
   //   "Thursday at 3pm", "tomorrow at 2"      (day-name + at + digit)
@@ -428,7 +440,7 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
   const [orgRes, examplesRes, servicesNamesRes] = await Promise.all([
     supabaseAdmin
       .from('organizations')
-      .select('ai_twin_voice_profile')
+      .select('ai_twin_voice_profile, vertical')
       .eq('id', ctx.organizationId)
       .single(),
     supabaseAdmin
@@ -559,6 +571,9 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
 
   const guardrailOpts = {
     bannedPhrases: profile.banned_phrases,
+    // Gate the med-spa clinical compliance rules by vertical — a
+    // landscaper's AI must be allowed to quote prices.
+    vertical: (orgRes.data as { vertical?: string } | null)?.vertical,
     // W3: when real slots were injected, allow the model to phrase
     // them ("Tuesday around 2pm") without tripping the day-and-time
     // calendar-commit guardrail. The remaining commit-shape rules

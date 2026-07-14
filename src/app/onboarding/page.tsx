@@ -19,7 +19,7 @@ export default async function OnboardingPage() {
     .single()
 
   const org = (profile?.organizations ?? null) as { vertical?: string; owner_language?: string } | null
-  const vertical = org?.vertical ?? 'medspa'
+  const vertical = org?.vertical ?? 'landscaping'
 
   if (vertical === 'medspa') return <MedspaOnboarding />
 
