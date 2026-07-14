@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { dbErrorResponse } from '@/lib/api/db-error'
 
 const lineItemSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500),
@@ -50,7 +51,7 @@ export async function GET() {
     .eq('organization_id', ctx.organizationId)
     .order('created_at', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbErrorResponse('invoices', error, { status: 500 })
 
   const normalized = (data ?? []).map((i: any) => {
     const contact = Array.isArray(i.contact) ? i.contact[0] : i.contact
@@ -192,10 +193,7 @@ export async function POST(req: NextRequest) {
     p_kind: 'invoice',
   })
   if (numberError || numberData == null) {
-    return NextResponse.json(
-      { error: numberError?.message ?? 'Could not assign invoice number.' },
-      { status: 500 }
-    )
+    return dbErrorResponse('invoices', numberError, { status: 500 })
   }
   const invoice_number = Number(numberData)
 
@@ -219,10 +217,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (insertError || !invoice) {
-    return NextResponse.json(
-      { error: insertError?.message ?? 'Could not create invoice.' },
-      { status: 500 }
-    )
+    return dbErrorResponse('invoices', insertError, { status: 500 })
   }
 
   if (itemRows.length > 0) {
@@ -238,7 +233,7 @@ export async function POST(req: NextRequest) {
     if (itemsError) {
       // Roll back the header so we don't leave an invoice with no lines.
       await supabase.from('invoices').delete().eq('id', invoice.id).eq('organization_id', organizationId)
-      return NextResponse.json({ error: itemsError.message }, { status: 500 })
+      return dbErrorResponse('invoices', itemsError, { status: 500 })
     }
   }
 

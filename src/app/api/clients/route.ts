@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { normalizePhone } from '@/lib/validators'
 import { z } from 'zod'
+import { dbErrorResponse } from '@/lib/api/db-error'
 
 const createClientSchema = z.object({
   first_name: z.string().min(1, 'Name is required').max(100),
@@ -64,10 +65,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (insertError || !contact) {
-    return NextResponse.json(
-      { error: insertError?.message ?? 'Could not create client.' },
-      { status: 500 }
-    )
+    return dbErrorResponse('clients', insertError, { status: 500 })
   }
 
   return NextResponse.json(

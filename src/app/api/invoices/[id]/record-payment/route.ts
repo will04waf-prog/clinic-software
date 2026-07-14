@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { dbErrorResponse } from '@/lib/api/db-error'
 
 // Manual (non-card) payments only. The card path is Stripe and lives
 // elsewhere; here the owner marks cash / Zelle / check / other.
@@ -83,7 +84,7 @@ export async function POST(
     idempotency_key: idempotency_key ?? null,
   })
   if (payError && payError.code !== UNIQUE_VIOLATION) {
-    return NextResponse.json({ error: payError.message }, { status: 500 })
+    return dbErrorResponse('record-payment', payError, { status: 500 })
   }
 
   // Recompute amount_paid_cents from the succeeded ledger rows.
@@ -94,7 +95,7 @@ export async function POST(
     .eq('organization_id', organizationId)
     .eq('status', 'succeeded')
   if (sumError) {
-    return NextResponse.json({ error: sumError.message }, { status: 500 })
+    return dbErrorResponse('record-payment', sumError, { status: 500 })
   }
   const amount_paid_cents = (succeeded ?? []).reduce(
     (sum, p: any) => sum + (p.amount_cents ?? 0),
@@ -116,10 +117,7 @@ export async function POST(
     .select('status, amount_paid_cents')
     .single()
   if (updateError || !updated) {
-    return NextResponse.json(
-      { error: updateError?.message ?? 'Could not update invoice.' },
-      { status: 500 }
-    )
+    return dbErrorResponse('record-payment', updateError, { status: 500 })
   }
 
   return NextResponse.json({
