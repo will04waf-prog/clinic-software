@@ -14,6 +14,9 @@ const createEstimateSchema = z.object({
   tax_cents: z.coerce.number().int().min(0).optional(),
   notes: z.string().max(2000).optional(),
   line_items: z.array(lineItemSchema).min(1, 'Add at least one line item'),
+  // Recurring work. Flows to the job on approval; weekly/biweekly/monthly
+  // auto-generate the next job on completion, 'custom' is manual.
+  recurrence: z.enum(['weekly', 'biweekly', 'monthly', 'custom']).nullable().optional(),
 })
 
 async function resolveOrg(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -74,7 +77,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-  const { contact_id, title, notes, line_items } = parsed.data
+  const { contact_id, title, notes, line_items, recurrence } = parsed.data
   const tax_cents = parsed.data.tax_cents ?? 0
 
   // Verify the contact belongs to this org before referencing it.
@@ -121,6 +124,7 @@ export async function POST(req: NextRequest) {
       subtotal_cents,
       tax_cents,
       total_cents,
+      recurrence: recurrence ?? null,
       created_by: user.id,
     })
     .select('id, estimate_number')

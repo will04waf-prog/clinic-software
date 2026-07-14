@@ -149,6 +149,13 @@ export const en: Messages = {
     shareLink: 'Share this link with your client',
     shareWhatsApp: 'Send by WhatsApp',
     shareMsg: (link: string) => `Here's your estimate. Open it and approve with one tap: ${link}`,
+    recurrenceTitle: 'Does it repeat?',
+    recurrenceNone: 'One-time',
+    recurrenceWeekly: 'Weekly',
+    recurrenceBiweekly: 'Every 2 weeks',
+    recurrenceMonthly: 'Monthly',
+    recurrenceCustom: 'Custom',
+    recurrenceHint: 'When you complete the job, the next one is created automatically (except “Custom”).',
   },
 
   invoice: {

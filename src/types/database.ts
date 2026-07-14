@@ -1049,6 +1049,7 @@ export type Database = {
           id: string
           notes: string | null
           organization_id: string
+          recurrence: string | null
           sent_at: string | null
           status: string
           subtotal_cents: number
@@ -1069,6 +1070,7 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id: string
+          recurrence?: string | null
           sent_at?: string | null
           status?: string
           subtotal_cents?: number
@@ -1089,6 +1091,7 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          recurrence?: string | null
           sent_at?: string | null
           status?: string
           subtotal_cents?: number
@@ -1385,6 +1388,8 @@ export type Database = {
           id: string
           notes: string | null
           organization_id: string
+          recurrence: string | null
+          recurrence_source_job_id: string | null
           scheduled_date: string | null
           status: string
           title: string | null
@@ -1398,6 +1403,8 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id: string
+          recurrence?: string | null
+          recurrence_source_job_id?: string | null
           scheduled_date?: string | null
           status?: string
           title?: string | null
@@ -1411,6 +1418,8 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          recurrence?: string | null
+          recurrence_source_job_id?: string | null
           scheduled_date?: string | null
           status?: string
           title?: string | null
@@ -1443,6 +1452,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_recurrence_source_job_id_fkey"
+            columns: ["recurrence_source_job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]

@@ -159,6 +159,13 @@ export const es = {
     shareLink: 'Comparta este enlace con su cliente',
     shareWhatsApp: 'Enviar por WhatsApp',
     shareMsg: (link: string) => `Aquí está su estimado. Ábralo y apruébelo con un toque: ${link}`,
+    recurrenceTitle: '¿Se repite?',
+    recurrenceNone: 'No se repite',
+    recurrenceWeekly: 'Semanal',
+    recurrenceBiweekly: 'Quincenal',
+    recurrenceMonthly: 'Mensual',
+    recurrenceCustom: 'Personalizado',
+    recurrenceHint: 'Al completar el trabajo, se crea el siguiente automáticamente (excepto “Personalizado”).',
   },
 
   // Facturas — el paso "cobrar" del ciclo. Efectivo/Zelle/cheque; sin

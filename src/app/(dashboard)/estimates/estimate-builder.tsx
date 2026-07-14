@@ -64,6 +64,7 @@ export function EstimateBuilder({
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [tax, setTax] = useState('')
+  const [recurrence, setRecurrence] = useState<'weekly' | 'biweekly' | 'monthly' | 'custom' | null>(null)
   const [lines, setLines] = useState<LineRow[]>([emptyLine()])
 
   const [saving, setSaving] = useState(false)
@@ -165,6 +166,7 @@ export function EstimateBuilder({
             quantity: qtyOf(l.qty),
             unit_price_cents: dollarsToCents(l.price),
           })),
+          recurrence,
         }),
       })
       const body = await res.json().catch(() => null)
@@ -361,6 +363,39 @@ export function EstimateBuilder({
             onChange={(e) => setTitle(e.target.value)}
             placeholder={m.jobTitlePlaceholder}
           />
+
+          {/* Recurring work — a lawn is a repeating job. Weekly/biweekly/
+              monthly auto-generate the next job on completion; custom is
+              manual. Flows estimate → job on approval. */}
+          <Label className="mb-2 mt-4 block">{m.recurrenceTitle}</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              [null, m.recurrenceNone],
+              ['weekly', m.recurrenceWeekly],
+              ['biweekly', m.recurrenceBiweekly],
+              ['monthly', m.recurrenceMonthly],
+              ['custom', m.recurrenceCustom],
+            ] as const).map(([value, label]) => {
+              const active = recurrence === value
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setRecurrence(value)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    active
+                      ? 'border-[#028090] bg-[#028090]/10 text-[#028090]'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          {recurrence && recurrence !== 'custom' && (
+            <p className="mt-1.5 text-[11px] text-gray-400">{m.recurrenceHint}</p>
+          )}
         </section>
 
         {/* Line items */}

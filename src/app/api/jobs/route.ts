@@ -124,11 +124,37 @@ export async function PATCH(req: NextRequest) {
     .update(update)
     .eq('id', id)
     .eq('organization_id', ctx.orgId)
-    .select('id, title, scheduled_date, status, completed_at')
+    .select('id, title, scheduled_date, status, completed_at, contact_id, recurrence, recurrence_source_job_id')
     .maybeSingle()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!updated) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+
+  // Recurring work: completing a weekly/biweekly/monthly job spawns the
+  // next one automatically (a lawn is a repeating job). 'custom' recurs but
+  // is created manually, so it does NOT auto-generate. Best-effort: a
+  // failure here never fails the completion the owner just did.
+  const AUTO: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 30 }
+  if (status === 'completed' && updated.recurrence && updated.recurrence in AUTO) {
+    try {
+      const base = updated.scheduled_date ? new Date(updated.scheduled_date + 'T00:00:00Z') : new Date()
+      const next = new Date(base)
+      if (updated.recurrence === 'monthly') next.setUTCMonth(next.getUTCMonth() + 1)
+      else next.setUTCDate(next.getUTCDate() + AUTO[updated.recurrence])
+      await supabase.from('jobs').insert({
+        organization_id: ctx.orgId,
+        contact_id: updated.contact_id,
+        title: updated.title,
+        status: 'scheduled',
+        scheduled_date: next.toISOString().slice(0, 10),
+        recurrence: updated.recurrence,
+        // Point the whole chain back to the original job.
+        recurrence_source_job_id: updated.recurrence_source_job_id ?? updated.id,
+      })
+    } catch (e) {
+      console.error('[jobs] recurring auto-generate failed:', e instanceof Error ? e.message : e)
+    }
+  }
 
   return NextResponse.json({ job: updated })
 }

@@ -27,7 +27,7 @@ import { resolveLocale } from '@/lib/i18n'
 // Ensure a scheduled job exists for an approved estimate. Idempotent:
 // on-conflict-do-nothing against the unique(estimate_id) index, so a
 // retry / self-heal / concurrent tap never creates a second job.
-async function ensureJob(est: { id: string; organization_id: string; contact_id: string; title: string | null }): Promise<void> {
+async function ensureJob(est: { id: string; organization_id: string; contact_id: string; title: string | null; recurrence?: string | null }): Promise<void> {
   const { error } = await supabaseAdmin
     .from('jobs')
     .upsert(
@@ -37,6 +37,7 @@ async function ensureJob(est: { id: string; organization_id: string; contact_id:
         contact_id: est.contact_id,
         title: est.title || 'Trabajo',
         status: 'scheduled',
+        recurrence: est.recurrence ?? null,
       },
       { onConflict: 'estimate_id', ignoreDuplicates: true },
     )
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
     .update({ status: 'approved', approved_at: nowIso, approved_ip: ip })
     .eq('id', estimateId)
     .in('status', ['sent', 'viewed'])
-    .select('id, organization_id, contact_id, title')
+    .select('id, organization_id, contact_id, title, recurrence')
     .maybeSingle()
 
   if (updateErr) {
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
     // this a safe no-op when the job is already there.
     const { data: existing } = await supabaseAdmin
       .from('estimates')
-      .select('id, organization_id, contact_id, title, status')
+      .select('id, organization_id, contact_id, title, status, recurrence')
       .eq('id', estimateId)
       .maybeSingle()
     if (existing?.status === 'approved') await ensureJob(existing)
