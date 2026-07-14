@@ -205,6 +205,16 @@ export function EstimateBuilder({
               <p className="mt-1 text-xs text-gray-500">
                 {sendResult.channel === 'whatsapp' ? m.sentWhatsApp : sendResult.channel === 'sms' ? m.sentSms : m.shareLink}
               </p>
+              {sendResult.link && selectedClient?.phone && (
+                <a
+                  href={`https://wa.me/${selectedClient.phone.replace(/\D/g, '')}?text=${encodeURIComponent(m.shareMsg(sendResult.link))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition-transform active:scale-[.99]"
+                >
+                  <Send className="h-4 w-4" /> {m.shareWhatsApp}
+                </a>
+              )}
               {sendResult.link && (
                 <div className="mt-3 flex items-center gap-2">
                   <input

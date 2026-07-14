@@ -2,7 +2,30 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { blockedReason } from '@/lib/billing/org-access'
 
+// Pure static marketing/legal routes: no auth logic applies to them, so
+// skip the createServerClient + auth.getUser() network round-trip entirely.
+// This is the biggest avoidable TTFB cost on the Spanish landing/demo
+// pages (every anon visitor was paying a JWT validation over the network
+// on fully-static HTML). NOT including '/', '/login', '/signup' — those
+// carry a logged-in → /dashboard redirect and must keep running.
+export const STATIC_PUBLIC = ['/es', '/trades', '/pricing', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/book-demo']
+
+// Unauthenticated routes: no login redirect, no plan lockout.
+export const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/pricing', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage', '/aprobar', '/pagar', '/accept-invite', '/demo', '/es', '/trades']
+
+// Boundary match — a route matches a prefix only at a real path boundary,
+// never mid-segment. Bare startsWith made '/estimates' match '/es',
+// classifying the whole authenticated estimates section as public.
+export function matchesRoute(pathname: string, routes: readonly string[]): boolean {
+  return routes.some((r) => pathname === r || pathname.startsWith(r + '/'))
+}
+
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  if (matchesRoute(path, STATIC_PUBLIC)) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -46,8 +69,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── Standard auth routes ───────────────────────────────────
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/pricing', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage', '/aprobar', '/pagar', '/accept-invite', '/demo', '/es', '/trades']
-  const isPublic = publicRoutes.some((r) => pathname.startsWith(r))
+  const isPublic = matchesRoute(pathname, PUBLIC_ROUTES)
 
   if (!user && !isPublic && pathname !== '/') {
     return NextResponse.redirect(new URL('/login', request.url))

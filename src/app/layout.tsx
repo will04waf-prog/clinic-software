@@ -89,7 +89,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${greatVibes.variable} ${newsreader.variable} h-full`}>
+    <html lang="es" className={`${greatVibes.variable} ${newsreader.variable} h-full`}>
       <body className={`${inter.className} h-full antialiased bg-[#F5EFE1]`}>
         {children}
       </body>

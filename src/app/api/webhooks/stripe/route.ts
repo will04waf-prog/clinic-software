@@ -5,6 +5,7 @@ import { stripe, isCrmPrice } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { tierFromPriceId } from '@/lib/billing/tiers'
 import { sendPaymentFailedEmail, sendSubscriptionCanceledEmail } from '@/lib/billing-lifecycle-emails'
+import { alertOperator } from '@/lib/ops-alert'
 
 // Map Stripe subscription statuses → Tarhunna plan_status values
 const STRIPE_STATUS_MAP: Record<string, string> = {
@@ -205,8 +206,18 @@ export async function POST(req: NextRequest) {
         break
     }
   } catch (err: any) {
-    // Return 200 so Stripe doesn't retry — we log the error for investigation
+    // Return 200 so Stripe doesn't retry — but a swallowed money-path
+    // failure (a churned org that keeps access, a payer left locked out)
+    // must page an operator, not just sit in console.error where it's
+    // "found out when a customer complains". Bounded key = one alert per
+    // event type per hour (never embed err text — it's an inbox-storm
+    // vector, see alertOperator's contract).
     console.error('[stripe-webhook] Handler error:', err.message)
+    after(() => alertOperator({
+      key: `stripe-webhook-error:${event.type}`,
+      subject: `Stripe webhook handler failed: ${event.type}`,
+      body: `A ${event.type} event (id ${event.id}) threw in the handler and was swallowed with a 200.\n\nError: ${err?.message ?? 'unknown'}\n\nStripe will NOT retry. Investigate the org's plan_status / subscription state manually.`,
+    }))
   }
 
   return NextResponse.json({ received: true })

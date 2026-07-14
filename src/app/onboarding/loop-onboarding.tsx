@@ -48,7 +48,7 @@ export function LoopOnboarding({ locale, ownerName }: { locale: Locale; ownerNam
         <div className="mt-6 space-y-2">
           <button
             type="button"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/clients')}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform shadow-sm"
           >
             {t.startCta}

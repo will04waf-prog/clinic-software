@@ -29,6 +29,35 @@ const nextConfig: NextConfig = {
       { source: '/med-spa-crm', destination: '/', permanent: true },
     ]
   },
+  // Security headers. HSTS was already set at the edge; these add the
+  // rest of the baseline a payments app should carry. Deliberately SAFE:
+  // the CSP here locks down framing, base-uri, plugins, and form targets
+  // — it does NOT set script-src/style-src, which would need Next nonce
+  // wiring and cross-service (Stripe/Vapi/Supabase) testing to avoid
+  // breaking the app. Full script/style CSP is a tracked follow-up.
+  async headers() {
+    const securityHeaders = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'X-DNS-Prefetch-Control', value: 'on' },
+      // We never use geolocation or the topics API; deny them platform-wide.
+      // camera/microphone intentionally NOT denied — the Vapi web-call demo
+      // needs the mic.
+      { key: 'Permissions-Policy', value: 'geolocation=(), browsing-topics=()' },
+      {
+        key: 'Content-Security-Policy',
+        value: [
+          "frame-ancestors 'none'",       // clickjacking: nothing may frame us
+          "base-uri 'self'",              // no <base> hijack
+          "object-src 'none'",            // no legacy plugins
+          "form-action 'self' https://checkout.stripe.com https://connect.stripe.com",
+          'upgrade-insecure-requests',
+        ].join('; '),
+      },
+    ]
+    return [{ source: '/:path*', headers: securityHeaders }]
+  },
 };
 
 export default nextConfig;
