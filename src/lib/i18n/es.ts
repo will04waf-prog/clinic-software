@@ -50,7 +50,7 @@ export const es = {
     passwordLabel: 'Contraseña',
     passwordHint: 'Mínimo 8 caracteres.',
     submitCta: 'Empezar prueba gratis',
-    trialNote: (days: number) => `Prueba gratis de ${days} días. Cancele cuando quiera.`,
+    trialNote: (days: number) => `Prueba gratis de ${days} días. Cancele cuando quiera, sin contratos.`,
     haveAccount: '¿Ya tiene cuenta?',
     logIn: 'Inicie sesión',
 
@@ -300,9 +300,10 @@ export const es = {
     active: 'Plan activo.',
     pastDue: 'Su pago no se procesó. Actualice su tarjeta.',
     subscribeCta: 'Suscribirse — $39/mes',
-    manageCta: 'Administrar suscripción',
+    manageCta: 'Cancelar o administrar suscripción',
     starting: 'Abriendo…',
     noCardNote: 'No se cobra durante la prueba. Cancele cuando quiera.',
+    lockIn: 'Cancele cuando quiera, sin contratos. Un solo clic — nunca cobramos sin avisar.',
     errorGeneric: 'No pudimos abrir el cobro. Intente de nuevo.',
   },
 }

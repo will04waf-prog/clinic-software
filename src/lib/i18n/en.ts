@@ -41,7 +41,7 @@ export const en: Messages = {
     passwordLabel: 'Password',
     passwordHint: 'At least 8 characters.',
     submitCta: 'Start free trial',
-    trialNote: (days: number) => `${days}-day free trial. Cancel anytime.`,
+    trialNote: (days: number) => `${days}-day free trial. Cancel anytime, no contracts.`,
     haveAccount: 'Already have an account?',
     logIn: 'Log in',
 
@@ -281,9 +281,10 @@ export const en: Messages = {
     active: 'Plan active.',
     pastDue: "Your payment didn't go through. Update your card.",
     subscribeCta: 'Subscribe — $39/mo',
-    manageCta: 'Manage subscription',
+    manageCta: 'Cancel or manage subscription',
     starting: 'Opening…',
     noCardNote: 'No charge during your trial. Cancel anytime.',
+    lockIn: 'Cancel anytime, no contracts. One click — we never charge without warning.',
     errorGeneric: "We couldn't open checkout. Please try again.",
   },
 }

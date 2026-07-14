@@ -9,10 +9,27 @@ import { APP_URL, wrap as wrapBase, p, btn } from '@/lib/email/branded'
 
 const wrap = (content: string) =>
   wrapBase(content, "Tarhunna &middot; You're receiving this because your account is on a free trial.")
+// Spanish footer for the CRM (loop) verticals.
+const wrapEs = (content: string) =>
+  wrapBase(content, 'Tarhunna &middot; Recibe esto porque su cuenta está en prueba gratis.')
 
-// ── Email content ─────────────────────────────────────────────
+// CRM (landscaping/trades) owners are Spanish-first and priced at $39 —
+// they must NEVER see the med-spa "$297"/"leads, pipeline, consultations"
+// framing (a wrong-price + wrong-product trust bug). `loop` selects the
+// Spanish, loop-framed, $39 content with the honest "no charge without
+// warning" line; med-spa (loop=false) renders byte-identically to before.
 
-function email7d(firstName: string, orgName: string) {
+function email7d(firstName: string, orgName: string, loop: boolean) {
+  if (loop) return {
+    subject: `¿Cómo va su prueba de Tarhunna, ${firstName}?`,
+    html: wrapEs(`
+      ${p(`Hola ${firstName},`)}
+      ${p(`Lleva una semana con Tarhunna en <strong>${orgName}</strong>. Buen comienzo.`)}
+      ${p(`Con su cuenta puede: crear estimados en 2 minutos, mandarlos por WhatsApp, y cobrar con tarjeta, efectivo o Zelle — todo desde el teléfono.`)}
+      ${p(`Le quedan 7 días de prueba gratis. Suscríbase cuando quiera para seguir sin interrupciones.`)}
+      <p style="margin:24px 0 0 0;">${btn('Ir a mi panel', `${APP_URL}/dashboard`)}</p>
+    `),
+  }
   return {
     subject: `How's your Tarhunna trial going, ${firstName}?`,
     html: wrap(`
@@ -32,7 +49,17 @@ function email7d(firstName: string, orgName: string) {
   }
 }
 
-function email3d(firstName: string, orgName: string) {
+function email3d(firstName: string, orgName: string, loop: boolean) {
+  if (loop) return {
+    subject: `Su prueba de Tarhunna termina en 3 días`,
+    html: wrapEs(`
+      ${p(`Hola ${firstName},`)}
+      ${p(`Su prueba gratis de 14 días para <strong>${orgName}</strong> termina en 3 días.`)}
+      ${p(`Para seguir enviando estimados y cobrando, suscríbase por <strong>$39/mes</strong>. Sus datos no se borran — la cuenta solo queda en pausa si no se suscribe.`)}
+      <p style="margin:24px 0 0 0;">${btn('Suscribirse — $39/mes', `${APP_URL}/settings`)}</p>
+      ${p(`<span style="font-size:13px;color:#6b7280;margin-top:16px;display:block;">Cancele cuando quiera, sin contratos. Nunca le cobramos sin avisarle primero.</span>`)}
+    `),
+  }
   return {
     subject: `Your Tarhunna trial ends in 3 days`,
     html: wrap(`
@@ -45,7 +72,17 @@ function email3d(firstName: string, orgName: string) {
   }
 }
 
-function email1d(firstName: string, orgName: string) {
+function email1d(firstName: string, orgName: string, loop: boolean) {
+  if (loop) return {
+    subject: `Última oportunidad — su prueba termina mañana`,
+    html: wrapEs(`
+      ${p(`Hola ${firstName},`)}
+      ${p(`Su prueba de Tarhunna para <strong>${orgName}</strong> termina mañana.`)}
+      ${p(`Al terminar, la cuenta queda en pausa hasta que se suscriba ($39/mes). Sus estimados, clientes y cobros lo esperan intactos.`)}
+      <p style="margin:24px 0 0 0;">${btn('Suscribirse — $39/mes', `${APP_URL}/settings`, '#028090')}</p>
+      ${p(`<span style="font-size:13px;color:#6b7280;margin-top:16px;display:block;">Cancele cuando quiera, sin contratos.</span>`)}
+    `),
+  }
   return {
     subject: `Last chance — your Tarhunna trial ends tomorrow`,
     html: wrap(`
@@ -57,7 +94,17 @@ function email1d(firstName: string, orgName: string) {
   }
 }
 
-function emailExpired(firstName: string, orgName: string) {
+function emailExpired(firstName: string, orgName: string, loop: boolean) {
+  if (loop) return {
+    subject: `Su prueba de Tarhunna terminó`,
+    html: wrapEs(`
+      ${p(`Hola ${firstName},`)}
+      ${p(`Su prueba de 14 días para <strong>${orgName}</strong> terminó y la cuenta está en pausa.`)}
+      ${p(`Suscríbase por $39/mes para seguir cobrando y enviando estimados. <strong>Sus datos están a salvo — no se borró nada.</strong>`)}
+      <p style="margin:24px 0 0 0;">${btn('Reactivar mi cuenta — $39/mes', `${APP_URL}/settings`, '#028090')}</p>
+      ${p(`<span style="font-size:13px;color:#6b7280;margin-top:16px;display:block;">Cancele cuando quiera, sin contratos.</span>`)}
+    `),
+  }
   return {
     subject: `Your Tarhunna trial has ended`,
     html: wrap(`
@@ -72,12 +119,13 @@ function emailExpired(firstName: string, orgName: string) {
 // ── Send helper ───────────────────────────────────────────────
 
 async function sendBatch(
-  orgs: { id: string; name: string }[],
-  buildEmail: (firstName: string, orgName: string) => { subject: string; html: string },
+  orgs: { id: string; name: string; vertical: string | null }[],
+  buildEmail: (firstName: string, orgName: string, loop: boolean) => { subject: string; html: string },
   sentAtColumn: string,
 ) {
   for (const org of orgs) {
     try {
+      const loop = org.vertical === 'landscaping' || org.vertical === 'trades'
       // Shared helper (org-owner.ts): the old maybeSingle() here broke
       // silently on two-owner orgs — no reminder emails, forever.
       const owner = await getOrgOwner(org.id)
@@ -98,8 +146,8 @@ async function sendBatch(
         .maybeSingle()
       if (!claimed) continue
 
-      const firstName = (owner.full_name ?? '').split(' ')[0] || 'there'
-      const { subject, html } = buildEmail(firstName, org.name)
+      const firstName = (owner.full_name ?? '').split(' ')[0] || (loop ? 'hola' : 'there')
+      const { subject, html } = buildEmail(firstName, org.name, loop)
 
       try {
         // Deterministic key: any accidental re-send inside Resend's 24h
@@ -137,7 +185,7 @@ export async function sendTrialReminders() {
   // 7-day reminder: trial ends in ≤7 days but hasn't expired yet
   const { data: orgs7d } = await supabaseAdmin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, vertical')
     .eq('plan_status', 'trial')
     .is('trial_reminder_7d_sent_at', null)
     .lte('trial_ends_at', in7Days.toISOString())
@@ -146,7 +194,7 @@ export async function sendTrialReminders() {
   // 3-day reminder
   const { data: orgs3d } = await supabaseAdmin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, vertical')
     .eq('plan_status', 'trial')
     .is('trial_reminder_3d_sent_at', null)
     .lte('trial_ends_at', in3Days.toISOString())
@@ -155,7 +203,7 @@ export async function sendTrialReminders() {
   // 1-day reminder
   const { data: orgs1d } = await supabaseAdmin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, vertical')
     .eq('plan_status', 'trial')
     .is('trial_reminder_1d_sent_at', null)
     .lte('trial_ends_at', in1Day.toISOString())
@@ -164,7 +212,7 @@ export async function sendTrialReminders() {
   // Expired: trial_ends_at has passed, plan is still trial or trial_expired
   const { data: orgsExpired } = await supabaseAdmin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, vertical')
     .in('plan_status', ['trial', 'trial_expired'])
     .is('trial_expired_email_sent_at', null)
     .lte('trial_ends_at', now.toISOString())

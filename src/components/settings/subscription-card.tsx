@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, ShieldCheck } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
 
 /**
@@ -84,6 +84,12 @@ export function SubscriptionCard({
       >
         {loading ? t.starting : isActive ? t.manageCta : t.subscribeCta}
       </button>
+
+      {/* No-lock-in reassurance — the differentiator against competitors'
+          predatory-billing reputation. Always visible. */}
+      <p className="mt-3 flex items-start gap-1.5 text-xs text-gray-500">
+        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#02C39A]" /> {t.lockIn}
+      </p>
     </div>
   )
 }

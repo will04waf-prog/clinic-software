@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   UserPlus, FileText, MessageCircle, CheckCircle2, CalendarDays, CreditCard,
-  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone, Check,
+  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone, Check, ShieldCheck,
 } from 'lucide-react'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
@@ -60,6 +60,7 @@ const COPY = {
       'Tarjeta: 3.9% + 30¢ — solo si cobra con tarjeta',
       'Zelle y efectivo: siempre gratis',
     ],
+    priceLockIn: 'Cancele cuando quiera. Sin contratos. Sin sorpresas.',
     priceCta: 'Empezar gratis',
     laylaTitle: 'Layla, un complemento opcional',
     layla: '¿Le suena el teléfono todo el día? Layla, la recepcionista con IA, contesta y agenda por usted — en inglés y español — cuando usted no puede.',
@@ -115,6 +116,7 @@ const COPY = {
       'Card: 3.9% + 30¢ — only when you charge by card',
       'Zelle and cash: always free',
     ],
+    priceLockIn: 'Cancel anytime. No contracts. No surprises.',
     priceCta: 'Start free',
     laylaTitle: 'Layla, an optional add-on',
     layla: 'Phone ringing all day? Layla, the AI receptionist, answers and books for you — in English and Spanish — when you can’t.',
@@ -261,9 +263,14 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
               </li>
             ))}
           </ul>
+          {/* No-lock-in promise — the direct counter to competitors' #1
+              complaint (predatory billing / hard-to-cancel). Made loud. */}
+          <p className="mx-auto mt-5 flex max-w-xs items-center justify-center gap-1.5 rounded-full bg-[#02C39A]/12 px-4 py-2 text-sm font-semibold text-[#0B7A5E]">
+            <ShieldCheck className="h-4 w-4 shrink-0" /> {t.priceLockIn}
+          </p>
           <Link
             href="/signup"
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-brand px-6 py-3.5 text-base font-semibold text-white transition-transform active:scale-[.99]"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-brand px-6 py-3.5 text-base font-semibold text-white transition-transform active:scale-[.99]"
           >
             {t.priceCta} <ArrowRight className="h-4 w-4" />
           </Link>
