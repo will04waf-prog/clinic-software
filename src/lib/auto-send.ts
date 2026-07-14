@@ -21,6 +21,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { Json } from '@/types/database'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import {
   checkAutoSendEligibility,
@@ -305,7 +306,7 @@ export async function attemptAutoSend(args: AttemptAutoSendArgs): Promise<Attemp
     }
     await supabaseAdmin
       .from('ai_drafts')
-      .update({ context_snapshot: mergedSnap })
+      .update({ context_snapshot: mergedSnap as Json })
       .eq('id', args.draftRowId)
 
     await supabaseAdmin.from('activity_log').insert({

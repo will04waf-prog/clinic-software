@@ -12,6 +12,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { Json } from '@/types/database'
 import { normalizePhone } from '@/lib/validators'
 
 export interface PersistCallInput {
@@ -114,7 +115,7 @@ export async function persistCallLog(input: PersistCallInput): Promise<{ inserte
       ended_at:                   input.endedAt,
       duration_sec:               input.durationSec,
       intent:                     input.intent,
-      transcript:                 input.transcript,
+      transcript:                 input.transcript as Json,
       recording_url:              input.recordingUrl,
       recording_consent_obtained: input.recordingConsentObtained,
       safety_trigger_label:       input.safetyTriggerLabel,

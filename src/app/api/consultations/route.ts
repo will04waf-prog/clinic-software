@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
         await sendConsultationSms({
           type: 'confirmation',
           org: orgSms as any,
-          contact: contactSms,
+          contact: contactSms as any,
           consultation: {
             id: consultation.id,
             organization_id: profile.organization_id,

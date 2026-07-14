@@ -132,7 +132,7 @@ export async function POST(req: Request) {
     .update({ status: 'canceled', updated_at: nowIso })
     .eq('id', consultationId)
     .eq('organization_id', org.id)
-    .eq('contact_id', contact.id)
+    .eq('contact_id', contact.id!)
     .in('status', ['scheduled', 'confirmed'])
     .select('id, scheduled_at, organization_id, contact_id')
     .maybeSingle()

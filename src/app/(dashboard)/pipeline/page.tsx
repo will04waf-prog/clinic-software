@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { PipelineBoard } from '@/components/pipeline/pipeline-board'
 import { createClient } from '@/lib/supabase/client'
-import type { PipelineColumn } from '@/types'
+import type { PipelineColumn, PipelineContact } from '@/types'
 
 function PipelineSkeleton() {
   return (
@@ -49,7 +49,7 @@ export default function PipelinePage() {
       ])
 
       const contacts = contactsData ?? []
-      const staged = contacts.filter((c) => c.stage_id != null)
+      const staged = contacts.filter((c) => c.stage_id != null) as PipelineContact[]
 
       const cols: PipelineColumn[] = (stages ?? []).map((stage) => {
         const stageContacts = staged.filter((c) => c.stage_id === stage.id)

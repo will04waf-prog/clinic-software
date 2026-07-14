@@ -79,16 +79,16 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         actions={
           <div className="flex items-center gap-2">
             <SendSmsDialog
-              contactId={contact.id}
+              contactId={contact.id!}
               contactPhone={contact.phone ?? null}
-              firstName={contact.first_name}
+              firstName={contact.first_name ?? ''}
               smsConsent={contact.sms_consent === true}
               optedOutSms={contact.opted_out_sms === true}
             />
             <SendEmailDialog
-              contactId={contact.id}
+              contactId={contact.id!}
               contactEmail={contact.email ?? null}
-              firstName={contact.first_name}
+              firstName={contact.first_name ?? ''}
             />
             <Link href="/leads">
               <Button variant="outline" size="sm">
@@ -101,7 +101,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       />
 
       <div className="flex-1 overflow-y-auto p-6">
-        <LeadSummaryCard contactId={contact.id} className="mb-6" />
+        <LeadSummaryCard contactId={contact.id!} className="mb-6" />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left column: contact info */}
           <div className="space-y-4 lg:col-span-1">
@@ -123,7 +123,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     </div>
                     <div className="flex items-center pl-6">
                       <SmsConsentToggle
-                        contactId={contact.id}
+                        contactId={contact.id!}
                         smsConsent={contact.sms_consent === true}
                         optedOutSms={contact.opted_out_sms === true}
                       />
@@ -208,7 +208,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {/* Meta */}
             <Card>
               <CardContent className="pt-4 space-y-1">
-                <p className="text-xs text-gray-400">Created: {formatDateTime(contact.created_at)}</p>
+                <p className="text-xs text-gray-400">Created: {formatDateTime(contact.created_at!)}</p>
                 {contact.last_contacted_at && (
                   <p className="text-xs text-gray-400">Last contacted: {formatRelative(contact.last_contacted_at)}</p>
                 )}
@@ -222,7 +222,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <Card className="bg-white border border-gray-200 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-gray-900">Consultations ({consultations.length})</CardTitle>
-                <BookConsultationDialog contactId={contact.id} />
+                <BookConsultationDialog contactId={contact.id!} />
               </CardHeader>
               <CardContent>
                 {consultations.length === 0 ? (

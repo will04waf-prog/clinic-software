@@ -219,7 +219,7 @@ async function buildMorningPayload(
   // ── Waiting set: contacts with inbound newer than last seen marker ──
   const waitingContacts = contacts
     .map(c => {
-      const inb = latestInboundByContact.get(c.id)
+      const inb = latestInboundByContact.get(c.id!)
       if (!inb) return null
       const seenAt = c.messages_last_seen_at
       const isWaiting = !seenAt || inb.created_at > seenAt
@@ -249,7 +249,7 @@ async function buildMorningPayload(
     const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Unknown'
     const procedures = (c.procedure_interest ?? []) as Procedure[]
     actions.push({
-      id: c.id,
+      id: c.id!,
       urg: 'now',
       kind: 'lead',
       initials: initialsOf(c.first_name, c.last_name),
@@ -309,10 +309,10 @@ async function buildMorningPayload(
   // replied since. Caps at 2 to keep the stack scannable.
   const coolCandidates = contacts
     .map(c => {
-      const inb = latestInboundByContact.get(c.id)
+      const inb = latestInboundByContact.get(c.id!)
       if (!inb) return null
       if (inb.created_at >= threeDaysAgo) return null
-      const out = latestOutboundByContact.get(c.id)
+      const out = latestOutboundByContact.get(c.id!)
       if (out && out > inb.created_at) return null
       return { contact: c, inbound: inb }
     })
@@ -434,7 +434,7 @@ async function buildMorningPayload(
       // so use one honest label. The prep-flag still drives the
       // mint-accented tile styling that signals "needs attention."
       cta: { label: 'Open', icon: 'arrow-up-right' },
-      contactId: c?.id,
+      contactId: c?.id ?? undefined,
     })
     cursor = startMs + (consult.duration_min ?? 60) * 60_000
   }

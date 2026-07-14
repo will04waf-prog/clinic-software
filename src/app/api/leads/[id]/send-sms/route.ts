@@ -137,7 +137,7 @@ export async function POST(
     ? formatProcedure((contact.procedure_interest as string[])[0])
     : ''
   const renderedBody = renderTemplate(messageBody, {
-    first_name:     contact.first_name,
+    first_name:     contact.first_name ?? '',
     clinic_name:    org?.name ?? '',
     procedure_name: procedureName,
   })
@@ -245,7 +245,7 @@ export async function POST(
   //    (service-role).
   if (draft && status === 'sent') {
     await supabaseAdmin.from('ai_drafts').update({
-      state:           draftState,
+      state:           draftState!,
       edit_distance:   editDistance,
       sent_message_id: insertedMessage?.id ?? null,
       resolved_at:     now,

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/types/database'
 import { sendEmail } from '@/lib/resend'
 import { withCronLock } from '@/lib/cron-locks'
 import { getOrgOwner } from '@/lib/org-owner'
@@ -90,7 +91,7 @@ async function sendBatch(
       const claimIso = new Date().toISOString()
       const { data: claimed } = await supabaseAdmin
         .from('organizations')
-        .update({ [sentAtColumn]: claimIso, updated_at: claimIso })
+        .update({ [sentAtColumn]: claimIso, updated_at: claimIso } as TablesUpdate<'organizations'>)
         .eq('id', org.id)
         .is(sentAtColumn, null)
         .select('id')
@@ -109,7 +110,7 @@ async function sendBatch(
         // deterministic key keeps that retry from duplicating.
         await supabaseAdmin
           .from('organizations')
-          .update({ [sentAtColumn]: null })
+          .update({ [sentAtColumn]: null } as TablesUpdate<'organizations'>)
           .eq('id', org.id)
           .eq(sentAtColumn, claimIso)
         throw sendErr

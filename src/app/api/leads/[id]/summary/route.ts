@@ -115,7 +115,7 @@ export async function POST(
   const stageName = (contact.stage as any)?.name as string | undefined
 
   const userPrompt = buildUserPrompt({
-    firstName:            contact.first_name,
+    firstName:            contact.first_name ?? '',
     lastName:             contact.last_name as string | null,
     clinicName:           org?.name ?? 'the clinic',
     procedures,

@@ -13,6 +13,7 @@
  * already-recorded. Safe to call on every page load of the success URL.
  */
 import { stripe } from '@/lib/stripe'
+import type { TablesUpdate } from '@/types/database'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { applicationFeeCents } from '@/lib/billing/connect-fees'
 
@@ -106,7 +107,7 @@ async function settleInvoice(invoiceId: string, organizationId: string): Promise
   }
   await supabaseAdmin
     .from('invoices')
-    .update(update)
+    .update(update as TablesUpdate<'invoices'>)
     .eq('id', invoiceId)
     .eq('organization_id', organizationId)
 }

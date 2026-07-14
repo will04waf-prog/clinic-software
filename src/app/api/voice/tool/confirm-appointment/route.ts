@@ -129,7 +129,7 @@ export async function POST(req: Request) {
     .update({ status: 'confirmed', updated_at: nowIso })
     .eq('id', consultationId)
     .eq('organization_id', org.id)
-    .eq('contact_id', contact.id)
+    .eq('contact_id', contact.id!)
     .eq('status', 'scheduled')
     .select('id, scheduled_at, contact_id')
     .maybeSingle()
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
       .select('id, status')
       .eq('id', consultationId)
       .eq('organization_id', org.id)
-      .eq('contact_id', contact.id)
+      .eq('contact_id', contact.id!)
       .maybeSingle()
     if (existing?.status === 'confirmed') {
       return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {

@@ -57,7 +57,7 @@ export async function notifyOwner(input: OwnerAlertInput): Promise<NotifyResult>
   const to = org?.owner_notify_e164
   if (!to) return { delivered: false } // no owner mobile → email-only
 
-  const channel: 'sms' | 'whatsapp' | 'both' = org.notification_channel ?? 'sms'
+  const channel: 'sms' | 'whatsapp' | 'both' = (org.notification_channel ?? 'sms') as 'sms' | 'whatsapp' | 'both'
   const lang: 'en' | 'es' = org.owner_language === 'es' ? 'es' : 'en'
   const wantSms = channel === 'sms' || channel === 'both'
   const wantWa = channel === 'whatsapp' || channel === 'both'

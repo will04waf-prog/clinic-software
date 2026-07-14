@@ -26,6 +26,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/types/database'
 import { sendSMS, isTwilioConfigured } from '@/lib/twilio'
 import { sendEmail, wrapEmailHtml } from '@/lib/resend'
 import { blockedReason } from '@/lib/billing/org-access'
@@ -321,7 +322,7 @@ async function sendReminder(consultation: any, type: 'reminder_24h' | 'reminder_
   const flag = type === 'reminder_24h' ? 'reminder_24h_sent' : 'reminder_2h_sent'
   await supabaseAdmin
     .from('consultations')
-    .update({ [flag]: true })
+    .update({ [flag]: true } as TablesUpdate<'consultations'>)
     .eq('id', consultation.id)
     .eq('scheduled_at', consultation.scheduled_at)
     .eq(flag, false)

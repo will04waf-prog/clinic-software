@@ -32,6 +32,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import type { TablesUpdate } from '@/types/database'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireRole, isDenied, OWNER_ONLY } from '@/lib/auth/roles'
@@ -122,7 +123,7 @@ export async function PATCH(req: NextRequest) {
 
   const { error } = await supabaseAdmin
     .from('organizations')
-    .update(dbUpdates)
+    .update(dbUpdates as TablesUpdate<'organizations'>)
     .eq('id', gate.orgId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

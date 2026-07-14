@@ -61,7 +61,7 @@ export async function POST(
     : ''
 
   const vars = {
-    first_name:     contact.first_name,
+    first_name:     contact.first_name ?? '',
     clinic_name:    org.name,
     procedure_name: procedureName,
   }

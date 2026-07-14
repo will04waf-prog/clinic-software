@@ -40,6 +40,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { Json, TablesUpdate } from '@/types/database'
 import { alertOperator } from '@/lib/ops-alert'
 
 export interface ProvisioningJob {
@@ -96,7 +97,7 @@ export async function enqueue(args: EnqueueArgs): Promise<EnqueueResult> {
     .insert({
       organization_id: args.organizationId,
       step:            args.step,
-      payload:         args.payload ?? null,
+      payload:         (args.payload ?? null) as Json,
     })
     .select('id')
     .single()
@@ -230,7 +231,7 @@ export async function complete(args: CompleteArgs): Promise<void> {
 
   const { error } = await supabaseAdmin
     .from('provisioning_jobs')
-    .update(update)
+    .update(update as TablesUpdate<'provisioning_jobs'>)
     .eq('id', args.jobId)
   if (error) throw new Error(`complete failed for ${args.jobId}: ${error.message}`)
 }

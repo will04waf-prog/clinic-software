@@ -138,7 +138,7 @@ export async function POST(req: Request) {
     .select('id, scheduled_at, duration_min, service_id, provider_id, status')
     .eq('id', consultationId)
     .eq('organization_id', org.id)
-    .eq('contact_id', contact.id)
+    .eq('contact_id', contact.id!)
     .in('status', ['scheduled', 'confirmed'])
     .maybeSingle()
   if (!existing) {
@@ -217,7 +217,7 @@ export async function POST(req: Request) {
     })
     .eq('id', consultationId)
     .eq('organization_id', org.id)
-    .eq('contact_id', contact.id)
+    .eq('contact_id', contact.id!)
     .eq('scheduled_at', existing.scheduled_at)
     .in('status', ['scheduled', 'confirmed'])
     .select('id, scheduled_at')
@@ -246,7 +246,7 @@ export async function POST(req: Request) {
       .select('scheduled_at, status')
       .eq('id', consultationId)
       .eq('organization_id', org.id)
-      .eq('contact_id', contact.id)
+      .eq('contact_id', contact.id!)
       .maybeSingle()
     const raced = recheck && recheck.scheduled_at !== existing.scheduled_at
     return NextResponse.json(toolCallResponseForVapi(tc.toolCallId, {
@@ -300,7 +300,7 @@ export async function POST(req: Request) {
       const { data: contactSms } = await supabaseAdmin
         .from('contacts_active')
         .select('id, first_name, phone, opted_out_sms, sms_consent')
-        .eq('id', contact.id)
+        .eq('id', contact.id!)
         .single()
       if (!contactSms) return
       if (

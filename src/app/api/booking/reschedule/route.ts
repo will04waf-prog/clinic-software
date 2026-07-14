@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
       .from('service_providers')
       .select('provider_id')
       .eq('organization_id', row.organization_id)
-      .eq('service_id', row.service_id)
+      .eq('service_id', row.service_id!)
       .eq('provider_id', parsed.data.provider_id)
       .maybeSingle()
     if (!link) {
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
     const bookable = await assertSlotBookable(supabaseAdmin, {
       organizationId: row.organization_id,
       providerId: newProviderId,
-      serviceId: row.service_id,
+      serviceId: row.service_id!,
       startUtc: newScheduledAt,
       now,
       excludeConsultationId: consultationId,
@@ -304,7 +304,7 @@ export async function POST(req: NextRequest) {
       await sendConsultationSms({
         type: 'confirmation',
         org: orgSms as any,
-        contact: contactSms,
+        contact: contactSms as any,
         consultation: {
           id: updated.id,
           organization_id: updated.organization_id,

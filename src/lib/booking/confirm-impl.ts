@@ -198,7 +198,7 @@ export async function confirmBookingInternal(rawInput: unknown): Promise<Confirm
       await sendConsultationSms({
         type: 'confirmation',
         org: orgSms as any,
-        contact: contactSms,
+        contact: contactSms as any,
         consultation: {
           id: data.id,
           organization_id: data.organization_id,
@@ -250,7 +250,7 @@ export async function confirmBookingInternal(rawInput: unknown): Promise<Confirm
       .from('pipeline_stages')
       .select('id')
       .eq('organization_id', data.organization_id)
-      .eq('label', 'Consultation Booked')
+      .eq('label' as 'name', 'Consultation Booked')
       .maybeSingle()
     if (stage) {
       await supabaseAdmin

@@ -30,6 +30,7 @@
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/types/database'
 import { HOLD_TTL_MS } from '@/lib/booking/types'
 import { assertSlotBookable } from '@/lib/booking/assert-slot-bookable'
 
@@ -276,7 +277,7 @@ export async function holdBookingInternal(rawInput: unknown): Promise<HoldResult
     }
     await supabaseAdmin
       .from('contacts')
-      .update(patch)
+      .update(patch as TablesUpdate<'contacts'>)
       .eq('id', contactId)
       .eq('organization_id', orgId)
   }

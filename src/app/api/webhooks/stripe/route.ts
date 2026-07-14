@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { TablesUpdate } from '@/types/database'
 import { after } from 'next/server'
 import Stripe from 'stripe'
 import { stripe, isCrmPrice } from '@/lib/stripe'
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
 
         const { error } = await supabaseAdmin
           .from('organizations')
-          .update(update)
+          .update(update as TablesUpdate<'organizations'>)
           .eq('id', orgId)
 
         if (error) {

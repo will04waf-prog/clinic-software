@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { TablesUpdate } from '@/types/database'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { requireCapability } from '@/lib/billing/require-tier'
@@ -320,7 +321,7 @@ export async function PATCH(request: NextRequest) {
 
   const { error: updErr } = await supabase
     .from('organizations')
-    .update(update)
+    .update(update as TablesUpdate<'organizations'>)
     .eq('id', orgId)
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
 

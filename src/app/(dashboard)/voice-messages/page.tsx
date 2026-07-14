@@ -4,7 +4,7 @@ import { Phone, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
-import { VoiceMessageCard } from '@/components/voice-messages/voice-message-card'
+import { VoiceMessageCard, type VoiceMessage } from '@/components/voice-messages/voice-message-card'
 
 export default async function VoiceMessagesPage() {
   const supabase = await createClient()
@@ -34,7 +34,7 @@ export default async function VoiceMessagesPage() {
     .order('created_at', { ascending: false })
     .limit(200)
 
-  const all   = messages ?? []
+  const all   = (messages ?? []) as VoiceMessage[]
   const open  = all.filter(m => m.status === 'open')
   const done  = all.filter(m => m.status === 'resolved')
 

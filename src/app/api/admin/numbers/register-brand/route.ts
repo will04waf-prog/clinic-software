@@ -41,6 +41,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { createBrand, type A2PBrandData } from '@/lib/telephony/a2p'
+import type { Json } from '@/types/database'
 
 const brandDataSchema = z.object({
   business_legal_name:           z.string().min(1).max(200),
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest) {
       organization_id,
       step:    'a2p_brand_register',
       status:  'in_progress',
-      payload: brand_data as unknown as A2PBrandData,
+      payload: brand_data as unknown as Json,
     })
     .select('id')
     .single()

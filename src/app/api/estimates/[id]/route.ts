@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { TablesUpdate } from '@/types/database'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
@@ -149,7 +150,7 @@ export async function PATCH(
   if (Object.keys(updates).length > 0) {
     const { error: updateError } = await supabase
       .from('estimates')
-      .update(updates)
+      .update(updates as TablesUpdate<'estimates'>)
       .eq('id', id)
       .eq('organization_id', organizationId)
       .eq('status', 'draft') // guard against a concurrent send

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { TablesInsert, TablesUpdate } from '@/types/database'
 import { after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
@@ -140,7 +141,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     if (sms_consent === true) refresh.sms_consent = true
     await supabaseAdmin
       .from('contacts')
-      .update(refresh)
+      .update(refresh as TablesUpdate<'contacts'>)
       .eq('id', existingContact.id)
     contactId = existingContact.id
 
@@ -166,7 +167,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       sms_consent:        sms_consent ?? false,
       ...rest,
       procedure_interest: rest.procedure_interest ?? [],
-    })
+    } as TablesInsert<'contacts'>)
     .select()
     .single()
 

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { markResolved, reopenMessage } from '@/app/(dashboard)/voice-messages/actions'
 import { ReplyForm } from '@/components/voice-messages/reply-form'
 
-interface VoiceMessage {
+export interface VoiceMessage {
   id:                  string
   caller_name:         string
   caller_phone:        string | null

@@ -7,6 +7,7 @@
  */
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/types/database'
 
 export interface ConnectAcctState {
   stripe_connect_id: string | null
@@ -100,7 +101,7 @@ export async function syncConnectStatus(
     if (!cur?.connect_onboarded_at) update.connect_onboarded_at = new Date().toISOString()
   }
 
-  const { error } = await supabaseAdmin.from('organizations').update(update).eq('id', orgId)
+  const { error } = await supabaseAdmin.from('organizations').update(update as TablesUpdate<'organizations'>).eq('id', orgId)
   if (error) throw new Error(`syncConnectStatus: persist failed: ${error.message}`)
 
   return { chargesEnabled, payoutsEnabled }

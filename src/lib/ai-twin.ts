@@ -25,6 +25,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { Json } from '@/types/database'
 import { formatProcedure } from '@/lib/utils'
 import { computeAvailableAfter } from '@/lib/quiet-hours'
 import {
@@ -468,7 +469,7 @@ export async function generateDraft(ctx: DraftContext): Promise<DraftResult> {
   // conflicts with the email prompt's 3-4-sentence rule. Skip until
   // a future migration adds a `channel` column on voice_examples.
   const selectedExamples = ctx.channel === 'sms'
-    ? selectVoiceExamples(examplesRes.data ?? [], resolvedClass)
+    ? selectVoiceExamples((examplesRes.data ?? []) as VoiceExampleRow[], resolvedClass)
     : []
   const examplesBlock = renderVoiceExamplesBlock(selectedExamples)
 
@@ -865,7 +866,7 @@ export async function autoDraftForInbound(args: {
           trigger_message_id: args.triggerMessageId,
           draft_body:         '',
           model:              MODEL,
-          context_snapshot:   result.contextSnapshot,
+          context_snapshot:   result.contextSnapshot as Json | undefined,
           state:              'guardrail_failed',
           guardrail_violation:result.violation ?? null,
           resolved_at:        new Date().toISOString(),
@@ -939,7 +940,7 @@ export async function autoDraftForInbound(args: {
       contactId:          args.contactId,
       contactPhone:       (contact.phone as string | null) ?? null,
       contactSmsConsent:  contact.sms_consent === true,
-      contactOptedOut:    contact.opted_out_sms === true,
+      contactOptedOut:    (contact.opted_out_sms as boolean | null) === true,
       clinicName:         org?.name ?? 'our clinic',
       orgAutoSendEnabled: (org?.ai_twin_auto_send_enabled as boolean | null) === true,
       orgAutoSendClasses: ((org?.ai_twin_auto_send_classes as string[] | null) ?? []),

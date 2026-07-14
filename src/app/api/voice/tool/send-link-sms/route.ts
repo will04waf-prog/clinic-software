@@ -297,9 +297,9 @@ export async function POST(req: Request) {
       .eq('organization_id', org.id)
       .ilike('phone', `%${last10}`)
       .limit(5)
-    contact = (candidates ?? []).find(
+    contact = ((candidates ?? []).find(
       c => (c.phone ?? '').replace(/\D/g, '').slice(-10) === last10,
-    ) ?? null
+    ) ?? null) as { id: string; first_name: string | null; phone: string | null; opted_out_sms: boolean | null; sms_consent: boolean | null } | null
   }
   if (contact?.opted_out_sms) {
     return wontSend('caller_opted_out_sms')

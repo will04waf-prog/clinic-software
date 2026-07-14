@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { TablesUpdate } from '@/types/database'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -505,7 +506,7 @@ export async function POST(req: NextRequest) {
   for (const op of toUpdate) {
     const { error: updErr } = await supabaseAdmin
       .from('contacts')
-      .update(op.patch)
+      .update(op.patch as TablesUpdate<'contacts'>)
       .eq('id', op.id)
       .eq('organization_id', orgId)
     if (updErr) {

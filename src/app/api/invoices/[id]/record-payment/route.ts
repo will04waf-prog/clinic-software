@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { TablesUpdate } from '@/types/database'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
@@ -111,7 +112,7 @@ export async function POST(
 
   const { data: updated, error: updateError } = await supabaseAdmin
     .from('invoices')
-    .update(update)
+    .update(update as TablesUpdate<'invoices'>)
     .eq('id', id)
     .eq('organization_id', organizationId)
     .select('status, amount_paid_cents')
