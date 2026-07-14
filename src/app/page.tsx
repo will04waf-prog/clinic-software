@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     siteName: 'Tarhunna',
     title: 'Tarhunna — El CRM en español para su negocio',
     description:
-      'Cotice por WhatsApp, cobre con tarjeta, y siga trabajando. El CRM en español para jardinería, limpieza y construcción.',
+      'Mande el estimado hoy. Cobre esta semana. El CRM en español para negocios de servicios.',
     url: 'https://tarhunna.net',
     locale: 'es_US',
   },

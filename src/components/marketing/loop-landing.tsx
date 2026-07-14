@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   UserPlus, FileText, MessageCircle, CheckCircle2, CalendarDays, CreditCard,
-  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone,
+  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone, Check,
 } from 'lucide-react'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
@@ -50,6 +50,16 @@ const COPY = {
       { label: 'Construcción y oficios', icon: HardHat },
     ],
     soon: 'más — próximamente',
+    priceTitle: 'Un solo plan, sin sorpresas',
+    priceAmount: '$39',
+    priceUnit: '/mes',
+    priceBullets: [
+      '14 días gratis',
+      'Sin tarjeta para empezar',
+      'Tarjeta: 3.9% + 30¢ — solo si cobra con tarjeta',
+      'Zelle y efectivo: siempre gratis',
+    ],
+    priceCta: 'Empezar gratis',
     laylaTitle: 'Layla, un complemento opcional',
     layla: '¿Le suena el teléfono todo el día? Layla, la recepcionista con IA, contesta y agenda por usted — en inglés y español — cuando usted no puede.',
     laylaCall: 'Llámela ahora y escúchela',
@@ -94,6 +104,16 @@ const COPY = {
       { label: 'Construction & trades', icon: HardHat },
     ],
     soon: 'more — soon',
+    priceTitle: 'One plan, no surprises',
+    priceAmount: '$39',
+    priceUnit: '/mo',
+    priceBullets: [
+      '14 days free',
+      'No card to start',
+      'Card: 3.9% + 30¢ — only when you charge by card',
+      'Zelle and cash: always free',
+    ],
+    priceCta: 'Start free',
     laylaTitle: 'Layla, an optional add-on',
     layla: 'Phone ringing all day? Layla, the AI receptionist, answers and books for you — in English and Spanish — when you can’t.',
     laylaCall: 'Call now and hear her',
@@ -213,6 +233,30 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
             </span>
           ))}
           <span className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400">{t.soon}</span>
+        </div>
+      </section>
+
+      {/* Pricing — one plan, no comparison table (founder-locked numbers). */}
+      <section className="mx-auto max-w-3xl px-5 pb-12">
+        <div className="mx-auto max-w-md rounded-2xl border border-[#028090]/25 bg-white p-7 text-center shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">{t.priceTitle}</h2>
+          <p className="mt-3">
+            <span className="text-5xl font-extrabold tracking-tight text-[#0B2027]">{t.priceAmount}</span>
+            <span className="text-lg font-medium text-gray-500">{t.priceUnit}</span>
+          </p>
+          <ul className="mx-auto mt-5 max-w-xs space-y-2.5 text-left">
+            {t.priceBullets.map((b) => (
+              <li key={b} className="flex items-start gap-2.5 text-sm text-gray-700">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#02C39A]" /> {b}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/signup"
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-brand px-6 py-3.5 text-base font-semibold text-white transition-transform active:scale-[.99]"
+          >
+            {t.priceCta} <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Tarhunna',
     title: 'Tarhunna — The bilingual CRM for the trades',
-    description: 'Quote by WhatsApp, get paid by card, and keep working. English and Spanish.',
+    description: 'Send the estimate today. Get paid this week. The bilingual CRM for the trades — English and Spanish.',
     url: 'https://tarhunna.net/trades',
     locale: 'en_US',
   },
