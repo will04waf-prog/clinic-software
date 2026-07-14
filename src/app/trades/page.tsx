@@ -17,5 +17,11 @@ export const metadata: Metadata = {
 }
 
 export default function TradesPage() {
-  return <LoopLanding defaultLocale="en" variant="trades" />
+  // Root <html lang="es"> is the product default; this page's content is
+  // English, so scope the subtree lang for screen readers + SEO.
+  return (
+    <div lang="en">
+      <LoopLanding defaultLocale="en" variant="trades" />
+    </div>
+  )
 }
