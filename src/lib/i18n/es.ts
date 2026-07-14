@@ -240,6 +240,7 @@ export const es = {
     notAvailable: 'Los cobros con tarjeta no están disponibles para esta factura.',
     notFound: 'No encontramos esta factura.',
     secure: 'Pago seguro procesado por Stripe.',
+    workPhotoAlt: 'Foto del trabajo terminado',
     poweredBy: 'Enviado con Tarhunna',
     errorGeneric: 'No pudimos abrir el pago. Intente de nuevo.',
   },
@@ -271,6 +272,12 @@ export const es = {
     statusScheduled: 'Programado',
     statusInProgress: 'En progreso',
     statusCompleted: 'Completado',
+    // Proof-of-work photos (Phase 3)
+    photosTitle: 'Foto del trabajo terminado',
+    addPhoto: 'Agregar foto',
+    uploadingPhoto: 'Subiendo…',
+    photoError: 'No se pudo subir la foto. Intente de nuevo.',
+    deletePhoto: 'Eliminar foto',
   },
 
   // Prueba de aprobación — el "escudo" contra disputas. Visible en el

@@ -1,5 +1,5 @@
 // AUTO-GENERATED from the Supabase schema (prod). Do not edit by hand;
-// regenerate via `supabase gen types` / the MCP generator.
+// regenerate via the MCP generator after any migration.
 /* eslint-disable */
 export type Json =
   | string
@@ -1311,6 +1311,64 @@ export type Database = {
           },
           {
             foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_photos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          geo_lat: number | null
+          geo_lng: number | null
+          id: string
+          job_id: string
+          organization_id: string
+          storage_path: string
+          taken_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          job_id: string
+          organization_id: string
+          storage_path: string
+          taken_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          job_id?: string
+          organization_id?: string
+          storage_path?: string
+          taken_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_photos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photos_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_photos_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

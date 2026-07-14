@@ -224,6 +224,7 @@ export const en: Messages = {
     notAvailable: 'Card payments are not available for this invoice.',
     notFound: "We couldn't find this invoice.",
     secure: 'Secure payment processed by Stripe.',
+    workPhotoAlt: 'Completed work photo',
     poweredBy: 'Sent with Tarhunna',
     errorGeneric: "We couldn't open payment. Please try again.",
   },
@@ -254,6 +255,11 @@ export const en: Messages = {
     statusScheduled: 'Scheduled',
     statusInProgress: 'In progress',
     statusCompleted: 'Completed',
+    photosTitle: 'Completed-work photo',
+    addPhoto: 'Add photo',
+    uploadingPhoto: 'Uploading…',
+    photoError: "Couldn't upload the photo. Please try again.",
+    deletePhoto: 'Delete photo',
   },
 
   proof: {

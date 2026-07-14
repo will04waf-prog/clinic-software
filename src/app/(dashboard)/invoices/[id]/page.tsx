@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveLocale } from '@/lib/i18n'
 import { signCapabilityToken } from '@/lib/tokens/capability-token'
+import { getJobPhotoUrls } from '@/lib/loop/job-photo-urls'
 import { InvoiceDetail, type InvoiceDetailData } from './invoice-detail'
 
 // Owner-facing invoice detail. Server component: resolves the owner's
@@ -25,7 +26,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const { data: invoice } = await supabase
     .from('invoices')
-    .select('id, invoice_number, status, title, subtotal_cents, tax_cents, total_cents, amount_paid_cents, notes, estimate:estimates(approved_at), contact:contacts(first_name, phone)')
+    .select('id, invoice_number, status, title, subtotal_cents, tax_cents, total_cents, amount_paid_cents, notes, job_id, estimate:estimates(approved_at), contact:contacts(first_name, phone)')
     .eq('id', id)
     .eq('organization_id', profile.organization_id)
     .single()
@@ -83,6 +84,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   // affordance on that flag.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tarhunna.net'
   const payLink = `${appUrl}/pagar/${signCapabilityToken('invoice_pay', invoice.id)}`
+  const photoUrls = await getJobPhotoUrls(invoice.job_id)
 
   return (
     <InvoiceDetail
@@ -91,6 +93,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       connectChargesEnabled={org?.connect_charges_enabled === true}
       payLink={payLink}
       clientPhone={contact?.phone ?? ''}
+      photoUrls={photoUrls}
     />
   )
 }

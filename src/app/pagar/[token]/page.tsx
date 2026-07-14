@@ -14,6 +14,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyCapabilityToken } from '@/lib/tokens/capability-token'
 import { resolveLocale } from '@/lib/i18n'
 import { reconcileInvoicePayment } from '@/lib/stripe/reconcile-invoice-payment'
+import { getJobPhotoUrls } from '@/lib/loop/job-photo-urls'
 import { PayView, PayStatus } from './pay-view'
 
 // Dynamic title/OG: the WhatsApp preview should say WHOSE invoice this
@@ -55,10 +56,14 @@ export default async function PayPage({
 
   const { data: invoice } = await supabaseAdmin
     .from('invoices')
-    .select('id, organization_id, invoice_number, title, status, total_cents, amount_paid_cents, estimate:estimates(approved_at), contact:contacts(first_name, preferred_language)')
+    .select('id, organization_id, invoice_number, title, status, total_cents, amount_paid_cents, job_id, estimate:estimates(approved_at), contact:contacts(first_name, preferred_language)')
     .eq('id', invoiceId)
     .maybeSingle()
   if (!invoice) return <PayStatus kind="notFound" locale="es" />
+
+  // Completion photos from the job this invoice bills — proof of work the
+  // paying client sees, and (once live) dispute evidence.
+  const photoUrls = await getJobPhotoUrls(invoice.job_id)
 
   // Approval record from the estimate this invoice descends from — the
   // dispute shield, shown on the page a client (and their bank) sees.
@@ -126,6 +131,7 @@ export default async function PayPage({
       balanceCents={balance}
       approvedAt={approvedAt}
       clientName={contact?.first_name ?? null}
+      photoUrls={photoUrls}
     />
   )
 }

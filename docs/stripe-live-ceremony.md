@@ -60,6 +60,15 @@ Vercel env vars.
 > approved-estimate timestamp + IP are auto-attached as Stripe evidence
 > (`buildDisputeEvidence`). Both are code-complete and test-verified; they
 > only need this live endpoint + secret.
+>
+> **Completion-photo evidence (Phase 3):** when the disputed invoice's job
+> has `job_photos`, the dispute handler should ALSO upload a completion
+> photo to Stripe (`stripe.files.create`, purpose `dispute_evidence`) and
+> pass its file id as `serviceDocFileId` to `buildDisputeEvidence` — it
+> becomes `service_documentation` (proof the work was performed) alongside
+> the approval record. The builder already accepts `serviceDocFileId` +
+> `photoCount`; wiring the Stripe file upload into the live webhook handler
+> is the remaining step.
 
 - Dashboard (live) → **Developers → Webhooks → Add endpoint**:
   - URL: `https://tarhunna.net/api/webhooks/stripe-connect`

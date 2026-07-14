@@ -27,6 +27,16 @@ export interface DisputeEvidenceInput {
   approvedIp?: string | null
   /** jobs.scheduled_date (YYYY-MM-DD) when a job exists. */
   serviceDate?: string | null
+  /**
+   * Stripe File id (from stripe.files.create with purpose
+   * 'dispute_evidence') of a COMPLETION PHOTO of the job. The Connect
+   * webhook uploads the job_photos image to Stripe and passes the id here;
+   * it becomes the `service_documentation` evidence — indisputable proof
+   * the work was performed. Optional (not every invoice has a photo).
+   */
+  serviceDocFileId?: string | null
+  /** How many completion photos exist (for the narrative). */
+  photoCount?: number
 }
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
@@ -57,12 +67,20 @@ export function buildDisputeEvidence(i: DisputeEvidenceInput): Stripe.DisputeUpd
   if (i.serviceDate) {
     lines.push(`The work was scheduled for ${i.serviceDate}.`)
   }
+  if (i.photoCount && i.photoCount > 0) {
+    lines.push(
+      `The business documented the completed work with ${i.photoCount} ` +
+      `photo${i.photoCount === 1 ? '' : 's'} taken on site${i.serviceDocFileId ? ' (attached)' : ''}.`,
+    )
+  }
 
   return {
     ...(i.customerName ? { customer_name: i.customerName } : {}),
     ...(i.customerEmail ? { customer_email_address: i.customerEmail } : {}),
     ...(i.approvedIp ? { customer_purchase_ip: i.approvedIp } : {}),
     ...(i.serviceDate ? { service_date: i.serviceDate } : {}),
+    // Completion photo as proof-of-service (a Stripe File id).
+    ...(i.serviceDocFileId ? { service_documentation: i.serviceDocFileId } : {}),
     product_description: `Landscaping services — Invoice #${i.invoiceNumber}${i.invoiceTitle ? ` ("${i.invoiceTitle}")` : ''}`,
     uncategorized_text: lines.join(' '),
   }

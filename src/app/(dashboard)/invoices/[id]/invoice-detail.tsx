@@ -58,12 +58,14 @@ export function InvoiceDetail({
   connectChargesEnabled = false,
   payLink = '',
   clientPhone = '',
+  photoUrls = [],
 }: {
   locale: Locale
   invoice: InvoiceDetailData
   connectChargesEnabled?: boolean
   payLink?: string
   clientPhone?: string
+  photoUrls?: string[]
 }) {
   const t = dict(locale).invoice
   const c = dict(locale).common
@@ -169,6 +171,16 @@ export function InvoiceDetail({
           approved estimate this invoice descends from. */}
       {invoice.approvedAt && (
         <ApprovalBadge approvedAt={invoice.approvedAt} clientName={invoice.clientName} locale={locale} className="mt-3 w-full" />
+      )}
+
+      {/* Completion photos from the job — proof of work. */}
+      {photoUrls.length > 0 && (
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {photoUrls.map((url) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={url} src={url} alt="" className="aspect-square w-full rounded-xl border border-gray-200 object-cover" />
+          ))}
+        </div>
       )}
 
       {/* Line items + totals */}

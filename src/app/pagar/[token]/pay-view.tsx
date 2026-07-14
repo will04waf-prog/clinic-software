@@ -17,6 +17,7 @@ export function PayView({
   balanceCents,
   approvedAt = null,
   clientName = null,
+  photoUrls = [],
 }: {
   token: string
   locale: Locale
@@ -26,6 +27,7 @@ export function PayView({
   balanceCents: number
   approvedAt?: string | null
   clientName?: string | null
+  photoUrls?: string[]
 }) {
   const t = dict(locale).pay
   const [loading, setLoading] = useState(false)
@@ -69,6 +71,17 @@ export function PayView({
           <p className="mt-1 text-right text-xs text-gray-400">{money(totalCents - balanceCents)} · {t.total.toLowerCase()}</p>
         )}
       </div>
+
+      {/* Completion photos — proof of work, the strongest "service was
+          performed" signal a paying client (or their bank) can see. */}
+      {photoUrls.length > 0 && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {photoUrls.map((url) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={url} src={url} alt={t.workPhotoAlt} className="aspect-square w-full rounded-xl border border-gray-200 object-cover" />
+          ))}
+        </div>
+      )}
 
       {/* Approval proof — reassures the paying client + is the record a
           bank sees on a dispute. Only when this invoice came from an

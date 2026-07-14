@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarDays, Check, Loader2 } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
+import { JobPhotos } from '@/components/loop/job-photos'
 
 type JobStatus = 'scheduled' | 'in_progress' | 'completed' | 'canceled'
 
@@ -215,36 +216,40 @@ function JobGroup({
           return (
             <div
               key={job.id}
-              className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm sm:flex-row sm:items-center"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[15px] font-semibold text-[#0B2027]">
-                    {job.contact_first_name || (locale === 'es' ? 'Cliente' : 'Client')}
-                  </p>
-                  <StatusPill status={job.status} locale={locale} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-[15px] font-semibold text-[#0B2027]">
+                      {job.contact_first_name || (locale === 'es' ? 'Cliente' : 'Client')}
+                    </p>
+                    <StatusPill status={job.status} locale={locale} />
+                  </div>
+                  <p className="truncate text-[13px] text-[#5A6A70]">{job.title || '—'}</p>
+                  {showDate && job.scheduled_date && (
+                    <p className="mt-0.5 text-[12px] text-[#A4AFB2]">{formatDate(job.scheduled_date, locale)}</p>
+                  )}
                 </div>
-                <p className="truncate text-[13px] text-[#5A6A70]">{job.title || '—'}</p>
-                {showDate && job.scheduled_date && (
-                  <p className="mt-0.5 text-[12px] text-[#A4AFB2]">{formatDate(job.scheduled_date, locale)}</p>
+                {done ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[#0B7A5E]">
+                    <Check className="h-4 w-4" />
+                    {t.completed}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onComplete(job.id)}
+                    disabled={busy}
+                    className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#028090] px-3.5 py-2 text-sm font-semibold text-white sm:w-auto sm:rounded-full shadow-[0_2px_6px_-2px_rgba(2,128,144,0.5)] transition-colors hover:bg-[#026B78] disabled:opacity-60"
+                  >
+                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" strokeWidth={2.6} />}
+                    {t.markComplete}
+                  </button>
                 )}
               </div>
-              {done ? (
-                <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[#0B7A5E]">
-                  <Check className="h-4 w-4" />
-                  {t.completed}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onComplete(job.id)}
-                  disabled={busy}
-                  className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#028090] px-3.5 py-2 text-sm font-semibold text-white sm:w-auto sm:rounded-full shadow-[0_2px_6px_-2px_rgba(2,128,144,0.5)] transition-colors hover:bg-[#026B78] disabled:opacity-60"
-                >
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" strokeWidth={2.6} />}
-                  {t.markComplete}
-                </button>
-              )}
+              {/* Proof of work — capture appears once the job is done. */}
+              {done && <JobPhotos jobId={job.id} locale={locale} />}
             </div>
           )
         })}
