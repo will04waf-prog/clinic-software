@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { dict, type Locale } from '@/lib/i18n'
 import { ArrowLeft, Check, Banknote, Smartphone, FileText, MoreHorizontal, CreditCard, Copy, Send } from 'lucide-react'
+import { ApprovalBadge } from '@/components/loop/approval-badge'
 
 type PaymentMethod = 'cash' | 'zelle' | 'check' | 'other'
 
@@ -13,6 +14,7 @@ export interface InvoiceDetailData {
   status: string
   title: string
   clientName: string
+  approvedAt: string | null
   subtotalCents: number
   taxCents: number
   totalCents: number
@@ -162,6 +164,12 @@ export function InvoiceDetail({
       </div>
 
       {invoice.title && <p className="mt-3 font-medium text-gray-800">{invoice.title}</p>}
+
+      {/* Client-approval proof — the dispute shield, carried from the
+          approved estimate this invoice descends from. */}
+      {invoice.approvedAt && (
+        <ApprovalBadge approvedAt={invoice.approvedAt} clientName={invoice.clientName} locale={locale} className="mt-3 w-full" />
+      )}
 
       {/* Line items + totals */}
       <div className="mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-100">

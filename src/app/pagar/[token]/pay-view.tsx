@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CreditCard, Check, Lock } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
+import { ApprovalBadge } from '@/components/loop/approval-badge'
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
@@ -14,6 +15,8 @@ export function PayView({
   invoiceNumber,
   totalCents,
   balanceCents,
+  approvedAt = null,
+  clientName = null,
 }: {
   token: string
   locale: Locale
@@ -21,6 +24,8 @@ export function PayView({
   invoiceNumber: number
   totalCents: number
   balanceCents: number
+  approvedAt?: string | null
+  clientName?: string | null
 }) {
   const t = dict(locale).pay
   const [loading, setLoading] = useState(false)
@@ -64,6 +69,13 @@ export function PayView({
           <p className="mt-1 text-right text-xs text-gray-400">{money(totalCents - balanceCents)} · {t.total.toLowerCase()}</p>
         )}
       </div>
+
+      {/* Approval proof — reassures the paying client + is the record a
+          bank sees on a dispute. Only when this invoice came from an
+          approved estimate. */}
+      {approvedAt && (
+        <ApprovalBadge approvedAt={approvedAt} clientName={clientName} locale={locale} variant="muted" className="mt-4 w-full justify-center" />
+      )}
 
       {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
 

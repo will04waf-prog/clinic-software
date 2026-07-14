@@ -256,6 +256,11 @@ export const en: Messages = {
     statusCompleted: 'Completed',
   },
 
+  proof: {
+    approvedByName: (name: string, date: string, time: string) => `Approved by ${name} on ${date} at ${time}`,
+    approvedOn: (date: string, time: string) => `Approved by the client on ${date} at ${time}`,
+  },
+
   connect: {
     title: 'Card payments',
     subtitle: 'Let your clients pay their invoices by card. Cash, Zelle, and check are always free.',

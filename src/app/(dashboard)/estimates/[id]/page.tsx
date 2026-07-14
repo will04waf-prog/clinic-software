@@ -24,7 +24,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
 
   const { data: estimate } = await supabase
     .from('estimates')
-    .select('id, estimate_number, status, title, subtotal_cents, tax_cents, total_cents, notes, contact:contacts(first_name, phone)')
+    .select('id, estimate_number, status, title, subtotal_cents, tax_cents, total_cents, notes, approved_at, contact:contacts(first_name, phone)')
     .eq('id', id)
     .eq('organization_id', profile.organization_id)
     .single()
@@ -44,6 +44,7 @@ export default async function EstimateDetailPage({ params }: { params: Promise<{
     status: estimate.status,
     title: estimate.title ?? '',
     clientName: contact?.first_name ?? '',
+    approvedAt: estimate.approved_at ?? null,
     subtotalCents: estimate.subtotal_cents,
     taxCents: estimate.tax_cents,
     totalCents: estimate.total_cents,

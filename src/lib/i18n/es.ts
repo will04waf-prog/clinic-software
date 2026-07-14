@@ -273,6 +273,13 @@ export const es = {
     statusCompleted: 'Completado',
   },
 
+  // Prueba de aprobación — el "escudo" contra disputas. Visible en el
+  // estimado, la factura y las páginas públicas que ve el cliente/banco.
+  proof: {
+    approvedByName: (name: string, date: string, time: string) => `Aprobado por ${name} el ${date} a las ${time}`,
+    approvedOn: (date: string, time: string) => `Aprobado por el cliente el ${date} a las ${time}`,
+  },
+
   // Cobros con tarjeta (Stripe Connect) — tarjeta del dueño en Ajustes.
   connect: {
     title: 'Cobros con tarjeta',

@@ -52,10 +52,21 @@ Vercel env vars.
 
 ## 4. Create the live Connect webhook endpoint (dashboard)
 
+> **This endpoint is DORMANT in prod today (returns 503, secret unset).**
+> Two live features depend on it and DO NOT WORK until this step is done:
+> (1) the **card-payment webhook fallback** — if a paying customer's browser
+> never returns to the success page, the invoice is settled here instead of
+> staying unpaid forever; (2) **dispute evidence** — on a card dispute, the
+> approved-estimate timestamp + IP are auto-attached as Stripe evidence
+> (`buildDisputeEvidence`). Both are code-complete and test-verified; they
+> only need this live endpoint + secret.
+
 - Dashboard (live) → **Developers → Webhooks → Add endpoint**:
   - URL: `https://tarhunna.net/api/webhooks/stripe-connect`
   - **Listen to: events on Connected accounts** (this is the Connect toggle)
-  - Event: `charge.dispute.created`
+  - Events (BOTH — the endpoint handles each):
+    - `charge.dispute.created` → attaches approval-record dispute evidence
+    - `checkout.session.completed` → the payment-settled fallback
 - Reveal the **signing secret** (`whsec_…`) once — paste it straight into
   Vercel (step 5), nowhere else.
 

@@ -25,7 +25,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const { data: invoice } = await supabase
     .from('invoices')
-    .select('id, invoice_number, status, title, subtotal_cents, tax_cents, total_cents, amount_paid_cents, notes, contact:contacts(first_name, phone)')
+    .select('id, invoice_number, status, title, subtotal_cents, tax_cents, total_cents, amount_paid_cents, notes, estimate:estimates(approved_at), contact:contacts(first_name, phone)')
     .eq('id', id)
     .eq('organization_id', profile.organization_id)
     .single()
@@ -48,6 +48,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const contact = (Array.isArray(invoice.contact) ? invoice.contact[0] : invoice.contact) as
     | { first_name?: string; phone?: string }
     | null
+  const estimate = (Array.isArray(invoice.estimate) ? invoice.estimate[0] : invoice.estimate) as
+    | { approved_at?: string | null }
+    | null
 
   const data: InvoiceDetailData = {
     id: invoice.id,
@@ -55,6 +58,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     status: invoice.status,
     title: invoice.title ?? '',
     clientName: contact?.first_name ?? '',
+    approvedAt: estimate?.approved_at ?? null,
     subtotalCents: invoice.subtotal_cents,
     taxCents: invoice.tax_cents,
     totalCents: invoice.total_cents,

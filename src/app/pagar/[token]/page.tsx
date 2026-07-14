@@ -55,10 +55,15 @@ export default async function PayPage({
 
   const { data: invoice } = await supabaseAdmin
     .from('invoices')
-    .select('id, organization_id, invoice_number, title, status, total_cents, amount_paid_cents, contact:contacts(preferred_language)')
+    .select('id, organization_id, invoice_number, title, status, total_cents, amount_paid_cents, estimate:estimates(approved_at), contact:contacts(first_name, preferred_language)')
     .eq('id', invoiceId)
     .maybeSingle()
   if (!invoice) return <PayStatus kind="notFound" locale="es" />
+
+  // Approval record from the estimate this invoice descends from — the
+  // dispute shield, shown on the page a client (and their bank) sees.
+  const estimate = Array.isArray(invoice.estimate) ? invoice.estimate[0] : invoice.estimate
+  const approvedAt = (estimate as { approved_at?: string | null } | null)?.approved_at ?? null
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
@@ -119,6 +124,8 @@ export default async function PayPage({
       invoiceNumber={invoice.invoice_number}
       totalCents={total}
       balanceCents={balance}
+      approvedAt={approvedAt}
+      clientName={contact?.first_name ?? null}
     />
   )
 }

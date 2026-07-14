@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { dict, type Locale } from '@/lib/i18n'
 import { ArrowLeft, Send, Check, Copy, ExternalLink } from 'lucide-react'
+import { ApprovalBadge } from '@/components/loop/approval-badge'
 
 export interface EstimateDetailData {
   id: string
@@ -11,6 +12,7 @@ export interface EstimateDetailData {
   status: string
   title: string
   clientName: string
+  approvedAt: string | null
   subtotalCents: number
   taxCents: number
   totalCents: number
@@ -90,6 +92,16 @@ export function EstimateDetail({ locale, estimate }: { locale: Locale; estimate:
       </div>
 
       {estimate.title && <p className="mt-3 font-medium text-gray-800">{estimate.title}</p>}
+
+      {/* Client-approval proof — the dispute shield. */}
+      {approved && (
+        <ApprovalBadge
+          approvedAt={estimate.approvedAt}
+          clientName={estimate.clientName}
+          locale={locale}
+          className="mt-3 w-full"
+        />
+      )}
 
       {/* Line items */}
       <div className="mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-100">
