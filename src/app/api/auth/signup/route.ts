@@ -4,6 +4,17 @@ import { slugify } from '@/lib/utils'
 import { normalizePhone } from '@/lib/validators'
 import { sendWelcomeEmail } from '@/lib/welcome-email'
 import type { Vertical } from '@/lib/vertical/config'
+import { makeRateLimiter } from '@/lib/public-rate-limit'
+import { ipFor } from '@/lib/booking/public-rate-limit'
+
+// Signup is fully public and does SERVICE-ROLE writes (auth user + org +
+// profile) plus a welcome email to an attacker-supplied address. Without a
+// throttle it's an unauth org-creation + email-cannon endpoint (Resend
+// reputation risk, polluted trial engine). In-memory per-instance limiters
+// stop naive floods with zero migration; a DB-backed throttle (like
+// password_reset_throttle) is the follow-up for distributed abuse.
+const ipSignupLimiter = makeRateLimiter(10, 60 * 60 * 1000)   // 10 / hour / IP
+const emailSignupLimiter = makeRateLimiter(3, 60 * 60 * 1000)  // 3 / hour / email
 
 // Use the service role key so we can bypass RLS during org creation
 const supabaseAdmin = createClient(
@@ -62,6 +73,11 @@ export async function POST(req: NextRequest) {
   if (!ownerCellRaw) return fail('phone', 'Enter your cell number.', 400)
   const ownerCell = normalizePhone(ownerCellRaw)
   if (!ownerCell) return fail('phone_format', 'Enter a valid US phone number.', 400)
+
+  // ── Rate limit (after cheap validation, before any service-role write) ──
+  if (!ipSignupLimiter(ipFor(req)).ok || !emailSignupLimiter(email).ok) {
+    return fail('rate_limited', 'Demasiados intentos. Espere un momento e intente de nuevo.', 429)
+  }
 
   // 1. Create auth user (auto-confirmed — zero-friction phone signup)
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({

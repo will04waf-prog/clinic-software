@@ -146,6 +146,8 @@ export const en: Messages = {
     sentWhatsApp: 'Sent by WhatsApp',
     sentSms: 'Sent by SMS',
     shareLink: 'Share this link with your client',
+    shareWhatsApp: 'Send by WhatsApp',
+    shareMsg: (link: string) => `Here's your estimate. Open it and approve with one tap: ${link}`,
   },
 
   invoice: {

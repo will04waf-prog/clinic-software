@@ -156,6 +156,8 @@ export const es = {
     sentWhatsApp: 'Enviado por WhatsApp',
     sentSms: 'Enviado por SMS',
     shareLink: 'Comparta este enlace con su cliente',
+    shareWhatsApp: 'Enviar por WhatsApp',
+    shareMsg: (link: string) => `Aquí está su estimado. Ábralo y apruébelo con un toque: ${link}`,
   },
 
   // Facturas — el paso "cobrar" del ciclo. Efectivo/Zelle/cheque; sin

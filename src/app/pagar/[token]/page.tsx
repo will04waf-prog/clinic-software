@@ -71,18 +71,24 @@ export default async function PayPage({
   const businessName = org?.name || 'Tarhunna'
 
   // Returned from Stripe Checkout → reconcile before deciding what to show.
+  // ONLY show the paid confirmation when reconcile actually confirms the
+  // payment succeeded. If it throws, or the Checkout session isn't 'paid'
+  // (card declined, tab reopened on a stale session), fall through to
+  // re-read the invoice and show its true state — never a false "paid".
   if (session_id && org?.stripe_connect_id) {
     try {
-      await reconcileInvoicePayment({
+      const result = await reconcileInvoicePayment({
         invoiceId: invoice.id,
         organizationId: invoice.organization_id,
         connectedAccountId: org.stripe_connect_id,
         sessionId: session_id,
       })
+      if (result.paid) {
+        return <PayStatus kind="paid" locale={locale} businessName={businessName} />
+      }
     } catch (err) {
       console.error('[pagar] reconcile failed:', err instanceof Error ? err.message : err)
     }
-    return <PayStatus kind="paid" locale={locale} businessName={businessName} />
   }
 
   // Re-read status after any reconcile (fresh row).
