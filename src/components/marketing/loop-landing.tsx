@@ -16,6 +16,7 @@ type Variant = 'default' | 'trades'
 // segment's language; the noun is 'estimado' (not 'presupuesto').
 const COPY = {
   es: {
+    skip: 'Saltar al contenido',
     switch: 'English',
     eyebrow: 'El CRM en español para su negocio',
     h1: 'Mande el estimado hoy. Cobre esta semana.',
@@ -70,6 +71,7 @@ const COPY = {
     footer: 'El CRM en español para negocios de servicios.',
   },
   en: {
+    skip: 'Skip to content',
     switch: 'Español',
     eyebrow: 'The Spanish CRM for your business',
     h1: 'Send the estimate today. Get paid this week.',
@@ -139,6 +141,13 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
 
   return (
     <div className="min-h-screen bg-[#F5EFE1] text-gray-900">
+      {/* Keyboard/screen-reader skip link — first focusable element. */}
+      <a
+        href="#contenido"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[#028090] focus:shadow-lg focus:ring-2 focus:ring-[#028090]"
+      >
+        {t.skip}
+      </a>
       {/* Top bar */}
       <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
         <LogoMark size="md" standalone priority />
@@ -156,6 +165,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
         </div>
       </header>
 
+      <main id="contenido" tabIndex={-1}>
       {/* Hero */}
       <section className="mx-auto max-w-3xl px-5 pt-6 pb-4 text-center">
         <SignatureLogo size="xl" variant="light-bg" animated className="mb-3 block" />
@@ -283,6 +293,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
           {t.closeCta} <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
+      </main>
 
       <footer className="mx-auto max-w-3xl px-5 py-8 text-center text-xs text-gray-400">
         {t.footer} · © 2026 Tarhunna

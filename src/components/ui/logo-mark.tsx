@@ -43,7 +43,11 @@ export function LogoMark({
         width={540}
         height={484}
         priority={priority}
-        unoptimized
+        // Was `unoptimized`: a 161KB source PNG was shipped whole and
+        // priority-preloaded to render at ~44px on a mobile/cellular
+        // audience. Letting Next optimize + capping the served size at the
+        // largest real render (96px) yields a ~few-KB WebP/AVIF instead.
+        sizes="96px"
         className={SIZE_CLASS[size]}
       />
     </span>
