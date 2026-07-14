@@ -135,6 +135,7 @@ export const es = {
     qty: 'Cant.',
     price: 'Precio',
     addLine: 'Agregar concepto',
+    quickAdd: 'Agregar rápido',
     removeLine: 'Quitar',
     subtotal: 'Subtotal',
     tax: 'Impuesto',

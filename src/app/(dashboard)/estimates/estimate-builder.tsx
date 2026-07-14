@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Trash2, ArrowLeft, Check, Send, Copy } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
+import { LOOP_SERVICE_PRESETS } from '@/lib/vertical/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,14 +33,23 @@ function money(cents: number): string {
 export function EstimateBuilder({
   locale,
   initialClients,
+  vertical = null,
 }: {
   locale: Locale
   initialClients: ClientOption[]
+  vertical?: string | null
 }) {
   const router = useRouter()
   const m = dict(locale).estimate
   const c = dict(locale).clients
   const common = dict(locale).common
+
+  // Common services for this vertical → tap-to-add chips (typing every
+  // line on a phone keyboard, between jobs, is the friction here).
+  const presets =
+    vertical === 'landscaping' || vertical === 'trades'
+      ? LOOP_SERVICE_PRESETS[vertical][locale === 'es' ? 'es' : 'en']
+      : []
 
   const [clients, setClients] = useState<ClientOption[]>(initialClients)
   const [clientId, setClientId] = useState<string>('')
@@ -76,6 +86,19 @@ export function EstimateBuilder({
   }
   function addLine() {
     setLines((prev) => [...prev, emptyLine()])
+  }
+  // Fill the last empty line if there is one, else append — so the first
+  // chip tap doesn't leave a stray blank row above it.
+  function addPreset(desc: string) {
+    setLines((prev) => {
+      const last = prev[prev.length - 1]
+      if (last && !last.description.trim() && !last.price.trim()) {
+        const copy = [...prev]
+        copy[copy.length - 1] = { ...last, description: desc }
+        return copy
+      }
+      return [...prev, { description: desc, qty: '1', price: '' }]
+    })
   }
   function removeLine(i: number) {
     setLines((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)))
@@ -343,6 +366,26 @@ export function EstimateBuilder({
         {/* Line items */}
         <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <Label className="mb-3 block">{m.lineItems}</Label>
+
+          {/* Quick-add chips: common services for this vertical, tap to add. */}
+          {presets.length > 0 && (
+            <div className="mb-3">
+              <p className="mb-1.5 text-xs text-gray-500">{m.quickAdd}</p>
+              <div className="flex flex-wrap gap-2">
+                {presets.map((svc) => (
+                  <button
+                    key={svc}
+                    type="button"
+                    onClick={() => addPreset(svc)}
+                    className="inline-flex items-center gap-1 rounded-full border border-[#028090]/30 bg-[#028090]/5 px-3 py-1.5 text-xs font-medium text-[#028090] transition-colors hover:bg-[#028090]/10 active:scale-95"
+                  >
+                    <Plus className="h-3 w-3" /> {svc}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             {lines.map((l, i) => (
               <div key={i} className="rounded-lg border border-gray-100 bg-gray-50/50 p-3">

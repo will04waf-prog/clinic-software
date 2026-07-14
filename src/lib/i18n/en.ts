@@ -125,6 +125,7 @@ export const en: Messages = {
     qty: 'Qty',
     price: 'Price',
     addLine: 'Add line',
+    quickAdd: 'Quick add',
     removeLine: 'Remove',
     subtotal: 'Subtotal',
     tax: 'Tax',

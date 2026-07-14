@@ -13,13 +13,13 @@ export default async function NewEstimatePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, organizations(owner_language)')
+    .select('organization_id, organizations(owner_language, vertical)')
     .eq('id', user.id)
     .single()
 
   if (!profile) redirect('/login')
 
-  const org = (profile.organizations ?? null) as { owner_language?: string } | null
+  const org = (profile.organizations ?? null) as { owner_language?: string; vertical?: string } | null
   const locale = resolveLocale(org?.owner_language)
 
   // Org-scoped contacts for the picker.
@@ -36,5 +36,5 @@ export default async function NewEstimatePage() {
     phone: c.phone ?? null,
   }))
 
-  return <EstimateBuilder locale={locale} initialClients={clients} />
+  return <EstimateBuilder locale={locale} initialClients={clients} vertical={org?.vertical ?? null} />
 }
