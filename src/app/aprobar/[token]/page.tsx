@@ -93,10 +93,10 @@ export default async function AprobarPage({
   const { data: est } = await supabaseAdmin
     .from('estimates')
     .select(`
-      id, organization_id, status, title, approved_at,
+      id, organization_id, status, title, approved_at, created_at, notes,
       subtotal_cents, tax_cents, total_cents, currency, estimate_number,
       line_items:estimate_line_items(id, description, quantity, unit_price_cents, position),
-      organization:organizations(name),
+      organization:organizations(name, phone),
       contact:contacts(first_name, preferred_language)
     `)
     .eq('id', estimateId)
@@ -155,7 +155,11 @@ export default async function AprobarPage({
       token={token}
       locale={locale}
       orgName={orgName}
+      orgPhone={org?.phone ?? null}
       title={est.title ?? ''}
+      estimateNumber={est.estimate_number ?? null}
+      createdAt={est.created_at ?? null}
+      notes={est.notes ?? null}
       lineItems={lineItems}
       subtotalCents={est.subtotal_cents ?? 0}
       taxCents={est.tax_cents ?? 0}

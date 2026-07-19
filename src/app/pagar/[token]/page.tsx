@@ -56,7 +56,13 @@ export default async function PayPage({
 
   const { data: invoice } = await supabaseAdmin
     .from('invoices')
-    .select('id, organization_id, invoice_number, title, status, total_cents, amount_paid_cents, job_id, estimate:estimates(approved_at), contact:contacts(first_name, preferred_language)')
+    .select(`
+      id, organization_id, invoice_number, title, status, total_cents,
+      amount_paid_cents, job_id, created_at, notes,
+      line_items:invoice_line_items(id, description, quantity, unit_price_cents, position),
+      estimate:estimates(approved_at),
+      contact:contacts(first_name, preferred_language)
+    `)
     .eq('id', invoiceId)
     .maybeSingle()
   if (!invoice) return <PayStatus kind="notFound" locale="es" />
@@ -72,7 +78,7 @@ export default async function PayPage({
 
   const { data: org } = await supabaseAdmin
     .from('organizations')
-    .select('name, owner_language, stripe_connect_id, connect_charges_enabled')
+    .select('name, phone, owner_language, stripe_connect_id, connect_charges_enabled')
     .eq('id', invoice.organization_id)
     .single()
 
@@ -121,12 +127,25 @@ export default async function PayPage({
     return <PayStatus kind="notAvailable" locale={locale} />
   }
 
+  const lineItems = [...(invoice.line_items ?? [])]
+    .sort((a: { position: number | null }, b: { position: number | null }) => (a.position ?? 0) - (b.position ?? 0))
+    .map((li: { id: string; description: string; quantity: number | string; unit_price_cents: number }) => ({
+      id: li.id,
+      description: li.description,
+      quantity: Number(li.quantity),
+      unitPriceCents: li.unit_price_cents,
+    }))
+
   return (
     <PayView
       token={token}
       locale={locale}
       businessName={businessName}
+      businessPhone={org?.phone ?? null}
       invoiceNumber={invoice.invoice_number}
+      createdAt={invoice.created_at ?? null}
+      notes={invoice.notes ?? null}
+      lineItems={lineItems}
       totalCents={total}
       balanceCents={balance}
       approvedAt={approvedAt}

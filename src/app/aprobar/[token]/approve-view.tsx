@@ -27,12 +27,37 @@ export interface ApproveViewProps {
   token: string
   locale: Locale
   orgName: string
+  /** Business contact phone — rendered as a tel: link when present. */
+  orgPhone?: string | null
   title: string
+  /** Receipt identity: estimate number + sent date + validity window. */
+  estimateNumber?: number | null
+  createdAt?: string | null
+  /** Owner-authored notes/terms, shown verbatim under the line items. */
+  notes?: string | null
   lineItems: LineItem[]
   subtotalCents: number
   taxCents: number
   totalCents: number
   currency: string
+}
+
+/** Estimates hold their price for 30 days from creation — computed, not
+ *  stored: adding a column for a fixed policy would be schema for its
+ *  own sake. If the policy ever becomes per-org, THEN it earns a column. */
+const VALIDITY_DAYS = 30
+
+function useDates(createdAt: string | null | undefined, locale: Locale) {
+  return useMemo(() => {
+    if (!createdAt) return { issued: null as string | null, validUntil: null as string | null }
+    const created = new Date(createdAt)
+    if (Number.isNaN(created.getTime())) return { issued: null, validUntil: null }
+    const until = new Date(created.getTime() + VALIDITY_DAYS * 86_400_000)
+    const fmt = new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    })
+    return { issued: fmt.format(created), validUntil: fmt.format(until) }
+  }, [createdAt, locale])
 }
 
 function useMoney(currency: string, locale: Locale) {
@@ -47,9 +72,13 @@ function useMoney(currency: string, locale: Locale) {
 }
 
 export function ApproveView(props: ApproveViewProps) {
-  const { token, locale, orgName, title, lineItems, subtotalCents, taxCents, totalCents, currency } = props
+  const {
+    token, locale, orgName, orgPhone, title, estimateNumber, createdAt,
+    notes, lineItems, subtotalCents, taxCents, totalCents, currency,
+  } = props
   const t = dict(locale)
   const money = useMoney(currency, locale)
+  const { issued, validUntil } = useDates(createdAt, locale)
 
   const [status, setStatus] = useState<'idle' | 'submitting' | 'approved'>('idle')
   const [error, setError] = useState('')
@@ -100,6 +129,17 @@ export function ApproveView(props: ApproveViewProps) {
           {t.approve.fromBusiness(orgName)}
         </h1>
         {title && <p className="mt-1 text-[13.5px] text-[#7E8C90]">{title}</p>}
+        {/* Receipt identity line: number · sent date. Validity below it. */}
+        {(estimateNumber != null || issued) && (
+          <p className="mt-2 text-[12.5px] text-[#7E8C90]">
+            {estimateNumber != null && <span className="font-medium text-[#4A5A60]">{t.approve.estimateNo(estimateNumber)}</span>}
+            {estimateNumber != null && issued && ' · '}
+            {issued && t.approve.issued(issued)}
+          </p>
+        )}
+        {validUntil && (
+          <p className="mt-0.5 text-[12.5px] text-[#7E8C90]">{t.approve.validity(validUntil)}</p>
+        )}
       </header>
 
       <div className="overflow-hidden rounded-xl border border-[#0B2027]/10">
@@ -129,6 +169,27 @@ export function ApproveView(props: ApproveViewProps) {
         </div>
       </div>
 
+      {/* Owner-authored notes/terms — verbatim, whitespace preserved. */}
+      {notes && notes.trim() && (
+        <div className="mt-4 rounded-xl border border-[#0B2027]/10 bg-white px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#7E8C90]">{t.approve.notesTitle}</p>
+          <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed text-[#4A5A60]">{notes.trim()}</p>
+        </div>
+      )}
+
+      {/* ¿Qué sigue? — sets expectations before the tap. */}
+      <div className="mt-4 rounded-xl bg-[#F5EFE1]/60 px-4 py-3.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#7E8C90]">{t.approve.whatsNextTitle}</p>
+        <ol className="mt-2 space-y-1.5">
+          {t.approve.whatsNextSteps(orgName).map((step, i) => (
+            <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-[#4A5A60]">
+              <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#028090]/10 text-[10.5px] font-semibold text-[#028090]">{i + 1}</span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+
       {error && (
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-[#B5710F]/30 bg-[#B5710F]/10 p-3 text-[12.5px] text-[#B5710F]">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -155,7 +216,17 @@ export function ApproveView(props: ApproveViewProps) {
         )}
       </button>
 
-      <p className="mt-4 text-center text-[12.5px] text-[#7E8C90]">{t.approve.questions}</p>
+      {/* Contact: a tel: link when the business has a phone on file —
+          the WhatsApp-reply line otherwise. */}
+      {orgPhone ? (
+        <p className="mt-4 text-center text-[12.5px] text-[#7E8C90]">
+          <a href={`tel:${orgPhone}`} className="underline decoration-[#7E8C90]/40 underline-offset-2">
+            {t.approve.callBusiness(orgPhone)}
+          </a>
+        </p>
+      ) : (
+        <p className="mt-4 text-center text-[12.5px] text-[#7E8C90]">{t.approve.questions}</p>
+      )}
     </Shell>
   )
 }

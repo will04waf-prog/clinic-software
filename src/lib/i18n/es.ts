@@ -250,6 +250,14 @@ export const es = {
     workPhotoAlt: 'Foto del trabajo terminado',
     poweredBy: 'Enviado con Tarhunna',
     errorGeneric: 'No pudimos abrir el pago. Intente de nuevo.',
+    // Receipt-grade detail (WS-B): date, line items, notes, next step.
+    issued: (date: string) => `Emitida el ${date}`,
+    detailTitle: 'Detalle del trabajo',
+    notesTitle: 'Notas',
+    whatsNextTitle: '¿Qué sigue?',
+    whatsNextBody: (biz: string) =>
+      `Al pagar, ${biz} recibe la confirmación al instante y usted recibe su recibo por correo.`,
+    callBusiness: (phone: string) => `¿Preguntas? Llame al ${phone}`,
   },
 
   // Public, client-facing approval page — Spanish-first, no login.
@@ -265,6 +273,18 @@ export const es = {
     expired: 'Este estimado ya no está disponible.',
     notFound: 'No encontramos este estimado.',
     questions: '¿Preguntas? Responda al mensaje de WhatsApp.',
+    // Receipt-grade header/footer (WS-B): number, dates, terms, next steps.
+    estimateNo: (n: number) => `Estimado #${n}`,
+    issued: (date: string) => `Enviado el ${date}`,
+    validity: (date: string) => `Precios válidos hasta el ${date}`,
+    notesTitle: 'Notas y condiciones',
+    whatsNextTitle: '¿Qué sigue?',
+    whatsNextSteps: (biz: string) => [
+      'Apruebe con un toque — queda constancia de qué aprobó y cuándo.',
+      `${biz} le confirma la fecha del trabajo.`,
+      'Paga cuando el trabajo esté hecho.',
+    ],
+    callBusiness: (phone: string) => `¿Preguntas? Llame al ${phone}`,
     poweredBy: 'Enviado con Tarhunna',
   },
 

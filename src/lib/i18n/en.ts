@@ -234,6 +234,14 @@ export const en: Messages = {
     workPhotoAlt: 'Completed work photo',
     poweredBy: 'Sent with Tarhunna',
     errorGeneric: "We couldn't open payment. Please try again.",
+    // Receipt-grade detail (WS-B): date, line items, notes, next step.
+    issued: (date: string) => `Issued on ${date}`,
+    detailTitle: 'Work detail',
+    notesTitle: 'Notes',
+    whatsNextTitle: "What's next?",
+    whatsNextBody: (biz: string) =>
+      `When you pay, ${biz} is notified instantly and your receipt arrives by email.`,
+    callBusiness: (phone: string) => `Questions? Call ${phone}`,
   },
 
   approve: {
@@ -248,6 +256,18 @@ export const en: Messages = {
     expired: 'This estimate is no longer available.',
     notFound: "We couldn't find this estimate.",
     questions: 'Questions? Just reply to the WhatsApp message.',
+    // Receipt-grade header/footer (WS-B): number, dates, terms, next steps.
+    estimateNo: (n: number) => `Estimate #${n}`,
+    issued: (date: string) => `Sent on ${date}`,
+    validity: (date: string) => `Prices valid until ${date}`,
+    notesTitle: 'Notes & terms',
+    whatsNextTitle: "What's next?",
+    whatsNextSteps: (biz: string) => [
+      'Approve with one tap — a record is kept of what you approved and when.',
+      `${biz} confirms the date of the work.`,
+      'Pay when the work is done.',
+    ],
+    callBusiness: (phone: string) => `Questions? Call ${phone}`,
     poweredBy: 'Sent with Tarhunna',
   },
 
