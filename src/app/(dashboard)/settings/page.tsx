@@ -7,6 +7,8 @@ import { ConnectPaymentsCard, type ConnectStatus } from '@/components/settings/c
 import { SubscriptionCard } from '@/components/settings/subscription-card'
 import { GoogleReviewsCard } from '@/components/settings/google-reviews-card'
 import { TaxExportCard } from '@/components/settings/tax-export-card'
+import { CalendarFeedCard } from '@/components/settings/calendar-feed-card'
+import { signCapabilityToken } from '@/lib/tokens/capability-token'
 import { LoopServicesCard } from '@/components/settings/loop-services-card'
 import { resolveLocale } from '@/lib/i18n'
 import { isLoopVertical } from '@/lib/vertical/config'
@@ -37,7 +39,7 @@ export default async function SettingsPage() {
     .select(`
       full_name, email, role,
       organization:organizations(
-        name, slug, plan, timezone, plan_status, trial_ends_at, stripe_customer_id, procedures, vertical,
+        id, name, slug, plan, timezone, plan_status, trial_ends_at, stripe_customer_id, procedures, vertical,
         stripe_connect_id, connect_charges_enabled,
         sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
         sms_template_confirmation, sms_template_confirmation_es, sms_template_reminder_24h, sms_template_reminder_2h,
@@ -52,6 +54,16 @@ export default async function SettingsPage() {
   const org = profile?.organization as any
   const isLoop = isLoopVertical(org?.vertical)
   const es = resolveLocale(org?.owner_language) === 'es'
+
+  // Calendar-feed URL: purpose-bound token over the ORG id, signed
+  // server-side so the client card only ever sees the finished URL.
+  // Null (card shows "unavailable") when MANAGE_TOKEN_SECRET is unset.
+  let calendarFeedUrl: string | null = null
+  if (isLoop && org?.id) {
+    try {
+      calendarFeedUrl = `${APP_URL}/api/calendar/${signCapabilityToken('calendar_feed', org.id)}`
+    } catch { /* secret not configured in this env */ }
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -120,6 +132,15 @@ export default async function SettingsPage() {
           <GoogleReviewsCard
             locale={resolveLocale(org?.owner_language)}
             initialPlaceId={org?.google_place_id ?? null}
+          />
+        )}
+
+        {/* Jobs → owner's own calendar (integrations build): signed
+            read-only ICS feed for Google/Apple Calendar. */}
+        {profile?.role === 'owner' && isLoop && (
+          <CalendarFeedCard
+            locale={resolveLocale(org?.owner_language)}
+            feedUrl={calendarFeedUrl}
           />
         )}
 

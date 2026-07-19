@@ -26,7 +26,7 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
-export type TokenPurpose = 'estimate_approve' | 'invoice_pay'
+export type TokenPurpose = 'estimate_approve' | 'invoice_pay' | 'calendar_feed'
 
 function getSecret(): string {
   const s = process.env.MANAGE_TOKEN_SECRET

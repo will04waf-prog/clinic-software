@@ -378,6 +378,19 @@ export const es = {
     fileSummary: 'Resumen de ingresos',
     download: 'Descargar',
   },
+
+  // Calendario (integrations build) — feed ICS de trabajos.
+  calendar: {
+    title: 'Sus trabajos en su calendario',
+    sub: 'Vea sus trabajos de Tarhunna en Google Calendar o en el calendario del iPhone, junto a sus citas personales. Solo lectura — nadie puede cambiar nada desde el calendario.',
+    copy: 'Copiar enlace',
+    copied: 'Enlace copiado ✓',
+    howTitle: 'Cómo agregarlo',
+    howGoogle: 'Google Calendar (en la computadora): Otros calendarios → + → Desde URL → pegue el enlace.',
+    howIphone: 'iPhone: Ajustes → Apps → Calendario → Cuentas → Añadir cuenta → Otro → Añadir calendario suscrito → pegue el enlace.',
+    refreshNote: 'Google actualiza los calendarios suscritos cada varias horas (así funciona Google, no Tarhunna). El calendario del iPhone se puede configurar para actualizar más seguido.',
+    unavailable: 'El enlace del calendario no está disponible en este momento.',
+  },
 }
 
 // No `as const`: Messages widens strings to `string` so en.ts can supply

@@ -354,4 +354,16 @@ export const en: Messages = {
     fileSummary: 'Income summary',
     download: 'Download',
   },
+
+  calendar: {
+    title: 'Your jobs in your calendar',
+    sub: "See your Tarhunna jobs in Google Calendar or the iPhone calendar, right next to your personal appointments. Read-only — nothing can be changed from the calendar side.",
+    copy: 'Copy link',
+    copied: 'Link copied ✓',
+    howTitle: 'How to add it',
+    howGoogle: 'Google Calendar (on a computer): Other calendars → + → From URL → paste the link.',
+    howIphone: 'iPhone: Settings → Apps → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste the link.',
+    refreshNote: "Google refreshes subscribed calendars every few hours (that's how Google works, not Tarhunna). The iPhone calendar can be set to refresh more often.",
+    unavailable: 'The calendar link is not available right now.',
+  },
 }
