@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: '/med-spa-crm', destination: '/', permanent: true },
+      // Route archaeology 2026-07-15: retire the remaining pre-pivot
+      // marketing surfaces. /pricing was the 3-tier med-spa page that
+      // contradicted the $39 single plan; /demo/[slug] was the med-spa
+      // GTM outreach mini-site. Saved links land on the loop homepage.
+      { source: '/pricing', destination: '/', permanent: true },
+      { source: '/demo/:slug', destination: '/', permanent: true },
     ]
   },
   // Security headers. HSTS was already set at the edge; these add the

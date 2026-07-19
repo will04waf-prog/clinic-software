@@ -1,203 +1,129 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { Phone, MessageCircle, CalendarCheck, Zap, ShieldCheck } from 'lucide-react'
 import { BookDemoForm } from './book-demo-form'
 import { LogoMark } from '@/components/ui/logo-mark'
 
+/**
+ * /book-demo — "Conozca a Layla". Rebuilt 2026-07-15 (route archaeology):
+ * the previous page sold Layla as "the AI receptionist for clinics" with
+ * the retired $147/$297/$497 tier ladder. Layla is now the ADD-ON to the
+ * $39 loop CRM, demoed live on the landscaping line. Spanish-first, same
+ * visual system as the loop landing. The request form + /api/demo pipeline
+ * is preserved (field names unchanged).
+ */
 export const metadata: Metadata = {
-  title: 'Book a Demo — Layla, the AI receptionist for clinics | Tarhunna',
+  title: 'Conozca a Layla — la recepcionista con IA',
   description:
-    'See Layla answer a live call, book an appointment, and text the confirmation — then how the CRM, AI Twin SMS, and self-service booking fit underneath. 20 minutes with a founder, not a sales rep.',
+    'Llame ahora y escuche a Layla contestar como una empresa de jardinería de verdad — en inglés y español. La recepcionista con IA, un complemento del CRM Tarhunna.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://tarhunna.net/book-demo' },
 }
 
-// What the 20-minute demo actually covers. Each item maps to a shipped
-// capability in the product; tier badge reflects where it unlocks so we
-// don't oversell on the Starter plan.
-const DEMO_AGENDA: Array<{
-  title: string
-  detail: string
-  tier: 'starter' | 'professional' | 'scale'
-}> = [
+const DEMO_LINE_DISPLAY = '(301) 962-2856'
+const DEMO_LINE_TEL = 'tel:+13019622856'
+
+const CAPABILITIES = [
   {
-    title: 'Layla answers a live call',
-    detail:
-      'We dial a real clinic line. Layla picks up, books an appointment from real availability, and texts the confirmation before we hang up.',
-    tier: 'scale',
+    icon: Phone,
+    h: 'Contesta cuando usted no puede',
+    b: 'Usted está con las manos en la tierra. Layla contesta al primer timbre, en inglés y en español, y nunca deja ir una llamada al buzón.',
   },
   {
-    title: 'Outbound reminder calls and the voice messages inbox',
-    detail:
-      'How Layla phones patients 4–72 hours ahead to confirm or reschedule, and where the messages she can’t resolve land for triage.',
-    tier: 'scale',
+    icon: MessageCircle,
+    h: 'Le avisa por WhatsApp',
+    b: 'Cada llamada le llega como un resumen a su WhatsApp: quién llamó, qué quiere, y su número para devolver la llamada.',
   },
   {
-    title: 'AI Twin SMS replies in your voice',
-    detail:
-      'Inbound texts come back with a drafted reply that already includes real open slots. Owner-approved on Professional, autonomous on Scale.',
-    tier: 'professional',
+    icon: Zap,
+    h: 'Detecta urgencias',
+    b: 'Si un cliente tiene una emergencia — una fuga de riego, un árbol caído — Layla le manda una alerta URGENTE al instante con el problema y el número.',
   },
   {
-    title: 'Self-service booking and reschedule links',
-    detail:
-      'Your public /book page and the signed /manage link patients tap to move their own visit — no front-desk round-trip.',
-    tier: 'starter',
-  },
-  {
-    title: 'The CRM underneath it all',
-    detail:
-      'Where every call, text, and booking lands: contacts, kanban pipeline, consultations calendar, activity timeline, tags, and notes.',
-    tier: 'starter',
-  },
-  {
-    title: 'Reminders that cut no-shows',
-    detail:
-      'Automated 24h and 2h consultation reminders by SMS and email — and on Scale, Layla places day-before reminder calls patients can confirm or reschedule by voice.',
-    tier: 'professional',
-  },
-  {
-    title: 'Tiers, pricing, and what you actually get',
-    detail:
-      'Honest walk-through of the ladder: Starter $147 (CRM), Professional $297 (CRM + AI Twin SMS + automations), Scale $497 (full Layla voice agent). Annual is 20% off.',
-    tier: 'starter',
+    icon: CalendarCheck,
+    h: 'Toma mensajes y agenda',
+    b: 'Deja cada mensaje ordenado en su panel, y puede agendar visitas directamente en su calendario.',
   },
 ]
 
-const TIER_LABEL: Record<'starter' | 'professional' | 'scale', string> = {
-  starter: 'Every plan',
-  professional: 'Professional+',
-  scale: 'Scale only',
-}
-
 export default function BookDemoPage() {
   return (
-    <div className="min-h-screen bg-[#F5EFE1] flex flex-col">
-      {/* Nav */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <LogoMark size="sm" standalone />
-          </a>
-          <a
-            href="/login"
-            className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Sign in
-          </a>
-        </div>
+    <div className="min-h-screen bg-[#F5EFE1] text-gray-900">
+      {/* Top bar — same shell as the loop landing */}
+      <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
+        <Link href="/"><LogoMark size="md" standalone priority /></Link>
+        <Link
+          href="/signup"
+          className="rounded-full bg-[#028090] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#026B78]"
+        >
+          Empezar gratis
+        </Link>
       </header>
 
-      {/* Main */}
-      <main className="flex-1 px-6 py-16">
-        <div className="mx-auto grid w-full max-w-6xl gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-start">
-          {/* Left: hero + agenda */}
-          <div>
-            {/* Eyebrow */}
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#02C39A]/30 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-700">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500" />
-              20-minute live walkthrough
-            </div>
+      <main>
+        {/* Hero: the live call IS the demo. No form required to hear her. */}
+        <section className="mx-auto max-w-3xl px-5 pt-8 pb-6 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#028090]">
+            Complemento del CRM Tarhunna
+          </p>
+          <h1 className="mx-auto mt-3 max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-tight text-balance sm:text-5xl">
+            Conozca a Layla.
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-gray-600">
+            La recepcionista con inteligencia artificial que contesta su teléfono
+            — en inglés y español — mientras usted trabaja.
+          </p>
 
-            <h1 className="text-4xl font-bold tracking-tight text-[#0B2027] sm:text-5xl">
-              Watch Layla answer a real call, book an appointment, and text the confirmation.
-            </h1>
+          {/* The star CTA: call the live line right now. */}
+          <a
+            href={DEMO_LINE_TEL}
+            className="mt-7 inline-flex w-full max-w-md items-center justify-center gap-2.5 rounded-xl bg-gradient-brand px-6 py-4 text-lg font-bold text-white transition-transform active:scale-[.99]"
+          >
+            <Phone className="h-5 w-5" /> Llámela ahora — {DEMO_LINE_DISPLAY}
+          </a>
+          <p className="mx-auto mt-3 max-w-sm text-sm text-gray-500">
+            Es una línea de demostración en vivo: Layla contesta como una empresa
+            de jardinería de verdad. Pregúntele lo que quiera, en el idioma que quiera.
+          </p>
+        </section>
 
-            <p className="mt-5 text-lg text-gray-600">
-              An AI receptionist that answers every call, backed by a full CRM. Layla picks up the
-              phone, books appointments, texts the link, and writes back to inbound SMS in your
-              voice — so leads stop slipping while your front desk is on another call.
-            </p>
-
-            {/* Trust signals */}
-            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Talk to a founder, not a sales rep
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Live product, not a slide deck
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                14-day trial waiting on the other side
-              </span>
-            </div>
-
-            {/* Agenda */}
-            <div className="mt-10">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-[#0B2027]">
-                What we&rsquo;ll cover
-              </h2>
-              <ul className="mt-4 space-y-4">
-                {DEMO_AGENDA.map((item) => (
-                  <li
-                    key={item.title}
-                    className="rounded-xl border border-gray-200 bg-white/70 p-4 shadow-sm"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-[#0B2027]">
-                        {item.title}
-                      </h3>
-                      <span
-                        className={
-                          item.tier === 'scale'
-                            ? 'inline-flex items-center rounded-full bg-[#0B2027] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#F5EFE1]'
-                            : item.tier === 'professional'
-                            ? 'inline-flex items-center rounded-full border border-brand-600/30 bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700'
-                            : 'inline-flex items-center rounded-full border border-gray-300 bg-[#F5EFE1] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-700'
-                        }
-                      >
-                        {TIER_LABEL[item.tier]}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{item.detail}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Prefer-trial nudge */}
-            <div className="mt-8 rounded-xl border border-dashed border-[#02C39A]/40 bg-white/60 p-4 text-sm text-gray-700">
-              <span className="font-semibold text-[#0B2027]">In a hurry?</span>{' '}
-              <a href="/signup" className="text-brand-700 underline-offset-2 hover:underline">
-                Start the 14-day free trial
-              </a>{' '}
-              and we&rsquo;ll book your demo from inside the product.
-            </div>
-          </div>
-
-          {/* Right: form */}
-          <div className="lg:sticky lg:top-24">
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-[#0B2027]">
-                  Pick a time
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  20 minutes. We&rsquo;ll confirm your time by email within one business day.
-                </p>
+        {/* What she does — loop-relevant, no tiers, no clinics. */}
+        <section className="mx-auto max-w-3xl px-5 py-8">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {CAPABILITIES.map(({ icon: Icon, h, b }) => (
+              <div key={h} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#028090]">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h2 className="mt-3 font-semibold text-gray-900">{h}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">{b}</p>
               </div>
+            ))}
+          </div>
+          <p className="mt-4 flex items-start gap-2 rounded-xl bg-[#0B2027] px-4 py-3 text-sm text-[#F5EFE1]/90">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#02C39A]" />
+            Layla es un complemento opcional del CRM Tarhunna ($39/mes). Se activa
+            con nuestro equipo cuando usted esté listo — sin contratos, como todo lo demás.
+          </p>
+        </section>
+
+        {/* The request form — kept pipeline, reframed ask. */}
+        <section className="mx-auto max-w-3xl px-5 py-8">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-7">
+            <h2 className="text-xl font-bold tracking-tight">¿Quiere que lo llamemos?</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Déjenos sus datos y un fundador — no un vendedor — lo llama para
+              mostrarle Layla con su propio negocio. 20 minutos, en español o inglés.
+            </p>
+            <div className="mt-5">
               <BookDemoForm />
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-sm text-gray-400">
-        <a href="/" className="hover:text-gray-600 transition-colors">Tarhunna</a>
-        {' · '}
-        <a href="/privacy" className="hover:text-gray-600 transition-colors">Privacy</a>
-        {' · '}
-        <a href="/terms" className="hover:text-gray-600 transition-colors">Terms</a>
-        {' · '}
-        <a href="/login" className="hover:text-gray-600 transition-colors">Sign in</a>
+      <footer className="mx-auto max-w-3xl px-5 py-8 text-center text-xs text-gray-400">
+        El CRM en español para negocios de servicios. · © 2026 Tarhunna
       </footer>
     </div>
   )
