@@ -22,7 +22,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { sendReviewRequestForJob } from '@/lib/loop/review-request'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -76,6 +79,22 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Which jobs already got their review request — powers the "Reseña
+  // pedida" chip on completed rows. Service-role read (activity_log has
+  // no owner-facing RLS policy); org-scoped by the filter.
+  const reviewRequested = new Set<string>()
+  try {
+    const { data: sent } = await supabaseAdmin
+      .from('activity_log')
+      .select('metadata')
+      .eq('organization_id', ctx.orgId)
+      .eq('action', 'review_request_sent')
+    for (const row of sent ?? []) {
+      const jobId = (row.metadata as { job_id?: string } | null)?.job_id
+      if (jobId) reviewRequested.add(jobId)
+    }
+  } catch { /* chip is cosmetic — never fail the list */ }
+
   const normalized = (jobs ?? []).map((j: any) => {
     const contact = Array.isArray(j.contact) ? j.contact[0] : j.contact
     return {
@@ -85,6 +104,7 @@ export async function GET() {
       status: j.status,
       completed_at: j.completed_at,
       contact_first_name: contact?.first_name ?? null,
+      review_requested: reviewRequested.has(j.id),
     }
   })
 
@@ -154,6 +174,13 @@ export async function PATCH(req: NextRequest) {
     } catch (e) {
       console.error('[jobs] recurring auto-generate failed:', e instanceof Error ? e.message : e)
     }
+  }
+
+  // Review request (star-gated Google review flow). Fire-and-forget:
+  // no-ops unless the org has a Google Place ID configured, and dedupes
+  // per job internally. Never delays or fails the completion response.
+  if (status === 'completed') {
+    after(() => sendReviewRequestForJob(ctx.orgId, updated.id))
   }
 
   return NextResponse.json({ job: updated })

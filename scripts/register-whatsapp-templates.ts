@@ -46,6 +46,7 @@ const SAMPLES: Record<string, Record<string, string>> = {
   estimate_ready:       { '1': 'María', '2': 'Jardinería García', '3': 'https://tarhunna.net/aprobar/ejemplo' },
   estimate_approved:    { '1': 'María', '2': 'Jardinería García' },
   job_reminder:         { '1': 'Jardinería García', '2': 'mañana a las 9:00 AM' },
+  job_completed:        { '1': 'María', '2': 'Jardinería García' },
 }
 
 async function api(method: string, path: string, body?: unknown) {
@@ -70,11 +71,17 @@ async function createOne(tpl: AnyTemplate, v: TemplateVariant): Promise<{ sid: s
     console.log(`  reuse   ${v.name} (${v.language}) → ${existing}`)
     return { sid: existing, created: false }
   }
+  // Quick-reply variants register as twilio/quick-reply (body + up to 3
+  // buttons); the tap returns ButtonPayload=id to the inbound webhook.
+  // Plain variants stay twilio/text.
+  const types = v.quickReplies?.length
+    ? { 'twilio/quick-reply': { body: v.body, actions: v.quickReplies.map(q => ({ title: q.title, id: q.id })) } }
+    : { 'twilio/text': { body: v.body } }
   const { status, json } = await api('POST', '/Content', {
     friendly_name: v.name,
     language: v.language,
     variables: SAMPLES[tpl.type],
-    types: { 'twilio/text': { body: v.body } },
+    types,
   })
   if (status >= 300 || !json.sid) {
     console.error(`  CREATE FAILED ${v.name}: ${status} ${JSON.stringify(json).slice(0, 200)}`)

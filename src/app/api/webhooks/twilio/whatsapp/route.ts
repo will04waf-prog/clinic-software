@@ -21,6 +21,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyTwilioSignature, twimlResponse } from '@/lib/twilio'
 import { normalizePhone } from '@/lib/validators'
 import { stampWhatsAppInbound } from '@/lib/notify/session'
+import { classifyReviewReply, handleReviewReply } from '@/lib/loop/review-request'
 
 const EMPTY_TWIML = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
 
@@ -56,10 +57,18 @@ export async function POST(req: Request) {
     if (match) {
       await stampWhatsAppInbound(match.id)
     } else {
-      // A WhatsApp from a number we don't recognize as any owner —
-      // valid Twilio request, just nothing to stamp. 200 so Twilio
-      // doesn't retry.
-      console.warn('[twilio-whatsapp] no org for inbound owner number')
+      // Not an owner number → it's a CUSTOMER replying to something we
+      // sent (integrations build 2026-07-18). First stop: the review
+      // star-gate — a quick-reply tap (ButtonPayload) or its typed-out
+      // text answers a pending review request; happy taps get the
+      // Google link, problem taps wake the owner privately.
+      const reply = classifyReviewReply(params.ButtonPayload, params.Body)
+      const consumed = reply ? await handleReviewReply(normalized, reply) : false
+      if (!consumed) {
+        // Unmatched client message — nothing to act on yet (the two-way
+        // inbox will persist these). 200 so Twilio doesn't retry.
+        console.warn('[twilio-whatsapp] unhandled client inbound')
+      }
     }
   }
 

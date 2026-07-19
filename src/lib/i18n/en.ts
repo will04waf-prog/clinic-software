@@ -325,4 +325,22 @@ export const en: Messages = {
     lockIn: 'Cancel anytime, no contracts. One click — we never charge without warning.',
     errorGeneric: "We couldn't open checkout. Please try again.",
   },
+
+  reviews: {
+    title: 'Google reviews',
+    sub: "When you complete a job, we ask the customer on WhatsApp how it turned out. Happy customers get your Google review link. If there was a problem, we alert you privately — before it reaches Google.",
+    inputLabel: 'Your Google Place ID (or your review link)',
+    inputPlaceholder: 'ChIJ… or https://search.google.com/local/writereview?placeid=…',
+    help: 'Find your Place ID free with Google\'s "Place ID finder" — or paste the review link you already use.',
+    save: 'Save',
+    saving: 'Saving…',
+    saved: 'Saved. Review requests are now on.',
+    cleared: 'Saved. Review requests are now off.',
+    active: 'On — a review is requested when each job is completed.',
+    inactive: 'Off — add your Place ID to turn it on.',
+    testLink: 'Test the review link',
+    errUnparseable: "We couldn't recognize that Place ID or link. Check it and try again.",
+    errGeneric: "Couldn't save. Please try again.",
+    requestedChip: 'Review requested',
+  },
 }

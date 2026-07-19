@@ -347,6 +347,25 @@ export const es = {
     lockIn: 'Cancele cuando quiera, sin contratos. Un solo clic — nunca cobramos sin avisar.',
     errorGeneric: 'No pudimos abrir el cobro. Intente de nuevo.',
   },
+
+  // Reseñas de Google (integrations build) — tarjeta en Ajustes + chip en Agenda.
+  reviews: {
+    title: 'Reseñas de Google',
+    sub: 'Al completar un trabajo, le preguntamos al cliente por WhatsApp cómo quedó. Si está contento, le mandamos su enlace de reseña de Google. Si hubo un problema, le avisamos a usted en privado — antes de que llegue a Google.',
+    inputLabel: 'Su Place ID de Google (o el enlace de reseña)',
+    inputPlaceholder: 'ChIJ… o https://search.google.com/local/writereview?placeid=…',
+    help: 'Encuentre su Place ID gratis en el buscador de Google (busque "Place ID finder") — o pegue el enlace de reseña que ya usa.',
+    save: 'Guardar',
+    saving: 'Guardando…',
+    saved: 'Guardado. Las solicitudes de reseña quedan activadas.',
+    cleared: 'Guardado. Las solicitudes de reseña quedan desactivadas.',
+    active: 'Activado — se pide reseña al completar cada trabajo.',
+    inactive: 'Desactivado — agregue su Place ID para activarlo.',
+    testLink: 'Probar el enlace de reseña',
+    errUnparseable: 'No reconocimos ese Place ID o enlace. Revise e intente de nuevo.',
+    errGeneric: 'No se pudo guardar. Intente de nuevo.',
+    requestedChip: 'Reseña pedida',
+  },
 }
 
 // No `as const`: Messages widens strings to `string` so en.ts can supply

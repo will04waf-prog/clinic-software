@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BillingCard } from '@/components/settings/billing-card'
 import { ConnectPaymentsCard, type ConnectStatus } from '@/components/settings/connect-payments-card'
 import { SubscriptionCard } from '@/components/settings/subscription-card'
+import { GoogleReviewsCard } from '@/components/settings/google-reviews-card'
 import { LoopServicesCard } from '@/components/settings/loop-services-card'
 import { resolveLocale } from '@/lib/i18n'
 import { isLoopVertical } from '@/lib/vertical/config'
@@ -40,7 +41,8 @@ export default async function SettingsPage() {
         sms_enabled, sms_confirmation_enabled, sms_reminder_24h_enabled, sms_reminder_2h_enabled,
         sms_template_confirmation, sms_template_confirmation_es, sms_template_reminder_24h, sms_template_reminder_2h,
         ai_twin_enabled, ai_twin_quiet_hours_start, ai_twin_quiet_hours_end,
-        caller_languages, owner_language, notification_channel, owner_notify_e164
+        caller_languages, owner_language, notification_channel, owner_notify_e164,
+        google_place_id
       )
     `)
     .eq('id', user.id)
@@ -107,6 +109,16 @@ export default async function SettingsPage() {
                   ? 'pending'
                   : 'inactive') as ConnectStatus
             }
+          />
+        )}
+
+        {/* Google review requests (integrations build) — the star-gated
+            "¿cómo quedó el trabajo?" flow. Owner-only, loop-only; saving
+            a Place ID here is the feature's on-switch. */}
+        {profile?.role === 'owner' && isLoop && (
+          <GoogleReviewsCard
+            locale={resolveLocale(org?.owner_language)}
+            initialPlaceId={org?.google_place_id ?? null}
           />
         )}
 

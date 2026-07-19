@@ -48,6 +48,15 @@ export interface TemplateVariant {
   body: string
   /** Env var holding the approved Twilio Content SID (HX…). */
   contentSidEnv: string
+  /**
+   * Quick-reply buttons (max 3). Present → the registration script
+   * creates a twilio/quick-reply content type instead of twilio/text,
+   * and the tap comes back to the inbound webhook as ButtonPayload=id
+   * + ButtonText=title. Titles must stay ≤ 25 chars (Meta limit).
+   * Static per template — per-send routing keys on the SENDER's number
+   * and recent activity, never on the payload.
+   */
+  quickReplies?: ReadonlyArray<{ title: string; id: string }>
 }
 
 export interface OwnerAlertTemplate {
@@ -136,7 +145,7 @@ export const OWNER_ALERT_TEMPLATES: Record<OwnerAlertType, OwnerAlertTemplate> =
 // kept in a SEPARATE registry so the owner templates (pending Meta
 // approval, character-for-character) are never disturbed. Bodies are
 // founder-approved 2026-07-12; no variable starts or ends any body.
-export type ClientTemplateType = 'estimate_ready' | 'estimate_approved' | 'job_reminder'
+export type ClientTemplateType = 'estimate_ready' | 'estimate_approved' | 'job_reminder' | 'job_completed'
 
 export interface ClientTemplate {
   type: ClientTemplateType
@@ -198,6 +207,40 @@ export const CLIENT_TEMPLATES: Record<ClientTemplateType, ClientTemplate> = {
       category: 'UTILITY',
       body: 'Recordatorio de {{1}}: su servicio está programado para {{2}}. Si necesita cambiar la hora, responda a este mensaje. ¡Nos vemos pronto!',
       contentSidEnv: 'TWILIO_WA_JOB_REMINDER_ES_SID',
+    },
+  },
+  // Review-gate opener (integrations build 2026-07-18): sent when the
+  // owner marks a job complete. The buttons are the star-gate — a happy
+  // tap gets a freeform follow-up with the Google review link (the tap
+  // opens the 24h window); a problem tap alerts the owner privately.
+  // The review LINK is deliberately NOT in this template: post-service
+  // feedback tied to a transaction is UTILITY; a link would risk a
+  // MARKETING classification, and Meta has paused marketing templates
+  // to US numbers.
+  job_completed: {
+    type: 'job_completed',
+    variables: ['client first name', 'business name'],
+    en: {
+      name: 'job_completed',
+      language: 'en',
+      category: 'UTILITY',
+      body: "Hi {{1}}, this is {{2}}. We just finished today's work at your property. How did everything turn out? Tap a button below to let us know.",
+      contentSidEnv: 'TWILIO_WA_JOB_COMPLETED_EN_SID',
+      quickReplies: [
+        { title: 'All great', id: 'review_ok' },
+        { title: 'There was a problem', id: 'review_issue' },
+      ],
+    },
+    es: {
+      name: 'trabajo_terminado',
+      language: 'es',
+      category: 'UTILITY',
+      body: 'Hola {{1}}, le escribe {{2}}. Acabamos de terminar el trabajo de hoy en su propiedad. ¿Cómo quedó todo? Toque un botón para contarnos.',
+      contentSidEnv: 'TWILIO_WA_JOB_COMPLETED_ES_SID',
+      quickReplies: [
+        { title: 'Todo excelente', id: 'review_ok' },
+        { title: 'Hubo un problema', id: 'review_issue' },
+      ],
     },
   },
 }

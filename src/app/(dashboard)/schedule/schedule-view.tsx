@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarDays, Check, Loader2 } from 'lucide-react'
+import { CalendarDays, Check, Loader2, Star } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
 import { JobPhotos } from '@/components/loop/job-photos'
 
@@ -24,6 +24,8 @@ interface Job {
   status: JobStatus
   completed_at: string | null
   contact_first_name: string | null
+  /** A Google-review request already went out for this job. */
+  review_requested?: boolean
 }
 
 /** Local YYYY-MM-DD for "today" — matches the DATE column's format and
@@ -232,9 +234,17 @@ function JobGroup({
                   )}
                 </div>
                 {done ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[#0B7A5E]">
-                    <Check className="h-4 w-4" />
-                    {t.completed}
+                  <span className="inline-flex shrink-0 flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#0B7A5E]">
+                      <Check className="h-4 w-4" />
+                      {t.completed}
+                    </span>
+                    {job.review_requested && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#028090]/10 px-2 py-0.5 text-[10.5px] font-semibold text-[#028090]">
+                        <Star className="h-3 w-3" />
+                        {dict(locale).reviews.requestedChip}
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <button
