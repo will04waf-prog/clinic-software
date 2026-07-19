@@ -23,7 +23,7 @@ export default function TermsPage() {
             <LogoMark size="sm" standalone />
           </Link>
           <div className="flex items-center gap-5">
-            <Link href="/pricing" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+            <Link href="/" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
               Pricing
             </Link>
             <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
@@ -223,7 +223,7 @@ export default function TermsPage() {
           <span>&copy; {new Date().getFullYear()} Tarhunna</span>
           <div className="flex items-center gap-5">
             <Link href="/" className="hover:text-gray-700 transition-colors">Home</Link>
-            <Link href="/pricing" className="hover:text-gray-700 transition-colors">Pricing</Link>
+            <Link href="/" className="hover:text-gray-700 transition-colors">Pricing</Link>
             <Link href="/privacy" className="hover:text-gray-700 transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-gray-700 transition-colors">Terms</Link>
             <Link href="/login" className="hover:text-gray-700 transition-colors">Sign in</Link>

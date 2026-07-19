@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   UserPlus, FileText, MessageCircle, CheckCircle2, CalendarDays, CreditCard,
-  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone, Check, ShieldCheck,
+  ArrowRight, Sprout, Sparkles, Leaf, Brush, HardHat, Phone, Check, ShieldCheck, Camera, Repeat,
 } from 'lucide-react'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
@@ -40,7 +40,18 @@ const COPY = {
       { h: 'Se lo manda por WhatsApp', b: 'Su cliente lo recibe donde ya está. Lo abre y lo aprueba con un toque — sin apps ni cuentas.', icon: MessageCircle },
       { h: 'Se vuelve un trabajo', b: 'Al aprobar, el estimado entra en su agenda. Nada se pierde en un papel ni en la memoria.', icon: CalendarDays },
       { h: 'Cobre como quiera', b: 'Con tarjeta dentro de la app, o marque el efectivo o Zelle. Usted decide; el dinero llega.', icon: CreditCard },
+      { h: 'Trabajos que se repiten', b: 'Semanal, quincenal o mensual: al completar un trabajo, el siguiente se crea solo en su agenda.', icon: Repeat },
     ],
+    proofTitle: 'Si un cliente reclama, usted tiene pruebas',
+    proofSub: 'Las dos quejas que más le cuestan a un jardinero: «yo nunca aprobé eso» y «a mí no me hicieron el trabajo». Tarhunna le deja constancia de las dos.',
+    proofApprovalTitle: 'Aprobación con un toque',
+    proofApprovalBody: 'Queda constancia de lo que el cliente aprobó: quién, qué día y a qué hora. Si después reclama, usted tiene el registro.',
+    proofApprovalExample: 'Aprobado por María · 14 de julio, 3:42 pm',
+    proofPhotoTitle: 'Foto del trabajo terminado',
+    proofPhotoBody: 'Su cliente ve la foto del trabajo terminado junto con su recibo. Nadie puede decir que no se hizo.',
+    trustTitle: 'Trato justo, siempre',
+    trustItems: ['Sin contratos', 'Cancele desde la app cuando quiera', 'Sin tarjeta para empezar la prueba'],
+    trustKiller: 'No guardamos su tarjeta durante la prueba — así que es imposible que le cobremos por sorpresa.',
     bridgeTitle: 'Habla los dos idiomas',
     bridge: 'Usted trabaja en español. Sus clientes a veces llaman en inglés. Tarhunna habla los dos — sus estimados, sus mensajes y su panel, en el idioma de cada quien.',
     forWhoTitle: 'Para quién',
@@ -96,7 +107,18 @@ const COPY = {
       { h: 'Send it by WhatsApp', b: 'Your client gets it where they already are. They open it and approve in one tap — no apps, no accounts.', icon: MessageCircle },
       { h: 'It becomes a job', b: 'On approval, the estimate lands on your schedule. Nothing lost on paper or in someone’s memory.', icon: CalendarDays },
       { h: 'Get paid your way', b: 'By card in the app, or mark it cash or Zelle. You choose; the money lands.', icon: CreditCard },
+      { h: 'Repeating jobs', b: 'Weekly, biweekly, or monthly: complete a job and the next one is created on your schedule automatically.', icon: Repeat },
     ],
+    proofTitle: 'If a client pushes back, you have proof',
+    proofSub: 'The two claims that cost service businesses the most: “I never approved that” and “the work was never done.” Tarhunna keeps a record of both.',
+    proofApprovalTitle: 'One-tap approval',
+    proofApprovalBody: 'A record of exactly what the client approved: who, what day, what time. If they push back later, you have the receipt.',
+    proofApprovalExample: 'Approved by María · July 14, 3:42 pm',
+    proofPhotoTitle: 'Completed-work photo',
+    proofPhotoBody: 'Your client sees the photo of the finished work right next to their receipt. No one can say it wasn’t done.',
+    trustTitle: 'Fair terms, always',
+    trustItems: ['No contracts', 'Cancel from the app anytime', 'No card to start the trial'],
+    trustKiller: 'We don’t store your card during the trial — so a surprise charge is impossible.',
     bridgeTitle: 'Speaks both languages',
     bridge: 'You work in Spanish. Your customers sometimes call in English. Tarhunna speaks both — your estimates, messages, and dashboard, each in the right language.',
     forWhoTitle: 'Who it’s for',
@@ -225,6 +247,29 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
         </div>
       </section>
 
+      {/* Proof / dispute protection — the market wound this product heals.
+          Framed as protection, not paperwork. */}
+      <section className="mx-auto max-w-3xl px-5 py-10">
+        <h2 className="text-2xl font-bold tracking-tight text-balance">{t.proofTitle}</h2>
+        <p className="mt-2 max-w-xl text-gray-600">{t.proofSub}</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-[#02C39A]/30 bg-white p-5 shadow-sm">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#0B7A5E]"><ShieldCheck className="h-5 w-5" /></span>
+            <h3 className="mt-3 font-semibold text-gray-900">{t.proofApprovalTitle}</h3>
+            <p className="mt-1 text-sm text-gray-600 leading-relaxed">{t.proofApprovalBody}</p>
+            {/* A miniature of the real approval badge the owner gets. */}
+            <p className="mt-3 inline-flex items-start gap-1.5 rounded-lg border border-[#02C39A]/25 bg-[#02C39A]/10 px-2.5 py-1.5 text-[12px] font-semibold text-[#0B7A5E]">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {t.proofApprovalExample}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#02C39A]/30 bg-white p-5 shadow-sm">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#0B7A5E]"><Camera className="h-5 w-5" /></span>
+            <h3 className="mt-3 font-semibold text-gray-900">{t.proofPhotoTitle}</h3>
+            <p className="mt-1 text-sm text-gray-600 leading-relaxed">{t.proofPhotoBody}</p>
+          </div>
+        </div>
+      </section>
+
       {/* Bilingual bridge — dark band */}
       <section className="mt-6 bg-[#0B2027] px-5 py-14 text-[#F5EFE1]">
         <div className="mx-auto max-w-2xl text-center">
@@ -245,6 +290,27 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
             </span>
           ))}
           <span className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400">{t.soon}</span>
+        </div>
+      </section>
+
+      {/* Trust block — the direct answer to what competitors are hated
+          for (predatory billing). The no-stored-card line gets top billing
+          because it makes the promise STRUCTURAL, not aspirational. */}
+      <section className="mx-auto max-w-3xl px-5 pb-4">
+        <div className="rounded-2xl bg-[#0B2027] p-6 text-[#F5EFE1] sm:p-7">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight">
+            <ShieldCheck className="h-5 w-5 text-[#02C39A]" /> {t.trustTitle}
+          </h2>
+          <p className="mt-3 text-[15px] font-semibold leading-relaxed text-[#02C39A]">
+            {t.trustKiller}
+          </p>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-3">
+            {t.trustItems.map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sm text-[#F5EFE1]/85">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#02C39A]" /> {item}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

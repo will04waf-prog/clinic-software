@@ -206,7 +206,7 @@ export function AiTwinTile() {
           </p>
           {briefingLocked && (
             <Link
-              href="/pricing#scale"
+              href="/settings"
               className="inline-flex items-center rounded-full bg-[#02C39A]/15 px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-[#04B08C] hover:bg-[#02C39A]/25"
               title="The 24-hour briefing is included on Scale"
             >

@@ -60,7 +60,7 @@ export function BookDemoForm() {
 
       setStatus('success')
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(err.message || 'Algo salió mal. Intente de nuevo.')
       setStatus('error')
     }
   }
@@ -73,9 +73,9 @@ export function BookDemoForm() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">You are on the list.</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Listo, lo llamamos.</h2>
         <p className="text-gray-500">
-          We will reach out within one business day to confirm your demo time.
+          Nos comunicamos en un día hábil para confirmar la hora.
         </p>
       </div>
     )
@@ -86,27 +86,27 @@ export function BookDemoForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Your name <span className="text-red-500">*</span>
+            Su nombre <span className="text-red-500">*</span>
           </label>
           <input
             id="name"
             name="name"
             type="text"
             required
-            placeholder="Jane Smith"
+            placeholder="José García"
             className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           />
         </div>
         <div>
           <label htmlFor="clinic_name" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Clinic / spa name <span className="text-red-500">*</span>
+            Nombre de su negocio <span className="text-red-500">*</span>
           </label>
           <input
             id="clinic_name"
             name="clinic_name"
             type="text"
             required
-            placeholder="Glow Aesthetics"
+            placeholder="Jardinería García"
             className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           />
         </div>
@@ -115,26 +115,26 @@ export function BookDemoForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Work email <span className="text-red-500">*</span>
+            Correo electrónico <span className="text-red-500">*</span>
           </label>
           <input
             id="email"
             name="email"
             type="email"
             required
-            placeholder="jane@glowclinic.com"
+            placeholder="jose@ejemplo.com"
             className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           />
         </div>
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Phone <span className="text-gray-400 font-normal">(optional)</span>
+            Celular <span className="text-gray-400 font-normal">(opcional)</span>
           </label>
           <input
             id="phone"
             name="phone"
             type="tel"
-            placeholder="+1 (555) 000-0000"
+            placeholder="(305) 555-0123"
             className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
           />
         </div>
@@ -143,7 +143,7 @@ export function BookDemoForm() {
       {/* Preferred date + time */}
       <div>
         <p className="block text-sm font-medium text-gray-700 mb-1.5">
-          Preferred date &amp; time <span className="text-gray-400 font-normal">(optional)</span>
+          Fecha y hora preferida <span className="text-gray-400 font-normal">(opcional)</span>
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -164,25 +164,25 @@ export function BookDemoForm() {
               defaultValue=""
               className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
             >
-              <option value="">Any time</option>
+              <option value="">Cualquier hora</option>
               {TIME_OPTIONS.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
         </div>
-        <p className="mt-1.5 text-xs text-gray-400">All times are Eastern (ET). We will confirm availability.</p>
+        <p className="mt-1.5 text-xs text-gray-400">Horario del Este (ET). Confirmamos disponibilidad.</p>
       </div>
 
       <div>
         <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1.5">
-          Anything you want us to know? <span className="text-gray-400 font-normal">(optional)</span>
+          ¿Algo que quiera contarnos? <span className="text-gray-400 font-normal">(opcional)</span>
         </label>
         <textarea
           id="notes"
           name="notes"
           rows={3}
-          placeholder="e.g. We run about 80 consultations a month and struggle with no-shows..."
+          placeholder="p. ej. Hago unos 15 trabajos por semana y se me pierden llamadas cuando ando trabajando…"
           className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none"
         />
       </div>
@@ -198,11 +198,11 @@ export function BookDemoForm() {
         disabled={status === 'submitting'}
         className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white font-semibold rounded-lg px-6 py-3 text-sm transition-colors"
       >
-        {status === 'submitting' ? 'Sending...' : 'Request a demo'}
+        {status === 'submitting' ? 'Enviando…' : 'Pedir que me llamen'}
       </button>
 
       <p className="text-center text-xs text-gray-400">
-        We respond within one business day. No spam, ever.
+        Respondemos en un día hábil. Sin spam, nunca.
       </p>
     </form>
   )
