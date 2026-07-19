@@ -22,6 +22,7 @@ import { verifyTwilioSignature, twimlResponse } from '@/lib/twilio'
 import { normalizePhone } from '@/lib/validators'
 import { stampWhatsAppInbound } from '@/lib/notify/session'
 import { classifyReviewReply, handleReviewReply } from '@/lib/loop/review-request'
+import { attributeClientInbound, persistInboundWhatsApp } from '@/lib/loop/wa-inbox'
 
 const EMPTY_TWIML = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
 
@@ -64,10 +65,24 @@ export async function POST(req: Request) {
       // Google link, problem taps wake the owner privately.
       const reply = classifyReviewReply(params.ButtonPayload, params.Body)
       const consumed = reply ? await handleReviewReply(normalized, reply) : false
-      if (!consumed) {
-        // Unmatched client message — nothing to act on yet (the two-way
-        // inbox will persist these). 200 so Twilio doesn't retry.
-        console.warn('[twilio-whatsapp] unhandled client inbound')
+
+      // Two-way inbox: every attributable client message lands on the
+      // contact's thread — including review-button taps, which are part
+      // of the conversation history. This is also what opens the
+      // contact's 24h freeform window for owner replies.
+      const attributed = await attributeClientInbound(normalized)
+      if (attributed) {
+        await persistInboundWhatsApp({
+          ...attributed,
+          fromE164: normalized,
+          body: params.Body ?? params.ButtonText ?? '',
+          messageSid: params.MessageSid,
+          numMedia: Number(params.NumMedia ?? 0) || 0,
+        })
+      } else if (!consumed) {
+        // Unknown number, no pending review — valid Twilio request,
+        // nothing to attach it to. 200 so Twilio doesn't retry.
+        console.warn('[twilio-whatsapp] unattributable client inbound')
       }
     }
   }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, UserPlus, Phone, FileText } from 'lucide-react'
+import { Plus, UserPlus, Phone, FileText, MessageCircle } from 'lucide-react'
 import { dict, type Locale } from '@/lib/i18n'
 
 export interface ClientRow {
@@ -119,14 +119,22 @@ export function ClientsView({ locale, initialClients }: { locale: Locale; initia
         <ul className="space-y-2">
           {rows.map((r) => (
             <li key={r.id} className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm">
-              <div className="min-w-0">
+              {/* Name/phone area opens the client's WhatsApp thread. */}
+              <Link href={`/clients/${r.id}`} className="min-w-0 flex-1">
                 <p className="truncate text-base font-medium text-gray-900">{r.first_name}</p>
                 {r.phone && (
                   <p className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-500">
                     <Phone className="h-3.5 w-3.5" /> {r.phone}
                   </p>
                 )}
-              </div>
+              </Link>
+              <Link
+                href={`/clients/${r.id}`}
+                aria-label={dict(locale).inbox.title}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-[#02C39A]/40 bg-[#02C39A]/10 px-3.5 text-sm font-medium text-[#0B7A5E] active:scale-[.99]"
+              >
+                <MessageCircle className="h-4 w-4" /> {dict(locale).inbox.title}
+              </Link>
               <Link
                 href="/estimates/new"
                 className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-[#028090]/30 bg-[#028090]/5 px-3.5 text-sm font-medium text-[#028090] active:scale-[.99]"

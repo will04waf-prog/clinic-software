@@ -366,4 +366,18 @@ export const en: Messages = {
     refreshNote: "Google refreshes subscribed calendars every few hours (that's how Google works, not Tarhunna). The iPhone calendar can be set to refresh more often.",
     unavailable: 'The calendar link is not available right now.',
   },
+
+  inbox: {
+    title: 'WhatsApp',
+    back: 'Clients',
+    empty: "No messages with this client yet. When they write you on WhatsApp, the conversation shows up here.",
+    composerPlaceholder: 'Type your message…',
+    send: 'Send',
+    sending: 'Sending…',
+    windowClosedTitle: 'The 24-hour window is closed',
+    windowClosedBody: "WhatsApp only allows free replies within 24 hours of the client's last message. Send them an estimate or call — when they reply, the window opens again.",
+    whatsappOffBody: 'WhatsApp sending is not enabled right now.',
+    errSend: "Couldn't send. Please try again.",
+    loadError: "Couldn't load messages. Please try again.",
+  },
 }

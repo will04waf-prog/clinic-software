@@ -391,6 +391,21 @@ export const es = {
     refreshNote: 'Google actualiza los calendarios suscritos cada varias horas (así funciona Google, no Tarhunna). El calendario del iPhone se puede configurar para actualizar más seguido.',
     unavailable: 'El enlace del calendario no está disponible en este momento.',
   },
+
+  // Bandeja de WhatsApp (integrations build) — hilo por cliente.
+  inbox: {
+    title: 'WhatsApp',
+    back: 'Clientes',
+    empty: 'Todavía no hay mensajes con este cliente. Cuando le escriba por WhatsApp, la conversación aparece aquí.',
+    composerPlaceholder: 'Escriba su mensaje…',
+    send: 'Enviar',
+    sending: 'Enviando…',
+    windowClosedTitle: 'La ventana de 24 horas está cerrada',
+    windowClosedBody: 'WhatsApp solo permite responder libremente durante las 24 horas después del último mensaje del cliente. Mándele un estimado o llámelo — cuando él responda, la ventana se abre de nuevo.',
+    whatsappOffBody: 'El envío por WhatsApp no está activado en este momento.',
+    errSend: 'No se pudo enviar. Intente de nuevo.',
+    loadError: 'No se pudieron cargar los mensajes. Intente de nuevo.',
+  },
 }
 
 // No `as const`: Messages widens strings to `string` so en.ts can supply
