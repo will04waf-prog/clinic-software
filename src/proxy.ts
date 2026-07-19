@@ -8,10 +8,13 @@ import { blockedReason } from '@/lib/billing/org-access'
 // pages (every anon visitor was paying a JWT validation over the network
 // on fully-static HTML). NOT including '/', '/login', '/signup' — those
 // carry a logged-in → /dashboard redirect and must keep running.
-export const STATIC_PUBLIC = ['/es', '/trades', '/pricing', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/book-demo']
+// Route archaeology 2026-07-15: '/pricing' and '/demo' removed — those
+// pages are deleted and 301 to '/' via next.config redirects, which run
+// BEFORE this proxy, so listing them here was dead config.
+export const STATIC_PUBLIC = ['/es', '/trades', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/book-demo']
 
 // Unauthenticated routes: no login redirect, no plan lockout.
-export const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/pricing', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage', '/aprobar', '/pagar', '/accept-invite', '/demo', '/es', '/trades']
+export const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage', '/aprobar', '/pagar', '/accept-invite', '/es', '/trades']
 
 // Boundary match — a route matches a prefix only at a real path boundary,
 // never mid-segment. Bare startsWith made '/estimates' match '/es',

@@ -23,10 +23,16 @@ export async function POST(req: NextRequest) {
 
   const origin = new URL(req.url).origin
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer:   org.stripe_customer_id,
-    return_url: `${origin}/settings`,
-  })
-
-  return NextResponse.json({ url: session.url })
+  // Raw Stripe errors log server-side only; the client gets a stable
+  // code it maps to friendly copy (same policy as subscribe/checkout).
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer:   org.stripe_customer_id,
+      return_url: `${origin}/settings`,
+    })
+    return NextResponse.json({ url: session.url })
+  } catch (err: any) {
+    console.error('[billing/portal] Stripe error:', err?.message)
+    return NextResponse.json({ error: 'portal_not_ready' }, { status: 503 })
+  }
 }

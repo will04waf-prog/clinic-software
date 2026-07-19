@@ -127,11 +127,11 @@ export async function notifyOwnerOfCallSummary(
   const html = wrapEmailHtml(
     (ownerLang === 'es'
       ? [
-          `Llamada completada: ${disp} en ${orgName}. Abra ClinIQ para ver la transcripción.`,
+          `Llamada completada: ${disp} en ${orgName}. Abra Tarhunna para ver la transcripción.`,
           `Ver la transcripción: ${transcriptUrl}`,
         ]
       : [
-          `Call completed: ${disp} at ${orgName}. Open ClinIQ for the transcript.`,
+          `Call completed: ${disp} at ${orgName}. Open Tarhunna for the transcript.`,
           `Open the transcript: ${transcriptUrl}`,
         ]
     ).join('\n'),

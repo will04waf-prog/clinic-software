@@ -54,8 +54,15 @@ export function BookDemoForm() {
       })
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || 'Something went wrong. Please try again.')
+        // The API's error strings are English; this page is Spanish-first.
+        // Map by status instead of echoing the server text.
+        throw new Error(
+          res.status === 429
+            ? 'Demasiadas solicitudes — intente de nuevo en un minuto.'
+            : res.status === 400
+              ? 'Revise los campos e intente de nuevo.'
+              : 'Algo salió mal. Intente de nuevo.',
+        )
       }
 
       setStatus('success')

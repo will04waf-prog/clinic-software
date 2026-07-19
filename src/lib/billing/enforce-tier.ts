@@ -49,12 +49,12 @@ export interface TierLimitError {
   current_count?: number
   tier_max?:      number
   feature?:       string
-  upgrade_url:    '/pricing'
+  upgrade_url:    '/settings'
 }
 
 export interface PlanLookupFailedError {
   error:       'plan_lookup_failed'
-  upgrade_url: '/pricing'
+  upgrade_url: '/settings'
 }
 
 export type EnforceResult =
@@ -123,7 +123,7 @@ function blockedError(tier: TierId, feature: string): EnforceResult {
       limit:        'feature_access',
       current_tier: tier,
       feature,
-      upgrade_url:  '/pricing',
+      upgrade_url:  '/settings',
     },
   }
 }
@@ -135,7 +135,7 @@ function planLookupFailed(orgId: string): EnforceResult {
     status: 500,
     error:  {
       error:       'plan_lookup_failed',
-      upgrade_url: '/pricing',
+      upgrade_url: '/settings',
     },
   }
 }
@@ -196,7 +196,7 @@ export async function checkContactLimit(
         current_tier:  tier,
         current_count: current,
         tier_max:      max,
-        upgrade_url:   '/pricing',
+        upgrade_url:   '/settings',
       },
     }
   }
@@ -233,7 +233,7 @@ export async function checkBulkImportSize(
         limit:        'feature_access',
         current_tier: tier,
         feature:      'bulk_import',
-        upgrade_url:  '/pricing',
+        upgrade_url:  '/settings',
       },
     }
   }
@@ -254,7 +254,7 @@ export async function checkBulkImportSize(
         current_tier:  tier,
         current_count: current,
         tier_max:      max,
-        upgrade_url:   '/pricing',
+        upgrade_url:   '/settings',
       },
     }
   }
@@ -288,7 +288,7 @@ export async function checkFeatureAccess(
         limit:        'feature_access',
         current_tier: tier,
         feature,
-        upgrade_url:  '/pricing',
+        upgrade_url:  '/settings',
       },
     }
   }

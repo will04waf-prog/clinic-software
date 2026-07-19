@@ -52,7 +52,13 @@ export async function POST(req: Request) {
       error: 'reason is required',
     }))
   }
-  const reason = reasonRaw.trim().slice(0, 200)
+  // Collapse newlines / repeated whitespace before truncating: the
+  // reason goes straight into the owner's SMS/WhatsApp alert, and a
+  // model that pastes multi-line transcript fragments would otherwise
+  // produce a ragged, garbled-looking text. (The schema also instructs
+  // the model to restate like a dispatcher — this is the server-side
+  // backstop.)
+  const reason = reasonRaw.replace(/\s+/g, ' ').trim().slice(0, 200)
 
   const { data: org } = await supabaseAdmin
     .from('organizations')

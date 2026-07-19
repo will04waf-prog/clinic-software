@@ -165,7 +165,7 @@ export function CallAgentSettingsCard() {
           <Check
             ok={hasNumber}
             label="Twilio phone number assigned"
-            help="Set in Supabase organizations.twilio_phone_number. Contact ClinIQ support if missing."
+            help="Set in Supabase organizations.twilio_phone_number. Contact Tarhunna support if missing."
           />
           <Check
             ok={hasAssistant}

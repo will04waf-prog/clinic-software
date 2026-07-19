@@ -36,7 +36,7 @@ export function buildInvitationEmail(args: {
     year: 'numeric',
   })
 
-  const subject = `You've been invited to ${args.orgName} on ClinIQ`
+  const subject = `You've been invited to ${args.orgName} on Tarhunna`
 
   const bodyLines = [
     `${inviter} invited you to join ${args.orgName} as a ${roleHuman}.`,

@@ -177,8 +177,8 @@ export async function notifyOwnerOfBooking(args: NotifyOwnerArgs): Promise<void>
     [
       body,
       ownerLang === 'es'
-        ? `Abre ClinIQ para ver los detalles: ${consultationsUrl}`
-        : `Open ClinIQ to see the details: ${consultationsUrl}`,
+        ? `Abre Tarhunna para ver los detalles: ${consultationsUrl}`
+        : `Open Tarhunna to see the details: ${consultationsUrl}`,
     ].join('\n'),
     orgName,
   )

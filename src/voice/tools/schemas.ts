@@ -423,13 +423,13 @@ export const TOOL_FLAG_URGENT: VapiTool = {
   function: {
     name: 'flag_urgent',
     description:
-      "Flag this call as an URGENT business emergency so the owner is alerted immediately to call the customer back — e.g. burst pipe, no water, flooding, gas smell, no heat in winter, a lockout. Call it AS SOON AS the caller describes the emergency, then keep helping them (book the job, take a message, etc.). This is NOT the medical 911 rail — that safety line is separate and always comes first. `reason` is the caller's stated issue in a short phrase; it is sent to the owner along with the caller's phone number so they can call back in one tap.",
+      "Flag this call as an URGENT business emergency so the owner is alerted immediately to call the customer back — e.g. burst pipe, no water, flooding, gas smell, no heat in winter, a lockout. Call it AS SOON AS the caller describes the emergency, then keep helping them (book the job, take a message, etc.). This is NOT the medical 911 rail — that safety line is separate and always comes first. `reason` is sent to the owner as a text alert along with the caller's phone number so they can call back in one tap.",
     parameters: {
       type: 'object',
       properties: {
         reason: {
           type: 'string',
-          description: "The caller's stated emergency in a short phrase, in the caller's own words (e.g. 'burst pipe flooding the kitchen', 'fuga de gas en la cocina'). Max 200 chars.",
+          description: "The emergency, RESTATED by you in a short clean phrase like a human dispatcher would relay it (e.g. 'burst pipe flooding the kitchen', 'fuga de gas en la cocina'). Never copy the transcript verbatim — phone transcription garbles words, and this text goes straight to the owner's phone. If the caller's words were unclear, describe what you understood the problem to be. Match the caller's language (Spanish or English). Max 200 chars.",
           maxLength: 200,
         },
       },

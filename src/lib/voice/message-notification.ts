@@ -6,7 +6,7 @@
  * wrapper, same fire-and-forget shape, same PHI-free body, same
  * activity_log-based durable dedupe + idempotencyKey belt-and-
  * suspenders. The body intentionally carries NO patient identity
- * and NO message contents — just "open ClinIQ to read it" with a
+ * and NO message contents — just "open Tarhunna to read it" with a
  * deep link.
  *
  * Why per-voice_message_id dedupe (not per-contact): a single
@@ -30,6 +30,13 @@ export interface NotifyOwnerOfVoiceMessageArgs {
    * no PHI either way — urgency does NOT leak who called or why.
    */
   urgency?: 'normal' | 'urgent'
+  /**
+   * Vapi call id, when the message came from a live call. Used ONLY to
+   * suppress the phone-channel ping when flag_urgent already alerted the
+   * owner about this same call (the founder-reported triple-ping: alert +
+   * urgent message ping + summary for one urgent call). Email untouched.
+   */
+  callSid?: string | null
 }
 
 /**
@@ -111,11 +118,11 @@ export async function notifyOwnerOfVoiceMessage(
   const html = wrapEmailHtml(
     (ownerLang === 'es'
       ? [
-          `Un cliente dejó un mensaje en ${orgName} — abra ClinIQ para leerlo.`,
+          `Un cliente dejó un mensaje en ${orgName} — abra Tarhunna para leerlo.`,
           `Abra la bandeja: ${inboxUrl}`,
         ]
       : [
-          `A caller left a message at ${orgName} — open ClinIQ to read it.`,
+          `A caller left a message at ${orgName} — open Tarhunna to read it.`,
           `Open the inbox: ${inboxUrl}`,
         ]
     ).join('\n'),
@@ -134,6 +141,29 @@ export async function notifyOwnerOfVoiceMessage(
     })
   } catch {
     console.error('[voice-message-notification] resend send failed')
+  }
+
+  // Per-call ping dedupe: if flag_urgent already fired for THIS call,
+  // the owner has the richer URGENTE alert (caller number + issue) in
+  // hand — a second "mensaje nuevo" phone ping is pure noise. Suppress
+  // the phone push, keep the email above. Ordering note: flag-urgent
+  // writes its voice_urgent_flag row synchronously BEFORE alerting, and
+  // take_message fires after it in a real call, so the row is visible
+  // here; if the rare inverse ordering happens we fail OPEN (both send)
+  // rather than risk a silent urgent call.
+  if (args.callSid) {
+    const { data: urgentFlag } = await supabaseAdmin
+      .from('activity_log')
+      .select('id')
+      .eq('organization_id', args.organizationId)
+      .eq('action', 'voice_urgent_flag')
+      .eq('metadata->>call_sid', args.callSid)
+      .limit(1)
+      .maybeSingle()
+    if (urgentFlag) {
+      console.info(`[voice-message-notification] phone ping suppressed — flag_urgent already alerted call ${args.callSid}`)
+      return
+    }
   }
 
   // Additive phone-channel push. Always the PHI-free job_summary

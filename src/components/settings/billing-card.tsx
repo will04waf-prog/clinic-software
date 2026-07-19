@@ -45,17 +45,21 @@ export function BillingCard({ plan, planStatus, hasStripeCustomer }: BillingCard
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
 
-  async function openPortal() {
+  // Raw server/Stripe error strings never render here — the API routes
+  // return stable codes and log the real message server-side; the user
+  // gets one friendly line either way.
+  const FRIENDLY_ERROR = 'Could not open billing right now. Please try again in a moment.'
+
+  async function post(path: string) {
     setLoading(true)
     setError(null)
     try {
-      const res  = await fetch('/api/billing/portal', { method: 'POST' })
+      const res  = await fetch(path, { method: 'POST' })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok)   throw new Error(data.message ?? data.error ?? `HTTP ${res.status}`)
-      if (!data.url) throw new Error('No redirect URL returned')
+      if (!res.ok || !data.url) throw new Error()
       window.location.href = data.url
-    } catch (err: any) {
-      setError(err.message)
+    } catch {
+      setError(FRIENDLY_ERROR)
       setLoading(false)
     }
   }
@@ -101,11 +105,12 @@ export function BillingCard({ plan, planStatus, hasStripeCustomer }: BillingCard
           size="sm"
           variant={isActive ? 'outline' : 'default'}
           onClick={() => {
-            if (isActive) {
-              openPortal()
-            } else {
-              window.location.href = '/pricing'
-            }
+            // Route archaeology 2026-07-15: the old non-active branch sent
+            // owners to /pricing (retired 3-tier page, now a 301 to the
+            // homepage). There is ONE plan now — the same subscribe route
+            // the CRM card uses, which hands back a portal URL when a
+            // subscription already exists.
+            post(isActive ? '/api/billing/portal' : '/api/billing/subscribe')
           }}
           disabled={loading}
         >

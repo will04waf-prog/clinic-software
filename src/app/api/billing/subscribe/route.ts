@@ -41,11 +41,18 @@ export async function POST(req: NextRequest) {
     if (!org.stripe_customer_id) {
       return NextResponse.json({ error: 'Already subscribed — use Manage Billing.' }, { status: 409 })
     }
-    const session = await stripe.billingPortal.sessions.create({
-      customer: org.stripe_customer_id,
-      return_url: `${origin}/settings`,
-    })
-    return NextResponse.json({ url: session.url })
+    // Same raw-error policy as the checkout branch below: log
+    // server-side, return a stable code the client maps to friendly copy.
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: org.stripe_customer_id,
+        return_url: `${origin}/settings`,
+      })
+      return NextResponse.json({ url: session.url })
+    } catch (err: any) {
+      console.error('[billing/subscribe] Stripe portal error:', err?.message)
+      return NextResponse.json({ error: 'portal_not_ready' }, { status: 503 })
+    }
   }
 
   // Honor remaining app-trial: card saved now, first charge at trial end.

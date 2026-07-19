@@ -44,7 +44,7 @@ export interface SeatLockedBody {
   required_tier: TierId
   current_tier:  TierId
   capability:    'team_seats'
-  upgrade_url:   '/pricing'
+  upgrade_url:   '/settings'
   /** Useful for UX copy: "You're at 5 of 5 seats." */
   current_seats: number
   cap:           number
@@ -135,7 +135,7 @@ export async function requireSeatAvailable(
       required_tier: 'professional',
       current_tier:  'starter',
       capability:    'team_seats',
-      upgrade_url:   '/pricing',
+      upgrade_url:   '/settings',
       current_seats: 0,
       cap:           0,
     }
@@ -153,7 +153,7 @@ export async function requireSeatAvailable(
       required_tier: nextTierForSeats(eff.tier),
       current_tier:  eff.tier,
       capability:    'team_seats',
-      upgrade_url:   '/pricing',
+      upgrade_url:   '/settings',
       current_seats: total,
       cap,
     }

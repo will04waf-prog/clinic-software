@@ -7,10 +7,23 @@ import { Button } from '@/components/ui/button'
 
 interface CaptureFormCardProps {
   url: string
+  /**
+   * Vertical-aware copy: loop (landscaping/trades) orgs talk about
+   * customers requesting estimates, in the owner's language; legacy
+   * med-spa orgs keep the original patient/consultation wording.
+   */
+  variant?: 'medspa' | 'loop-en' | 'loop-es'
 }
 
-export function CaptureFormCard({ url }: CaptureFormCardProps) {
+const COPY = {
+  medspa:    { title: 'Intake Form',        sub: 'Share this link with patients to collect consultation requests.' },
+  'loop-en': { title: 'Request Form',       sub: 'Share this link so customers can request an estimate.' },
+  'loop-es': { title: 'Formulario de solicitudes', sub: 'Comparta este enlace para que sus clientes pidan un estimado.' },
+} as const
+
+export function CaptureFormCard({ url, variant = 'medspa' }: CaptureFormCardProps) {
   const [copied, setCopied] = useState(false)
+  const copy = COPY[variant]
 
   async function handleCopy() {
     await navigator.clipboard.writeText(url)
@@ -21,9 +34,9 @@ export function CaptureFormCard({ url }: CaptureFormCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Intake Form</CardTitle>
+        <CardTitle>{copy.title}</CardTitle>
         <p className="text-sm text-gray-500 mt-1">
-          Share this link with patients to collect consultation requests.
+          {copy.sub}
         </p>
       </CardHeader>
       <CardContent>

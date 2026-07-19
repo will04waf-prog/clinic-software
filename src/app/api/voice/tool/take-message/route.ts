@@ -244,6 +244,9 @@ export async function POST(req: Request) {
         organizationId: org.id,
         voiceMessageId,
         urgency,
+        // Lets the notifier suppress its phone ping when flag_urgent
+        // already alerted the owner about THIS call (triple-ping dedupe).
+        callSid: tc.callSid ?? null,
       })
     } catch {
       console.error('[voice/take-message owner notification] failed')

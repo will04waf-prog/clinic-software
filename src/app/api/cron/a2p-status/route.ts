@@ -128,7 +128,7 @@ async function notifyOwner(args: {
     : [
         `Your A2P 10DLC registration needs attention.`,
         `The Campaign Registry returned a rejection on the brand for ${args.orgName}.`,
-        `Open ClinIQ to review the reason and resubmit: ${settingsUrl}`,
+        `Open Tarhunna to review the reason and resubmit: ${settingsUrl}`,
       ].join('\n')
 
   const subject = args.outcome === 'approved'

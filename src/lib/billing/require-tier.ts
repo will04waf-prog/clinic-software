@@ -41,7 +41,7 @@ export interface LockedBody {
   required_tier: TierId
   current_tier:  TierId
   capability:    CapabilityKey
-  upgrade_url:   '/pricing'
+  upgrade_url:   '/settings'
 }
 
 export type RequireResult =
@@ -64,7 +64,7 @@ export function lockedResponseBody(
     required_tier: REQUIRED_TIER_FOR[key],
     current_tier:  currentTier,
     capability:    key,
-    upgrade_url:   '/pricing',
+    upgrade_url:   '/settings',
   }
 }
 

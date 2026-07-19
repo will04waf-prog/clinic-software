@@ -119,7 +119,13 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       )
     }
-    return NextResponse.json({ error: authError?.message ?? 'auth_create_failed' }, { status: 500 })
+    // Raw Supabase auth errors log server-side only — this is a public
+    // page, and the client renders whatever message it receives.
+    console.error('[accept-invite] auth createUser failed:', authError?.message)
+    return NextResponse.json(
+      { error: 'auth_create_failed', message: 'Account setup failed. Please try the invitation link again.' },
+      { status: 500 },
+    )
   }
   const userId = authData.user.id
 
