@@ -6,6 +6,7 @@ import { BillingCard } from '@/components/settings/billing-card'
 import { ConnectPaymentsCard, type ConnectStatus } from '@/components/settings/connect-payments-card'
 import { SubscriptionCard } from '@/components/settings/subscription-card'
 import { GoogleReviewsCard } from '@/components/settings/google-reviews-card'
+import { TaxExportCard } from '@/components/settings/tax-export-card'
 import { LoopServicesCard } from '@/components/settings/loop-services-card'
 import { resolveLocale } from '@/lib/i18n'
 import { isLoopVertical } from '@/lib/vertical/config'
@@ -120,6 +121,12 @@ export default async function SettingsPage() {
             locale={resolveLocale(org?.owner_language)}
             initialPlaceId={org?.google_place_id ?? null}
           />
+        )}
+
+        {/* Tax-time CSV packet (integrations build) — invoices, payments,
+            clients + income summary for the owner's accountant. */}
+        {profile?.role === 'owner' && isLoop && (
+          <TaxExportCard locale={resolveLocale(org?.owner_language)} />
         )}
 
         {!isLoop && org?.slug && (

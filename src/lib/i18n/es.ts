@@ -366,6 +366,18 @@ export const es = {
     errGeneric: 'No se pudo guardar. Intente de nuevo.',
     requestedChip: 'Reseña pedida',
   },
+
+  // Paquete para el contador (integrations build) — exportación CSV anual.
+  taxExport: {
+    title: 'Paquete para su contador',
+    sub: 'Todo lo que su contador necesita en la temporada de impuestos: facturas, pagos y clientes del año, más un resumen de ingresos por mes y por método de pago. Archivos CSV — se abren en Excel y en QuickBooks.',
+    yearLabel: 'Año',
+    fileInvoices: 'Facturas',
+    filePayments: 'Pagos',
+    fileClients: 'Clientes',
+    fileSummary: 'Resumen de ingresos',
+    download: 'Descargar',
+  },
 }
 
 // No `as const`: Messages widens strings to `string` so en.ts can supply

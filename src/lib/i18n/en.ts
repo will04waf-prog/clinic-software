@@ -343,4 +343,15 @@ export const en: Messages = {
     errGeneric: "Couldn't save. Please try again.",
     requestedChip: 'Review requested',
   },
+
+  taxExport: {
+    title: 'Package for your accountant',
+    sub: 'Everything your accountant needs at tax time: the year\'s invoices, payments, and customers, plus an income summary by month and payment method. CSV files — they open in Excel and QuickBooks.',
+    yearLabel: 'Year',
+    fileInvoices: 'Invoices',
+    filePayments: 'Payments',
+    fileClients: 'Customers',
+    fileSummary: 'Income summary',
+    download: 'Download',
+  },
 }
