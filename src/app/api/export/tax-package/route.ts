@@ -26,10 +26,33 @@ type FileKind = (typeof FILES)[number]
 
 const dollars = (cents: number | null | undefined) => ((cents ?? 0) / 100).toFixed(2)
 
-/** RFC-4180 quoting: wrap when the value carries a comma/quote/newline. */
+/**
+ * RFC-4180 quoting + formula-injection neutralization (CWE-1236): a
+ * customer named "=HYPERLINK(...)" must not become a live formula on
+ * the ACCOUNTANT's machine. Leading = + - @ tab CR get an apostrophe
+ * prefix (Excel renders it as text). Our own numeric cells never start
+ * with those, so data stays clean.
+ */
 function csvCell(v: string | number | null | undefined): string {
-  const s = v == null ? '' : String(v)
+  let s = v == null ? '' : String(v)
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+/**
+ * The business's LOCAL calendar date for a timestamp — a payment
+ * recorded 11 PM Dec 31 in Maryland belongs to THAT tax year, not
+ * UTC's Jan 1. en-CA locale gives YYYY-MM-DD directly.
+ */
+function localDate(iso: string | null | undefined, tz: string): string {
+  if (!iso) return ''
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date(iso))
+  } catch {
+    return iso.slice(0, 10)
+  }
 }
 const csvRow = (cells: Array<string | number | null | undefined>) => cells.map(csvCell).join(',')
 
@@ -66,14 +89,19 @@ export async function GET(req: NextRequest) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, owner_language')
+    .select('name, owner_language, timezone')
     .eq('id', gate.orgId)
     .single()
   const es = org?.owner_language !== 'en'
   const orgName = org?.name ?? 'Tarhunna'
+  const tz = org?.timezone || 'America/New_York'
 
-  const from = `${year}-01-01T00:00:00Z`
-  const to = `${year + 1}-01-01T00:00:00Z`
+  // Query window padded ±2 days around the UTC year, then rows are
+  // filtered by their LOCAL (org-timezone) calendar date — so late-night
+  // Dec 31 / Jan 1 activity lands in the correct tax year.
+  const from = `${year - 1}-12-30T00:00:00Z`
+  const to = `${year + 1}-01-02T00:00:00Z`
+  const inYear = (iso: string | null | undefined) => localDate(iso, tz).startsWith(`${year}-`)
 
   if (file === 'clients') {
     const { data, error } = await supabase
@@ -103,13 +131,13 @@ export async function GET(req: NextRequest) {
       csvRow(es
         ? ['Factura #', 'Fecha', 'Cliente', 'Descripción', 'Estado', 'Subtotal', 'Impuesto', 'Total', 'Pagado', 'Fecha de pago']
         : ['Invoice #', 'Date', 'Customer', 'Description', 'Status', 'Subtotal', 'Tax', 'Total', 'Paid', 'Paid on']),
-      ...(data ?? []).map((i: any) => {
+      ...(data ?? []).filter((i: any) => inYear(i.created_at)).map((i: any) => {
         const c = Array.isArray(i.contact) ? i.contact[0] : i.contact
         const name = [c?.first_name, c?.last_name].filter(Boolean).join(' ')
         return csvRow([
-          i.invoice_number, (i.created_at ?? '').slice(0, 10), name, i.title, i.status,
+          i.invoice_number, localDate(i.created_at, tz), name, i.title, i.status,
           dollars(i.subtotal_cents), dollars(i.tax_cents), dollars(i.total_cents),
-          dollars(i.amount_paid_cents), (i.paid_at ?? '').slice(0, 10),
+          dollars(i.amount_paid_cents), localDate(i.paid_at, tz),
         ])
       }),
     ]
@@ -129,12 +157,12 @@ export async function GET(req: NextRequest) {
       csvRow(es
         ? ['Fecha', 'Monto', 'Método', 'Estado', 'Factura #', 'Cliente', 'Nota']
         : ['Date', 'Amount', 'Method', 'Status', 'Invoice #', 'Customer', 'Note']),
-      ...(data ?? []).map((p: any) => {
+      ...(data ?? []).filter((p: any) => inYear(p.created_at)).map((p: any) => {
         const inv = Array.isArray(p.invoice) ? p.invoice[0] : p.invoice
         const c = inv ? (Array.isArray(inv.contact) ? inv.contact[0] : inv.contact) : null
         const name = [c?.first_name, c?.last_name].filter(Boolean).join(' ')
         return csvRow([
-          (p.created_at ?? '').slice(0, 10), dollars(p.amount_cents), p.method, p.status,
+          localDate(p.created_at, tz), dollars(p.amount_cents), p.method, p.status,
           inv?.invoice_number ?? '', name, p.note,
         ])
       }),
@@ -155,10 +183,14 @@ export async function GET(req: NextRequest) {
   const byMethod = new Map<string, number>()
   let total = 0
   for (const p of pays ?? []) {
-    if (p.status === 'refunded' || p.status === 'failed') continue
+    // "Collected income" means exactly that: only succeeded payments.
+    // pending/failed/refunded must never inflate an accountant-facing
+    // total.
+    if (p.status !== 'succeeded') continue
+    if (!inYear(p.created_at)) continue
     const cents = p.amount_cents ?? 0
     total += cents
-    const month = (p.created_at ?? '').slice(0, 7)
+    const month = localDate(p.created_at, tz).slice(0, 7)
     byMonth.set(month, (byMonth.get(month) ?? 0) + cents)
     byMethod.set(p.method ?? '?', (byMethod.get(p.method ?? '?') ?? 0) + cents)
   }

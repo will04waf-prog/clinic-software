@@ -23,9 +23,20 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyCapabilityToken } from '@/lib/tokens/capability-token'
 
-/** RFC 5545 TEXT escaping: backslash, semicolon, comma, newline. */
+/** RFC 5545 TEXT escaping: backslash, semicolon, comma, and EVERY
+ *  newline form — a lone CR (no LF) in a client name would otherwise
+ *  inject raw ICS content lines. */
 function icsEscape(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n')
+}
+
+/** RFC 5545 UTC DATE-TIME (…Z). PostgREST serializes timestamptz with a
+ *  numeric offset (+00:00), which naive stripping turned into an INVALID
+ *  '+0000' suffix — round-tripping through Date guarantees the Z form. */
+function icsStampUtc(iso: string | null | undefined): string {
+  const d = iso ? new Date(iso) : new Date()
+  const safe = Number.isNaN(d.getTime()) ? new Date() : d
+  return safe.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 }
 
 const dateBasic = (iso: string) => iso.replaceAll('-', '')
@@ -86,7 +97,7 @@ export async function GET(
     const client = [c?.first_name, c?.last_name].filter(Boolean).join(' ')
     const title = j.title || (es ? 'Trabajo' : 'Job')
     const summary = client ? `${title} — ${client}` : title
-    const stamp = (j.updated_at ?? new Date().toISOString()).replace(/[-:]/g, '').replace(/\.\d+/, '')
+    const stamp = icsStampUtc(j.updated_at)
     lines.push(
       'BEGIN:VEVENT',
       `UID:job-${j.id}@tarhunna.net`,

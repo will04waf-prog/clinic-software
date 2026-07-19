@@ -23,9 +23,12 @@
  * UTILITY classification (Meta has paused MARKETING templates to US
  * numbers).
  *
- * SMS fallback (WhatsApp disabled / template unapproved) is UNGATED:
- * the SMS carries the review link directly. Less elegant, still useful,
- * and it means the feature works day one.
+ * SMS fallback (WhatsApp disabled / template unapproved) carries the
+ * review link directly in the SMS body — no buttons on that rail. Note
+ * the SMS path is still A2P-gated inside notifyClient; when NEITHER
+ * channel can deliver, notifyClient reports channel 'none' and we do
+ * NOT record the request — the job stays eligible for a real send once
+ * a channel comes online.
  */
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -124,6 +127,14 @@ export async function sendReviewRequestForJob(orgId: string, jobId: string): Pro
       link,
     })
 
+    // Nothing delivered (WhatsApp off/unapproved AND SMS gated) → do NOT
+    // burn the one-request-per-job guard on a phantom send; the job stays
+    // eligible once a channel comes online.
+    if (result.channel === 'none') {
+      console.info(`[review-request] no channel could deliver for job ${jobId} — not recorded`)
+      return
+    }
+
     await supabaseAdmin.from('activity_log').insert({
       organization_id: orgId,
       contact_id: contact.id,
@@ -174,14 +185,33 @@ async function sendFreeformWhatsApp(toE164: string, body: string): Promise<boole
  *
  * The customer's tap opened THEIR 24h service window, so the follow-up
  * (review link, or the "we'll make it right" note) goes freeform.
+ *
+ * `messageSid` (Twilio's inbound id) makes retried webhook deliveries
+ * no-ops instead of double-firing the gate's side effects.
  */
-export async function handleReviewReply(fromE164: string, reply: ReviewReply): Promise<boolean> {
+export async function handleReviewReply(fromE164: string, reply: ReviewReply, messageSid?: string): Promise<boolean> {
   try {
     const last10 = fromE164.replace(/\D/g, '').slice(-10)
     if (last10.length !== 10) return false
 
-    // Most recent un-answered request to this phone within 14 days.
-    const cutoff = new Date(Date.now() - 14 * 86_400_000).toISOString()
+    // Twilio retries webhooks; a retry carries the same MessageSid.
+    // Read-then-act is enough here — retries arrive seconds apart, not
+    // concurrently.
+    if (messageSid) {
+      const { data: dup } = await supabaseAdmin
+        .from('activity_log')
+        .select('id')
+        .eq('action', 'review_response')
+        .eq('metadata->>message_sid', messageSid)
+        .limit(1)
+        .maybeSingle()
+      if (dup) return true
+    }
+
+    // Most recent un-answered request to this phone. 30 days — the
+    // request may be up to 14 days old when the CRON reminder goes out,
+    // and the customer can take days more to answer THAT.
+    const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString()
     const { data: candidates } = await supabaseAdmin
       .from('activity_log')
       .select('id, organization_id, contact_id, metadata, created_at')
@@ -225,28 +255,35 @@ export async function handleReviewReply(fromE164: string, reply: ReviewReply): P
     ])
     if (!org) return false
 
-    await supabaseAdmin.from('activity_log').insert({
+    const lang: 'en' | 'es' = contact?.preferred_language === 'en' ? 'en' : 'es'
+    const orgName = org.name ?? 'el equipo'
+    const responseRow = {
       organization_id: pending.organization_id,
       contact_id: pending.contact_id,
       action: 'review_response',
-      metadata: { job_id: jobId, contact_id: pending.contact_id, response: reply },
-    })
-
-    const lang: 'en' | 'es' = contact?.preferred_language === 'en' ? 'en' : 'es'
-    const orgName = org.name ?? 'el equipo'
+      metadata: { job_id: jobId, contact_id: pending.contact_id, response: reply, message_sid: messageSid ?? null },
+    }
 
     if (reply === 'ok') {
+      // Deliver the link BEFORE consuming the gate: if Twilio hiccups,
+      // we return false, Twilio retries the webhook, and the customer
+      // still gets their link instead of the gate closing on silence.
       if (org.google_place_id) {
         const link = reviewLinkFromPlaceId(org.google_place_id)
-        await sendFreeformWhatsApp(fromE164, lang === 'es'
+        const delivered = await sendFreeformWhatsApp(fromE164, lang === 'es'
           ? `¡Gracias! 🙏 Si nos puede regalar una reseña en Google, nos ayuda muchísimo a seguir creciendo: ${link}`
           : `Thank you! 🙏 A quick Google review would help us grow — it only takes a minute: ${link}`)
+        if (!delivered) return false
       }
+      await supabaseAdmin.from('activity_log').insert(responseRow)
       return true
     }
 
-    // 'issue': thank + reassure the customer, then wake the owner —
+    // 'issue': consume the gate FIRST (the owner alert below has its own
+    // fallbacks; a duplicate owner page would be worse than a lost
+    // client-side ack), then reassure the customer and wake the owner —
     // this is the bad review that never made it to Google.
+    await supabaseAdmin.from('activity_log').insert(responseRow)
     await sendFreeformWhatsApp(fromE164, lang === 'es'
       ? `Lamentamos mucho eso. ${orgName} se comunicará con usted hoy mismo para arreglarlo.`
       : `We're very sorry to hear that. ${orgName} will reach out today to make it right.`)

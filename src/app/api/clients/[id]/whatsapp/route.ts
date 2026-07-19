@@ -42,17 +42,20 @@ export async function GET(
   if ('error' in resolved) return resolved.error
   const { contact } = resolved
 
+  // NEWEST 200, then reverse into chronological order — ascending+limit
+  // would pin the thread to the oldest 200 forever once history grows.
   const { data: messages, error } = await supabase
     .from('messages')
     .select('id, direction, status, body, created_at')
     .eq('contact_id', contact.id)
     .eq('channel', 'whatsapp')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(200)
   if (error) {
     console.error('[clients/whatsapp] list failed:', error.message)
     return NextResponse.json({ error: 'list_failed' }, { status: 500 })
   }
+  messages?.reverse()
 
   const win = await whatsappWindowFor(contact.organization_id, contact.id)
   return NextResponse.json({

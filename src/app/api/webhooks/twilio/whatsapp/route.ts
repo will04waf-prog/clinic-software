@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       // text answers a pending review request; happy taps get the
       // Google link, problem taps wake the owner privately.
       const reply = classifyReviewReply(params.ButtonPayload, params.Body)
-      const consumed = reply ? await handleReviewReply(normalized, reply) : false
+      const consumed = reply ? await handleReviewReply(normalized, reply, params.MessageSid) : false
 
       // Two-way inbox: every attributable client message lands on the
       // contact's thread — including review-button taps, which are part

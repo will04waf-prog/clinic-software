@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const firstName = (contact.first_name ?? '').trim() || (lang === 'es' ? 'vecino' : 'neighbor')
     const link = reviewLinkFromPlaceId(org.google_place_id)
 
-    await notifyClient({
+    const result = await notifyClient({
       orgId: row.organization_id,
       toPhone: contact.phone,
       lang,
@@ -88,6 +88,9 @@ export async function POST(req: NextRequest) {
         : `Hi ${firstName}, this is ${org.name}. Happy with the work? A Google review would help us a lot: ${link}`,
       link,
     })
+    // Undelivered (both channels gated/off) → don't burn the one-reminder
+    // guard; tomorrow's run retries while the row is inside the window.
+    if (result.channel === 'none') { skipped++; continue }
 
     await supabaseAdmin.from('activity_log').insert({
       organization_id: row.organization_id,
