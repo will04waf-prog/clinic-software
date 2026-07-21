@@ -11,10 +11,10 @@ import { blockedReason } from '@/lib/billing/org-access'
 // Route archaeology 2026-07-15: '/pricing' and '/demo' removed — those
 // pages are deleted and 301 to '/' via next.config redirects, which run
 // BEFORE this proxy, so listing them here was dead config.
-export const STATIC_PUBLIC = ['/es', '/trades', '/limpieza', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/book-demo']
+export const STATIC_PUBLIC = ['/es', '/trades', '/limpieza', '/construccion', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/book-demo']
 
 // Unauthenticated routes: no login redirect, no plan lockout.
-export const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage', '/aprobar', '/pagar', '/accept-invite', '/es', '/trades', '/limpieza']
+export const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/capture', '/billing', '/med-spa-crm', '/book-demo', '/privacy', '/terms', '/sms-consent', '/voice-consent', '/sitemap.xml', '/robots.txt', '/icon.svg', '/book', '/manage', '/aprobar', '/pagar', '/accept-invite', '/es', '/trades', '/limpieza', '/construccion']
 
 // Boundary match — a route matches a prefix only at a real path boundary,
 // never mid-segment. Bare startsWith made '/estimates' match '/es',

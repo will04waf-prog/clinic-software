@@ -26,6 +26,7 @@ export const en: Messages = {
     industryCleaning: 'House cleaning',
     industryCleaningDesc: 'Regular, deep, move-out, and office cleaning.',
     industryConstruction: 'Construction & trades',
+    industryConstructionDesc: 'Remodeling, painting, drywall, roofing, flooring, concrete.',
     industryRestaurants: 'Restaurants & food',
     soonBadge: 'Coming soon',
 

@@ -289,9 +289,12 @@ export const LOOP_SERVICE_PRESETS: Record<LoopPresetVertical, { es: string[]; en
     es: ['Corte de césped', 'Limpieza de jardín', 'Mantenimiento mensual', 'Poda de arbustos', 'Acolchado (mulch)', 'Diseño de jardines', 'Riego / irrigación', 'Limpieza de otoño'],
     en: ['Lawn mowing', 'Yard cleanup', 'Monthly maintenance', 'Bush trimming', 'Mulching', 'Garden design', 'Irrigation', 'Fall cleanup'],
   },
+  // Construction-sharpened 2026-07-21 (the /construccion funnel rides
+  // this vertical). Additive for existing trades orgs — presets are
+  // picker suggestions, not stored data.
   trades: {
-    es: ['Reparación', 'Instalación', 'Mantenimiento', 'Inspección', 'Servicio de emergencia', 'Remodelación'],
-    en: ['Repair', 'Installation', 'Maintenance', 'Inspection', 'Emergency service', 'Remodeling'],
+    es: ['Remodelación', 'Pintura', 'Drywall', 'Techos (roofing)', 'Pisos', 'Concreto', 'Reparación general', 'Instalación', 'Demolición', 'Servicio de emergencia'],
+    en: ['Remodeling', 'Painting', 'Drywall', 'Roofing', 'Flooring', 'Concrete', 'General repair', 'Installation', 'Demolition', 'Emergency service'],
   },
   cleaning: {
     es: ['Limpieza regular (semanal o quincenal)', 'Limpieza profunda', 'Limpieza de mudanza (entrada/salida)', 'Limpieza post-construcción', 'Limpieza de oficinas', 'Ventanas', 'Alfombras', 'Limpieza de primavera'],

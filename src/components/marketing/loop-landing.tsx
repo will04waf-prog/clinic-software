@@ -10,7 +10,7 @@ import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
 
 type Locale = 'es' | 'en'
-type Variant = 'default' | 'trades' | 'limpieza'
+type Variant = 'default' | 'trades' | 'limpieza' | 'construccion'
 
 // Approved loop-first copy (founder-approved 2026-07-12). Spanish is the
 // segment's language; the noun is 'estimado' (not 'presupuesto').
@@ -174,15 +174,36 @@ const LIMPIEZA_HOOK = {
   },
 } as const
 
+// The /construccion variant leads with THE contractor pain: the verbal
+// change order ("eso yo nunca lo aprobé"). One-tap written approval is
+// the product's sharpest fit for this trade.
+const CONSTRUCCION_HOOK = {
+  es: {
+    h1: 'Cada trabajo y cada extra, aprobado por escrito — con un toque.',
+    sub: 'Mande el estimado por WhatsApp y su cliente lo aprueba con un toque: queda constancia de quién aprobó qué, con fecha y hora. Los extras y cambios también por escrito. Y usted cobra — con tarjeta, efectivo o Zelle.',
+    proofSub: 'Las dos quejas que más le cuestan a un contratista: «yo nunca aprobé ese extra» y «eso no quedó como lo pedí». Tarhunna le deja constancia de las dos.',
+  },
+  en: {
+    h1: 'Every job and every change order, approved in writing — one tap.',
+    sub: 'Send the estimate by WhatsApp and your client approves with one tap: a record of who approved what, with date and time. Extras and changes in writing too. And you get paid — card, cash, or Zelle.',
+    proofSub: 'The two claims that cost a contractor the most: “I never approved that extra” and “that\'s not what I asked for.” Tarhunna keeps a record of both.',
+  },
+} as const
+
+const VERTICAL_HOOKS = { limpieza: LIMPIEZA_HOOK, construccion: CONSTRUCCION_HOOK } as const
+
 export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { defaultLocale?: Locale; variant?: Variant }) {
   const [locale, setLocale] = useState<Locale>(defaultLocale)
   const t = COPY[locale]
-  const limpieza = variant === 'limpieza' ? LIMPIEZA_HOOK[locale] : null
-  const h1 = limpieza?.h1 ?? (variant === 'trades' && locale === 'en' ? TRADES_HOOK.h1 : t.h1)
-  const sub = limpieza?.sub ?? (variant === 'trades' && locale === 'en' ? TRADES_HOOK.sub : t.sub)
-  const proofSub = limpieza?.proofSub ?? t.proofSub
+  const hook = variant === 'limpieza' || variant === 'construccion' ? VERTICAL_HOOKS[variant][locale] : null
+  const h1 = hook?.h1 ?? (variant === 'trades' && locale === 'en' ? TRADES_HOOK.h1 : t.h1)
+  const sub = hook?.sub ?? (variant === 'trades' && locale === 'en' ? TRADES_HOOK.sub : t.sub)
+  const proofSub = hook?.proofSub ?? t.proofSub
   // Per-vertical funnel: the signup page reads ?v= to set the org's vertical.
-  const signupHref = variant === 'limpieza' ? '/signup?v=limpieza' : '/signup'
+  const signupHref =
+    variant === 'limpieza' ? '/signup?v=limpieza'
+    : variant === 'construccion' ? '/signup?v=construccion'
+    : '/signup'
 
   return (
     <div className="min-h-screen bg-[#F5EFE1] text-gray-900">

@@ -34,6 +34,7 @@ export const es = {
     industryCleaning: 'Limpieza de casas',
     industryCleaningDesc: 'Limpieza regular, profunda, de mudanza y de oficinas.',
     industryConstruction: 'Construcción y oficios',
+    industryConstructionDesc: 'Remodelación, pintura, drywall, techos, pisos, concreto.',
     industryRestaurants: 'Restaurantes y comida',
     soonBadge: 'Próximamente',
 

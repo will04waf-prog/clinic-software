@@ -30,11 +30,15 @@ export default function SignupPage() {
   const router = useRouter()
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE)
   const [step, setStep] = useState<Step>('industry')
-  // Per-vertical funnels: /limpieza links here with ?v=limpieza. Read
-  // after mount (client-only) so SSR/prerender never touches window.
-  const [vertical, setVertical] = useState<'landscaping' | 'cleaning'>('landscaping')
+  // Per-vertical funnels: /limpieza and /construccion link here with
+  // ?v=. Read after mount (client-only) so SSR never touches window.
+  // Construction rides the 'trades' vertical (Layla urgent detection
+  // included) — it is a marketing funnel, not a new backend key.
+  const [vertical, setVertical] = useState<'landscaping' | 'cleaning' | 'trades'>('landscaping')
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('v') === 'limpieza') setVertical('cleaning')
+    const v = new URLSearchParams(window.location.search).get('v')
+    if (v === 'limpieza') setVertical('cleaning')
+    if (v === 'construccion') setVertical('trades')
   }, [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -110,6 +114,7 @@ export default function SignupPage() {
               {([
                 { v: 'landscaping' as const, icon: Leaf, label: t.industryLandscaping, desc: t.industryLandscapingDesc },
                 { v: 'cleaning' as const, icon: Brush, label: t.industryCleaning, desc: t.industryCleaningDesc },
+                { v: 'trades' as const, icon: HardHat, label: t.industryConstruction, desc: t.industryConstructionDesc },
               ]).map(({ v, icon: Icon, label, desc }) => (
                 <button
                   key={v}
@@ -130,7 +135,6 @@ export default function SignupPage() {
 
               {/* Coming soon */}
               {[
-                { icon: HardHat, label: t.industryConstruction },
                 { icon: UtensilsCrossed, label: t.industryRestaurants },
               ].map(({ icon: Icon, label }) => (
                 <div
