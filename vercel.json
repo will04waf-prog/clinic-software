@@ -7,6 +7,7 @@
     { "path": "/api/cron/provisioning", "schedule": "* * * * *" },
     { "path": "/api/cron/report-usage", "schedule": "0 2 * * *" },
     { "path": "/api/cron/weekly-digest", "schedule": "0 14 * * 1" },
-    { "path": "/api/cron/review-reminders", "schedule": "0 16 * * *" }
+    { "path": "/api/cron/review-reminders", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/wa-sender-health", "schedule": "0 */6 * * *" }
   ]
 }

@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { whatsappWindowFor, sendClientWhatsApp } from '@/lib/loop/wa-inbox'
 import { isWhatsAppEnabled } from '@/lib/notify/whatsapp'
+import { clientMessagingBlocked } from '@/lib/notify/kill-switch'
 
 const MAX_BODY = 1000
 
@@ -83,6 +84,11 @@ export async function POST(
   const body = typeof payload?.body === 'string' ? payload.body.trim() : ''
   if (!body || body.length > MAX_BODY) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 })
+  }
+
+  // Per-tenant kill switch (shared-sender insurance) — admin-imposed.
+  if (await clientMessagingBlocked(contact.organization_id)) {
+    return NextResponse.json({ error: 'messaging_blocked' }, { status: 403 })
   }
 
   // Meta's rule, enforced server-side: freeform only inside the window.

@@ -14,6 +14,7 @@
  */
 import { getTwilioClient, isTwilioConfigured, sendSMS } from '@/lib/twilio'
 import { isWhatsAppEnabled } from './whatsapp'
+import { clientMessagingBlocked } from './kill-switch'
 import { clientTemplateVariant, templateContentSid, type ClientTemplateType, type TemplateLang } from './templates'
 
 export interface NotifyClientInput {
@@ -35,6 +36,14 @@ export interface NotifyClientInput {
 export type NotifyClientResult = { channel: 'whatsapp' | 'sms' | 'none'; link: string }
 
 export async function notifyClient(input: NotifyClientInput): Promise<NotifyClientResult> {
+  // 0. Per-tenant kill switch (shared-sender insurance). Blocked orgs
+  //    send NOTHING to customers on any channel; the link still comes
+  //    back so in-app surfaces keep working.
+  if (await clientMessagingBlocked(input.orgId)) {
+    console.warn(`[notifyClient] org ${input.orgId} is messaging-blocked — send suppressed`)
+    return { channel: 'none', link: input.link }
+  }
+
   // 1. WhatsApp template (out-of-session). No-ops cleanly when disabled,
   //    unconfigured, or the template SID isn't set yet.
   if (isWhatsAppEnabled() && isTwilioConfigured()) {

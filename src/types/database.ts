@@ -1683,6 +1683,8 @@ export type Database = {
           call_agent_voice_id: string | null
           caller_languages: string[]
           canceled_at: string | null
+          client_messaging_blocked_at: string | null
+          client_messaging_blocked_reason: string | null
           city: string | null
           connect_charges_enabled: boolean
           connect_onboarded_at: string | null
@@ -1769,6 +1771,8 @@ export type Database = {
           call_agent_voice_id?: string | null
           caller_languages?: string[]
           canceled_at?: string | null
+          client_messaging_blocked_at?: string | null
+          client_messaging_blocked_reason?: string | null
           city?: string | null
           connect_charges_enabled?: boolean
           connect_onboarded_at?: string | null
@@ -1855,6 +1859,8 @@ export type Database = {
           call_agent_voice_id?: string | null
           caller_languages?: string[]
           canceled_at?: string | null
+          client_messaging_blocked_at?: string | null
+          client_messaging_blocked_reason?: string | null
           city?: string | null
           connect_charges_enabled?: boolean
           connect_onboarded_at?: string | null

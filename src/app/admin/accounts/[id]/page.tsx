@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { AccountEditForm } from '@/components/admin/account-edit-form'
+import { MessagingKillSwitch } from '@/components/admin/messaging-kill-switch'
 import { formatRelative } from '@/lib/utils'
 
 const PLAN_STATUS_COLORS: Record<string, string> = {
@@ -123,6 +124,13 @@ export default async function AdminAccountDetailPage({
           plan={org.plan}
           planStatus={org.plan_status}
           adminNotes={(org as any).admin_notes ?? null}
+        />
+
+        {/* Shared-sender insurance: per-tenant client-messaging kill switch */}
+        <MessagingKillSwitch
+          orgId={org.id}
+          blockedAt={org.client_messaging_blocked_at}
+          blockedReason={org.client_messaging_blocked_reason}
         />
       </div>
     </div>

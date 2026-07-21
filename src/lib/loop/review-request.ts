@@ -33,6 +33,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { notifyClient } from '@/lib/notify/client'
+import { clientMessagingBlocked } from '@/lib/notify/kill-switch'
 import { notifyOwner } from '@/lib/notify'
 import { isWhatsAppEnabled } from '@/lib/notify/whatsapp'
 import { getTwilioClient, isTwilioConfigured } from '@/lib/twilio'
@@ -237,6 +238,11 @@ export async function handleReviewReply(fromE164: string, reply: ReviewReply, me
       if (!answered) { pending = c; break }
     }
     if (!pending) return false
+
+    // Per-tenant kill switch: a blocked org sends nothing outbound.
+    // Return false so the reply still lands as a normal inbox message
+    // (inbound is evidence; only OUR sends are gated).
+    if (await clientMessagingBlocked(pending.organization_id)) return false
 
     const jobId = (pending.metadata as { job_id?: string }).job_id!
     const [{ data: org }, { data: contact }] = await Promise.all([
