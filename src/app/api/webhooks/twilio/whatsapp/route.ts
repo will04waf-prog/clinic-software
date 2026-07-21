@@ -16,13 +16,20 @@
  * WhatsApp number (owner_notify_e164) — see src/lib/notify/session.ts.
  */
 
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
+
+// after() work is bounded by the route's duration budget — the voice-
+// estimate pipeline (media download + STT + LLM + inserts) legitimately
+// runs 15-60s, and a platform-default cap would kill it mid-flight with
+// no draft AND no reply. Same precedent as cron/weekly-digest.
+export const maxDuration = 300
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { verifyTwilioSignature, twimlResponse } from '@/lib/twilio'
 import { normalizePhone } from '@/lib/validators'
 import { stampWhatsAppInbound } from '@/lib/notify/session'
 import { classifyReviewReply, handleReviewReply } from '@/lib/loop/review-request'
 import { attributeClientInbound, persistInboundWhatsApp } from '@/lib/loop/wa-inbox'
+import { handleOwnerVoiceNote } from '@/lib/loop/voice-estimate'
 
 const EMPTY_TWIML = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
 
@@ -57,6 +64,23 @@ export async function POST(req: Request) {
     )
     if (match) {
       await stampWhatsAppInbound(match.id)
+      // Voice-note → draft estimate ("mándele una nota de voz a
+      // Layla"). Only OWNER-sent audio takes this path; the heavy
+      // pipeline (download → transcribe → extract → draft) runs in
+      // after() so Twilio gets its 200 immediately. The stamp above
+      // opened the owner's 24h session, so the pipeline's reply can
+      // go freeform.
+      const numMedia = Number(params.NumMedia ?? 0)
+      if (numMedia > 0 && (params.MediaContentType0 ?? '').startsWith('audio/') && params.MediaUrl0) {
+        after(() => handleOwnerVoiceNote({
+          orgId: match.id,
+          ownerE164: normalized,
+          mediaUrl: params.MediaUrl0!,
+          contentType: params.MediaContentType0!,
+          caption: params.Body?.trim() || null,
+          messageSid: params.MessageSid ?? null,
+        }))
+      }
     } else {
       // Not an owner number → it's a CUSTOMER replying to something we
       // sent (integrations build 2026-07-18). First stop: the review

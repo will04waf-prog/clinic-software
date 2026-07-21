@@ -23,6 +23,8 @@ export const en: Messages = {
     pickIndustrySubtitle: 'Pick your industry so we can set Tarhunna up for you.',
     industryLandscaping: 'Landscaping & lawn care',
     industryLandscapingDesc: 'Mowing, cleanups, maintenance, garden design.',
+    industryCleaning: 'House cleaning',
+    industryCleaningDesc: 'Regular, deep, move-out, and office cleaning.',
     industryConstruction: 'Construction & trades',
     industryRestaurants: 'Restaurants & food',
     soonBadge: 'Coming soon',

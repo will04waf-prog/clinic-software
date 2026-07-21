@@ -162,7 +162,7 @@ export default async function SettingsPage() {
         {isLoop && (
           <LoopServicesCard
             locale={resolveLocale(org?.owner_language)}
-            vertical={(org?.vertical === 'trades' ? 'trades' : 'landscaping')}
+            vertical={(org?.vertical === 'trades' || org?.vertical === 'cleaning' ? org.vertical : 'landscaping')}
             initial={Array.isArray(org?.procedures) ? org.procedures : null}
           />
         )}

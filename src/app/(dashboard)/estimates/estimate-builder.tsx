@@ -47,7 +47,7 @@ export function EstimateBuilder({
   // Common services for this vertical → tap-to-add chips (typing every
   // line on a phone keyboard, between jobs, is the friction here).
   const presets =
-    vertical === 'landscaping' || vertical === 'trades'
+    vertical === 'landscaping' || vertical === 'trades' || vertical === 'cleaning'
       ? LOOP_SERVICE_PRESETS[vertical][locale === 'es' ? 'es' : 'en']
       : []
 

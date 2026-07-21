@@ -31,6 +31,8 @@ export const es = {
     pickIndustrySubtitle: 'Elija su industria para preparar Tarhunna a su medida.',
     industryLandscaping: 'Jardinería y paisajismo',
     industryLandscapingDesc: 'Cortes, limpieza, mantenimiento, diseño de jardines.',
+    industryCleaning: 'Limpieza de casas',
+    industryCleaningDesc: 'Limpieza regular, profunda, de mudanza y de oficinas.',
     industryConstruction: 'Construcción y oficios',
     industryRestaurants: 'Restaurantes y comida',
     soonBadge: 'Próximamente',

@@ -3,6 +3,7 @@ import type { TablesUpdate } from '@/types/database'
 import { sendEmail } from '@/lib/resend'
 import { withCronLock } from '@/lib/cron-locks'
 import { getOrgOwner } from '@/lib/org-owner'
+import { isLoopVertical } from '@/lib/vertical/config'
 // Shared branded building blocks — extracted to email/branded.ts so the
 // welcome email + weekly digest render identically to these reminders.
 import { APP_URL, wrap as wrapBase, p, btn } from '@/lib/email/branded'
@@ -125,7 +126,10 @@ async function sendBatch(
 ) {
   for (const org of orgs) {
     try {
-      const loop = org.vertical === 'landscaping' || org.vertical === 'trades'
+      // Loop FAMILY, not a hardcoded pair — cleaning (and every future
+      // loop vertical) must get the Spanish loop emails, not the clinic
+      // variant.
+      const loop = isLoopVertical(org.vertical)
       // Shared helper (org-owner.ts): the old maybeSingle() here broke
       // silently on two-owner orgs — no reminder emails, forever.
       const owner = await getOrgOwner(org.id)

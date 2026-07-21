@@ -16,7 +16,7 @@
  *     (Phase 2/3).
  */
 
-export type Vertical = 'medspa' | 'trades' | 'food' | 'general' | 'landscaping'
+export type Vertical = 'medspa' | 'trades' | 'food' | 'general' | 'landscaping' | 'cleaning'
 export type OwnerLanguage = 'en' | 'es'
 export type CallerLanguage = 'en' | 'es'
 export type NotificationChannel = 'sms' | 'whatsapp' | 'both'
@@ -195,6 +195,33 @@ const CONFIG: Record<Vertical, VerticalConfig> = {
     phiScrub: false,
     extraTools: [],
   },
+  // Industry ladder step 2 (2026-07-21): residential cleaning. Same
+  // loop family as landscaping — recurring visits are the heart of the
+  // business, so the estimado→aprobar→trabajo→reseña engine fits
+  // unchanged. Own vertical key (not squatting on 'trades') so copy,
+  // presets, and GTM can diverge; reuses the trades voice fragment,
+  // whose own text already covers cleaning.
+  cleaning: {
+    vertical: 'cleaning',
+    terms: {
+      engagement: 'cleaning', engagementEs: 'limpieza',
+      engagementPlural: 'cleanings', engagementPluralEs: 'limpiezas',
+      provider: 'team', providerEs: 'equipo',
+      business: 'business', businessEs: 'negocio',
+      customer: 'customer', customerEs: 'clienta',
+      customerPlural: 'customers', customerPluralEs: 'clientas',
+      serviceExample: 'Limpieza regular — quincenal',
+    },
+    promptFragment: 'trades',
+    intakeQuestions: [
+      'the home address (where the cleaning happens)',
+      'the size of the home (bedrooms / bathrooms) and what kind of cleaning they want',
+      'a preferred day and time window',
+      'any access notes — keys, codes, pets',
+    ],
+    phiScrub: false,
+    extraTools: [],
+  },
 }
 
 /** Resolve a tenant's vertical config, defaulting to med-spa for any
@@ -247,7 +274,7 @@ export function isBilingual(
  * through to the clinic UI. Gate on the FAMILY, never a single vertical.
  */
 export function isLoopVertical(vertical: string | null | undefined): boolean {
-  return vertical === 'landscaping' || vertical === 'trades'
+  return vertical === 'landscaping' || vertical === 'trades' || vertical === 'cleaning'
 }
 
 /**
@@ -255,7 +282,9 @@ export function isLoopVertical(vertical: string | null | undefined): boolean {
  * in organizations.procedures (same column + endpoint the med-spa
  * picker uses — UI-only difference). Spanish-first per the segment.
  */
-export const LOOP_SERVICE_PRESETS: Record<'landscaping' | 'trades', { es: string[]; en: string[] }> = {
+export type LoopPresetVertical = 'landscaping' | 'trades' | 'cleaning'
+
+export const LOOP_SERVICE_PRESETS: Record<LoopPresetVertical, { es: string[]; en: string[] }> = {
   landscaping: {
     es: ['Corte de césped', 'Limpieza de jardín', 'Mantenimiento mensual', 'Poda de arbustos', 'Acolchado (mulch)', 'Diseño de jardines', 'Riego / irrigación', 'Limpieza de otoño'],
     en: ['Lawn mowing', 'Yard cleanup', 'Monthly maintenance', 'Bush trimming', 'Mulching', 'Garden design', 'Irrigation', 'Fall cleanup'],
@@ -263,5 +292,9 @@ export const LOOP_SERVICE_PRESETS: Record<'landscaping' | 'trades', { es: string
   trades: {
     es: ['Reparación', 'Instalación', 'Mantenimiento', 'Inspección', 'Servicio de emergencia', 'Remodelación'],
     en: ['Repair', 'Installation', 'Maintenance', 'Inspection', 'Emergency service', 'Remodeling'],
+  },
+  cleaning: {
+    es: ['Limpieza regular (semanal o quincenal)', 'Limpieza profunda', 'Limpieza de mudanza (entrada/salida)', 'Limpieza post-construcción', 'Limpieza de oficinas', 'Ventanas', 'Alfombras', 'Limpieza de primavera'],
+    en: ['Regular cleaning (weekly or biweekly)', 'Deep cleaning', 'Move-in / move-out cleaning', 'Post-construction cleaning', 'Office cleaning', 'Windows', 'Carpets', 'Spring cleaning'],
   },
 }

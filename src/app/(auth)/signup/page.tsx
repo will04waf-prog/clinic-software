@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { dict, DEFAULT_LOCALE, type Locale } from '@/lib/i18n'
-import { Leaf, HardHat, UtensilsCrossed, Check } from 'lucide-react'
+import { Leaf, Brush, HardHat, UtensilsCrossed, Check } from 'lucide-react'
 
 type Step = 'industry' | 'account'
 
@@ -30,6 +30,12 @@ export default function SignupPage() {
   const router = useRouter()
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE)
   const [step, setStep] = useState<Step>('industry')
+  // Per-vertical funnels: /limpieza links here with ?v=limpieza. Read
+  // after mount (client-only) so SSR/prerender never touches window.
+  const [vertical, setVertical] = useState<'landscaping' | 'cleaning'>('landscaping')
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('v') === 'limpieza') setVertical('cleaning')
+  }, [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -56,7 +62,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, vertical: 'landscaping', owner_language: locale }),
+        body: JSON.stringify({ ...form, vertical, owner_language: locale }),
       })
       const ctype = res.headers.get('content-type') ?? ''
       if (!ctype.includes('application/json')) throw new Error('server')
@@ -100,21 +106,27 @@ export default function SignupPage() {
             <p className="mt-1 text-sm text-gray-500">{t.pickIndustrySubtitle}</p>
 
             <div className="mt-5 space-y-2.5">
-              {/* Landscaping — the only active industry */}
-              <button
-                type="button"
-                onClick={() => { setError(null); setStep('account') }}
-                className="w-full flex items-center gap-3 rounded-2xl border-2 border-[#028090] bg-white px-4 py-4 text-left shadow-sm active:scale-[.99] transition-transform"
-              >
-                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#02C39A]/15">
-                  <Leaf className="h-5 w-5 text-[#028090]" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-gray-900">{t.industryLandscaping}</span>
-                  <span className="block text-xs text-gray-500 leading-snug">{t.industryLandscapingDesc}</span>
-                </span>
-                <Check className="h-5 w-5 shrink-0 text-[#028090]" />
-              </button>
+              {/* Active industries — the tap picks the org's vertical. */}
+              {([
+                { v: 'landscaping' as const, icon: Leaf, label: t.industryLandscaping, desc: t.industryLandscapingDesc },
+                { v: 'cleaning' as const, icon: Brush, label: t.industryCleaning, desc: t.industryCleaningDesc },
+              ]).map(({ v, icon: Icon, label, desc }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => { setVertical(v); setError(null); setStep('account') }}
+                  className={`w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-4 text-left shadow-sm active:scale-[.99] transition-transform ${vertical === v ? 'border-[#028090]' : 'border-gray-200'}`}
+                >
+                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#02C39A]/15">
+                    <Icon className="h-5 w-5 text-[#028090]" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-gray-900">{label}</span>
+                    <span className="block text-xs text-gray-500 leading-snug">{desc}</span>
+                  </span>
+                  {vertical === v && <Check className="h-5 w-5 shrink-0 text-[#028090]" />}
+                </button>
+              ))}
 
               {/* Coming soon */}
               {[

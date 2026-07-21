@@ -24,7 +24,7 @@ const supabaseAdmin = createClient(
 
 // Verticals a self-serve signup may claim. Defaults to landscaping (the
 // CRM pivot's first deep-built vertical). Unknown values fall back to it.
-const SIGNUP_VERTICALS: Vertical[] = ['landscaping', 'trades', 'food', 'general', 'medspa']
+const SIGNUP_VERTICALS: Vertical[] = ['landscaping', 'cleaning', 'trades', 'food', 'general', 'medspa']
 
 // Error codes the client localizes via the i18n dictionary; `error`
 // carries a fallback message for non-localized callers.

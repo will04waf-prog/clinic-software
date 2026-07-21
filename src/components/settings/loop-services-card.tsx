@@ -15,7 +15,7 @@ export function LoopServicesCard({
   initial,
 }: {
   locale: Locale
-  vertical: 'landscaping' | 'trades'
+  vertical: 'landscaping' | 'trades' | 'cleaning'
   initial: string[] | null
 }) {
   const t = dict(locale).services

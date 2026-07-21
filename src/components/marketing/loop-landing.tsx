@@ -10,7 +10,7 @@ import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
 
 type Locale = 'es' | 'en'
-type Variant = 'default' | 'trades'
+type Variant = 'default' | 'trades' | 'limpieza'
 
 // Approved loop-first copy (founder-approved 2026-07-12). Spanish is the
 // segment's language; the noun is 'estimado' (not 'presupuesto').
@@ -157,11 +157,32 @@ const TRADES_HOOK = {
   sub: 'Build an estimate in 2 minutes and send it by WhatsApp — your customer approves with one tap, and it becomes a scheduled job you get paid for. And half your customers speak Spanish. Tarhunna handles both.',
 }
 
+// The /limpieza variant speaks to cleaning owners (Spanish-first).
+// Recurring visits + the Google-review ask are THE hooks for this
+// segment; the proof line swaps the landscaping complaint framing for
+// the cleaning one.
+const LIMPIEZA_HOOK = {
+  es: {
+    h1: 'Sus limpiezas, sus clientas y sus pagos — todo por WhatsApp.',
+    sub: 'Mande el estimado por WhatsApp y su clienta lo aprueba con un toque. La limpieza queda en su agenda — la semanal se repite sola — y al terminar, el sistema le pide la reseña de Google por usted.',
+    proofSub: 'Las dos quejas que más le cuestan a un negocio de limpieza: «yo nunca aprobé ese precio» y «no quedó bien limpio». Tarhunna le deja constancia de las dos.',
+  },
+  en: {
+    h1: 'Your cleanings, clients, and payments — all on WhatsApp.',
+    sub: 'Send the estimate on WhatsApp and your client approves with one tap. The cleaning lands on your schedule — weeklies repeat on their own — and when you finish, we ask for the Google review for you.',
+    proofSub: 'The two claims that cost a cleaning business the most: “I never approved that price” and “it wasn’t cleaned right.” Tarhunna keeps a record of both.',
+  },
+} as const
+
 export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { defaultLocale?: Locale; variant?: Variant }) {
   const [locale, setLocale] = useState<Locale>(defaultLocale)
   const t = COPY[locale]
-  const h1 = variant === 'trades' && locale === 'en' ? TRADES_HOOK.h1 : t.h1
-  const sub = variant === 'trades' && locale === 'en' ? TRADES_HOOK.sub : t.sub
+  const limpieza = variant === 'limpieza' ? LIMPIEZA_HOOK[locale] : null
+  const h1 = limpieza?.h1 ?? (variant === 'trades' && locale === 'en' ? TRADES_HOOK.h1 : t.h1)
+  const sub = limpieza?.sub ?? (variant === 'trades' && locale === 'en' ? TRADES_HOOK.sub : t.sub)
+  const proofSub = limpieza?.proofSub ?? t.proofSub
+  // Per-vertical funnel: the signup page reads ?v= to set the org's vertical.
+  const signupHref = variant === 'limpieza' ? '/signup?v=limpieza' : '/signup'
 
   return (
     <div className="min-h-screen bg-[#F5EFE1] text-gray-900">
@@ -183,7 +204,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
           >
             {t.switch}
           </button>
-          <Link href="/signup" className="rounded-full bg-[#028090] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#026B78]">
+          <Link href={signupHref} className="rounded-full bg-[#028090] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#026B78]">
             {t.ctaPrimary}
           </Link>
         </div>
@@ -198,7 +219,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
         <p className="mx-auto mt-5 max-w-xl text-lg text-gray-600">{sub}</p>
         <p className="mx-auto mt-4 max-w-lg text-sm text-gray-400">{t.hook}</p>
         <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link href="/signup" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-brand px-6 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform sm:w-auto">
+          <Link href={signupHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-brand px-6 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform sm:w-auto">
             {t.ctaPrimary} <ArrowRight className="h-4 w-4" />
           </Link>
           <a href="#como" className="inline-flex w-full items-center justify-center rounded-xl border border-gray-300 bg-[#F5EFE1] px-6 py-3.5 text-base font-semibold text-gray-700 hover:border-gray-400 sm:w-auto">
@@ -251,7 +272,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
           Framed as protection, not paperwork. */}
       <section className="mx-auto max-w-3xl px-5 py-10">
         <h2 className="text-2xl font-bold tracking-tight text-balance">{t.proofTitle}</h2>
-        <p className="mt-2 max-w-xl text-gray-600">{t.proofSub}</p>
+        <p className="mt-2 max-w-xl text-gray-600">{proofSub}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-[#02C39A]/30 bg-white p-5 shadow-sm">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#0B7A5E]"><ShieldCheck className="h-5 w-5" /></span>
@@ -335,7 +356,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
             <ShieldCheck className="h-4 w-4 shrink-0" /> {t.priceLockIn}
           </p>
           <Link
-            href="/signup"
+            href={signupHref}
             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-brand px-6 py-3.5 text-base font-semibold text-white transition-transform active:scale-[.99]"
           >
             {t.priceCta} <ArrowRight className="h-4 w-4" />
@@ -362,7 +383,7 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
       <section className="bg-[#0B2027] px-5 py-16 text-center text-[#F5EFE1]">
         <h2 className="text-3xl font-extrabold tracking-tight">{t.closeTitle}</h2>
         <p className="mx-auto mt-2 max-w-sm text-[#F5EFE1]/70">{t.closeSub}</p>
-        <Link href="/signup" className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-7 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform">
+        <Link href={signupHref} className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-7 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform">
           {t.closeCta} <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
