@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import {
   UserPlus, FileText, MessageCircle, CheckCircle2, CalendarDays, CreditCard,
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react'
 import { LogoMark } from '@/components/ui/logo-mark'
 import { SignatureLogo } from '@/components/ui/signature-logo'
+import { AnimatedSection } from '@/components/marketing/animated-section'
+import { DepthParallax } from '@/components/marketing/depth-parallax'
 
 type Locale = 'es' | 'en'
 type Variant = 'default' | 'trades' | 'limpieza' | 'construccion'
@@ -34,6 +37,12 @@ const COPY = {
       { t: 'Trabajo', d: 'en su agenda', icon: CalendarDays },
       { t: 'Cobrado', d: 'tarjeta o efectivo', icon: CreditCard },
     ],
+    // Annotation cards on the loop showcase (desktop only, decorative;
+    // composed strictly from the approved loop vocabulary above).
+    annoSent: 'Enviado por WhatsApp',
+    annoSentSub: 'estimado en 2 minutos',
+    annoApproved: 'Aprobado con un toque',
+    annoApprovedSub: 'queda en su agenda',
     featTitle: 'Qué hace',
     features: [
       { h: 'Estimados en 2 minutos', b: 'Sus servicios y precios, desde el teléfono, entre un trabajo y otro. Se ve profesional — sin papeleo.', icon: FileText },
@@ -101,6 +110,10 @@ const COPY = {
       { t: 'Job', d: 'on your schedule', icon: CalendarDays },
       { t: 'Paid', d: 'card or cash', icon: CreditCard },
     ],
+    annoSent: 'Sent by WhatsApp',
+    annoSentSub: 'estimate in 2 minutes',
+    annoApproved: 'Approved in one tap',
+    annoApprovedSub: 'lands on your schedule',
     featTitle: 'What it does',
     features: [
       { h: 'Estimates in 2 minutes', b: 'Your services and prices, from your phone, between jobs. Looks professional — no paperwork.', icon: FileText },
@@ -256,23 +269,70 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
         </div>
       </section>
 
-      {/* Loop strip */}
+      {/* Loop strip — the product showcase. Depth parallax (drifts a
+          few % slower than scroll on fine pointers) + two tilted
+          floating annotation cards overlapping the frame corners on
+          desktop, same language as the division sites' stages. */}
       <section id="como" className="mx-auto max-w-3xl px-5 py-10 scroll-mt-6">
         <h2 className="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-gray-500">{t.loopTitle}</h2>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          {t.loop.map(({ t: label, d, icon: Icon }, i) => (
-            <div key={label} className="flex items-center gap-2.5 rounded-xl border-l-[3px] border-[#028090] border border-gray-200 bg-white px-3 py-3 shadow-sm">
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#028090]">
-                <Icon className="h-4 w-4" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[10px] font-mono text-gray-400">{String(i + 1).padStart(2, '0')}</span>
-                <span className="block text-sm font-bold leading-tight">{label}</span>
-                <span className="block text-[11px] text-gray-500 leading-tight">{d}</span>
-              </span>
+        <DepthParallax factor={0.05}>
+          <div className="relative">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {t.loop.map(({ t: label, d, icon: Icon }, i) => (
+                <div key={label} className="flex items-center gap-2.5 rounded-xl border-l-[3px] border-[#028090] border border-gray-200 bg-white px-3 py-3 shadow-sm">
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#028090]">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[10px] font-mono text-gray-400">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="block text-sm font-bold leading-tight">{label}</span>
+                    <span className="block text-[11px] text-gray-500 leading-tight">{d}</span>
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            {/* Annotation cards — decorative, desktop only, never
+                intercept clicks. Transform nesting: .anno-card
+                (position) → AnimatedSection (reveal) → .tilt (rotate)
+                → .float (gentle phased float). */}
+            <div
+              aria-hidden="true"
+              className="anno-card hidden lg:block -top-9 -left-14"
+              style={{ '--tilt': '-7deg', '--float-dur': '5.2s' } as CSSProperties}
+            >
+              <AnimatedSection delay={0.15}>
+                <div className="tilt">
+                  <div className="float">
+                    <div className="w-48 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                      <p className="text-[13px] font-semibold text-gray-900">
+                        <span className="text-[#02C39A]">●</span> {t.annoSent}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-gray-500">{t.annoSentSub}</p>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedSection>
+            </div>
+            <div
+              aria-hidden="true"
+              className="anno-card hidden lg:block -bottom-12 -right-24"
+              style={{ '--tilt': '8deg', '--float-dur': '6s', '--float-phase': '-2.1s' } as CSSProperties}
+            >
+              <AnimatedSection delay={0.25}>
+                <div className="tilt">
+                  <div className="float">
+                    <div className="w-48 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                      <p className="text-[13px] font-semibold text-gray-900">
+                        <span className="text-[#02C39A]">✓</span> {t.annoApproved}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-gray-500">{t.annoApprovedSub}</p>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedSection>
+            </div>
+          </div>
+        </DepthParallax>
       </section>
 
       {/* Features */}
@@ -294,7 +354,8 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
       <section className="mx-auto max-w-3xl px-5 py-10">
         <h2 className="text-2xl font-bold tracking-tight text-balance">{t.proofTitle}</h2>
         <p className="mt-2 max-w-xl text-gray-600">{proofSub}</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <DepthParallax factor={0.04} className="mt-5">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-[#02C39A]/30 bg-white p-5 shadow-sm">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#02C39A]/15 text-[#0B7A5E]"><ShieldCheck className="h-5 w-5" /></span>
             <h3 className="mt-3 font-semibold text-gray-900">{t.proofApprovalTitle}</h3>
@@ -310,16 +371,24 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
             <p className="mt-1 text-sm text-gray-600 leading-relaxed">{t.proofPhotoBody}</p>
           </div>
         </div>
+        </DepthParallax>
       </section>
 
-      {/* Bilingual bridge — dark band */}
-      <section className="mt-6 bg-[#0B2027] px-5 py-14 text-[#F5EFE1]">
+      {/* scene-cut: cream → ink */}
+      <div className="scene-cut cut-cream-ink" aria-hidden="true" />
+
+      {/* Bilingual bridge — dark band, with the family film grain */}
+      <section className="relative overflow-hidden bg-[#0B2027] px-5 py-14 text-[#F5EFE1]">
         <div className="mx-auto max-w-2xl text-center">
           <Sparkles className="mx-auto h-6 w-6 text-[#02C39A]" />
           <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl text-balance">{t.bridgeTitle}</h2>
           <p className="mx-auto mt-4 max-w-lg text-[#F5EFE1]/75">{t.bridge}</p>
         </div>
+        <div className="film-grain" aria-hidden="true" />
       </section>
+
+      {/* scene-cut: ink → cream (raked the other way) */}
+      <div className="scene-cut scene-cut--l cut-ink-cream" aria-hidden="true" />
 
       {/* For whom */}
       <section className="mx-auto max-w-3xl px-5 py-12 text-center">
@@ -339,7 +408,8 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
           for (predatory billing). The no-stored-card line gets top billing
           because it makes the promise STRUCTURAL, not aspirational. */}
       <section className="mx-auto max-w-3xl px-5 pb-4">
-        <div className="rounded-2xl bg-[#0B2027] p-6 text-[#F5EFE1] sm:p-7">
+        <div className="relative overflow-hidden rounded-2xl bg-[#0B2027] p-6 text-[#F5EFE1] sm:p-7">
+          <div className="film-grain" aria-hidden="true" />
           <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <ShieldCheck className="h-5 w-5 text-[#02C39A]" /> {t.trustTitle}
           </h2>
@@ -400,13 +470,17 @@ export function LoopLanding({ defaultLocale = 'es', variant = 'default' }: { def
         </div>
       </section>
 
-      {/* Close */}
-      <section className="bg-[#0B2027] px-5 py-16 text-center text-[#F5EFE1]">
+      {/* scene-cut: cream → ink, into the close */}
+      <div className="scene-cut cut-cream-ink" aria-hidden="true" />
+
+      {/* Close — dark final CTA with the family film grain */}
+      <section className="relative overflow-hidden bg-[#0B2027] px-5 py-16 text-center text-[#F5EFE1]">
         <h2 className="text-3xl font-extrabold tracking-tight">{t.closeTitle}</h2>
         <p className="mx-auto mt-2 max-w-sm text-[#F5EFE1]/70">{t.closeSub}</p>
         <Link href={signupHref} className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-7 py-3.5 text-base font-semibold text-white active:scale-[.99] transition-transform">
           {t.closeCta} <ArrowRight className="h-4 w-4" />
         </Link>
+        <div className="film-grain" aria-hidden="true" />
       </section>
       </main>
 
